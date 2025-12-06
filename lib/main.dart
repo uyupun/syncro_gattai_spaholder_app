@@ -703,10 +703,10 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 15.5;
+  static const double armLength = 14;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 5.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
+  static const double enemyRadius = 6.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -821,7 +821,7 @@ class RobotArmGame extends Forge2DGame {
         _physicsStoppedOnHit = true;
         hitCount.value++;
 
-        Future.delayed(Duration(seconds: 1), () {
+        Future.delayed(Duration(seconds: 2), () {
           showSuccessMessage.value = true;
         });
 
@@ -1176,7 +1176,7 @@ class Enemy extends BodyComponent {
     
     if (currentSprite != null) {
       // 画像を使用してレンダリング（サイズを2倍に）
-      final size = _radius * 2.75; // 直径の2倍
+      final size = _radius * 2.5; // 直径の2倍
       currentSprite.render(
         canvas,
         size: Vector2.all(size),

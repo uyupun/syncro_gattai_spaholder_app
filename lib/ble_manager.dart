@@ -192,7 +192,7 @@ class BleManager {
 
     try {
       // 1 or 0 を送信
-      await target!.write([value ? 1 : 0]);
+      await target!.write([value ? 1 : 0], withoutResponse: true);
       _printLog("ポンプ送信: ${value ? 'ON' : 'OFF'}");
     } catch (e) {
       _printLog("送信エラー: $e");

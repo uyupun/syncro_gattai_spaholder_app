@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,25 +37,45 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
 
+  @override
+  void initState() {
+    super.initState();
+    // タイトル画面のBGMを再生
+    _playBgm('title.mp3');
+  }
+
+  /// BGMを切り替える（現在のBGMを停止して新しいBGMをループ再生）
+  void _playBgm(String filename) {
+    FlameAudio.bgm.stop();
+    FlameAudio.bgm.play(filename);
+  }
+
   void _startCountdown() {
     setState(() {
       _currentScreen = AppScreen.countdown;
     });
+    // カウントダウン中はタイトルBGMを継続
   }
 
   void _startGame() {
+    // ゲーム画面のBGMに切り替え
+    _playBgm('game.mp3');
     setState(() {
       _currentScreen = AppScreen.game;
     });
   }
 
   void _showGameClear() {
+    // クリア画面のBGMに切り替え
+    _playBgm('clear.mp3');
     setState(() {
       _currentScreen = AppScreen.gameClear;
     });
   }
 
   void _returnToTitle() {
+    // タイトル画面のBGMに切り替え
+    _playBgm('title.mp3');
     setState(() {
       _currentScreen = AppScreen.title;
     });
@@ -86,7 +107,7 @@ class TitleScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onStart,
       child: Container(
-        color: const Color(0xFF222222),
+        color: const Color(0xFFFFFFFF),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -95,7 +116,7 @@ class TitleScreen extends StatelessWidget {
               const Text(
                 'ROBOT ARM',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Colors.black87,
                   fontSize: 64,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 8,
@@ -113,7 +134,7 @@ class TitleScreen extends StatelessWidget {
               const Text(
                 'Tap to Start',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Colors.black54,
                   fontSize: 24,
                   fontWeight: FontWeight.w300,
                 ),
@@ -175,12 +196,12 @@ class _CountdownScreenState extends State<CountdownScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF222222),
+      color: const Color(0xFFFFFFFF),
       child: Center(
         child: Text(
           _showGameStart ? 'ゲームスタート' : '$_count',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.black87,
             fontSize: _showGameStart ? 48 : 120,
             fontWeight: FontWeight.bold,
             shadows: const [
@@ -210,7 +231,7 @@ class GameClearScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        color: const Color(0xFF222222),
+        color: const Color(0xFFFFFFFF),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -218,14 +239,14 @@ class GameClearScreen extends StatelessWidget {
               const Text(
                 'GAME CLEAR!',
                 style: TextStyle(
-                  color: Colors.greenAccent,
+                  color: Colors.green,
                   fontSize: 64,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 4,
                   shadows: [
                     Shadow(
                       blurRadius: 10,
-                      color: Colors.green,
+                      color: Colors.greenAccent,
                       offset: Offset(0, 0),
                     ),
                   ],
@@ -235,7 +256,7 @@ class GameClearScreen extends StatelessWidget {
               const Text(
                 'Tap to Return',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Colors.black54,
                   fontSize: 24,
                   fontWeight: FontWeight.w300,
                 ),
@@ -375,9 +396,8 @@ class _GameWrapperState extends State<GameWrapper> {
                   "Snap Straight\n(強制整列)",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      shadows: [Shadow(blurRadius: 2, color: Colors.black)]),
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 HoldButton(
@@ -422,9 +442,8 @@ class ControlPanel extends StatelessWidget {
       children: [
         Text(label,
             style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                shadows: [Shadow(blurRadius: 2, color: Colors.black)])),
+                color: Colors.black87,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -559,7 +578,7 @@ class RobotArmGame extends Forge2DGame {
   static const double enemyRadius = 5.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
   @override
-  Color backgroundColor() => const Color(0xFF222222);
+  Color backgroundColor() => const Color(0xFFFFFFFF);
 
   @override
   Future<void> onLoad() async {
@@ -903,7 +922,7 @@ class ArmPart extends BodyComponent {
           center: Offset.zero, width: _size.x, height: _size.y);
       canvas.drawRect(rect, paint);
       final border = Paint()
-        ..color = Colors.white.withValues(alpha: 0.5)
+        ..color = Colors.black.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.1;
       canvas.drawRect(rect, border);
@@ -912,7 +931,7 @@ class ArmPart extends BodyComponent {
     // ジョイント位置の表示（画像使用時は透明化）
     if (_sprite == null) {
       // 画像がない場合のみジョイント位置を表示
-      final jointPaint = Paint()..color = Colors.white.withValues(alpha: 0.3);
+      final jointPaint = Paint()..color = Colors.black.withValues(alpha: 0.5);
       canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
       canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
     }
@@ -981,7 +1000,7 @@ class Enemy extends BodyComponent {
       canvas.drawCircle(Offset.zero, _radius, paint);
 
       final border = Paint()
-        ..color = Colors.white
+        ..color = Colors.black.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.1;
       canvas.drawCircle(Offset.zero, _radius, border);

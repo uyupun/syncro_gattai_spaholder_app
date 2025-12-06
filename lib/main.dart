@@ -426,7 +426,7 @@ class _GameWrapperState extends State<GameWrapper> {
     
     // 2つの値が存在し、両方とも正の値でかつ1以上の場合
     if (values.length >= 2) {
-      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 1.0);
+      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 0.5);
       
       if (allPositiveAndAboveOne) {
         // 肘を伸ばすアクション（強制整列）を実行
@@ -483,7 +483,7 @@ class _GameWrapperState extends State<GameWrapper> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
-                          '温泉を救った！',
+                          '温泉が帰ってきた！',
                           style: TextStyle(
                             color: Colors.yellowAccent,
                             fontSize: 64,
@@ -527,7 +527,7 @@ class _GameWrapperState extends State<GameWrapper> {
             );
           },
         ),
-        // --- 中央下：腕伸ばしボタンのみ表示 ---
+        // --- 中央下：腕伸ばしボタンのみ表示 デバッグボタン ---
         // Positioned(
         //   bottom: 30,
         //   left: 0,
@@ -536,15 +536,6 @@ class _GameWrapperState extends State<GameWrapper> {
         //     child: Column(
         //       mainAxisSize: MainAxisSize.min,
         //       children: [
-        //         // 強制まっすぐボタン
-        //         const Text(
-        //           "Snap Straight\n(強制整列)",
-        //           textAlign: TextAlign.center,
-        //           style: TextStyle(
-        //               color: Colors.black87,
-        //               fontWeight: FontWeight.bold),
-        //         ),
-        //         const SizedBox(height: 10),
         //         HoldButton(
         //           icon: Icons.vertical_align_center,
         //           onPressed: () => game.startStraightening(),
@@ -817,12 +808,18 @@ class RobotArmGame extends Forge2DGame {
       final distance = tipPos.distanceTo(enemy.body.position);
       final hitDistance = tipRadius + enemy.radius;
       if (distance < hitDistance) {
+        // 敵の画像を変更
+        enemy.onHit();
+        
         // 一度ヒットしたら物理演算を停止し、成功メッセージを表示
         _isCleared = true;
         _physicsStoppedOnHit = true;
         hitCount.value++;
-        showSuccessMessage.value = true;
-        
+
+        Future.delayed(Duration(seconds: 1), () {
+          showSuccessMessage.value = true;
+        });
+
         // 物理演算を停止
         _stopAllPhysics();
         
@@ -1090,6 +1087,8 @@ class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
   Sprite? _sprite;
+  Sprite? _splashSprite;
+  bool _isHit = false;
 
   Enemy({
     required Vector2 position,
@@ -1104,10 +1103,16 @@ class Enemy extends BodyComponent {
     await super.onLoad();
     try {
       _sprite = await Sprite.load('rockmonster.png');
+      _splashSprite = await Sprite.load('rockmonster_splashA.png');
     } catch (e) {
       // 画像の読み込みに失敗した場合はスプライトをnullのままにする
-      print('Failed to load image: rockmonster.png, error: $e');
+      print('Failed to load image: $e');
     }
+  }
+
+  /// 敵がヒットされた時に呼び出される
+  void onHit() {
+    _isHit = true;
   }
 
   @override
@@ -1131,17 +1136,20 @@ class Enemy extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    if (_sprite != null) {
+    // ヒット状態に応じて画像を切り替え
+    final currentSprite = _isHit ? _splashSprite : _sprite;
+    
+    if (currentSprite != null) {
       // 画像を使用してレンダリング（サイズを2倍に）
       final size = _radius * 2.75; // 直径の2倍
-      _sprite!.render(
+      currentSprite.render(
         canvas,
         size: Vector2.all(size),
         anchor: Anchor.center,
       );
     } else {
       // 画像がない場合は従来の円描画
-      final paint = Paint()..color = Colors.redAccent;
+      final paint = Paint()..color = _isHit ? Colors.orange : Colors.redAccent;
       canvas.drawCircle(Offset.zero, _radius, paint);
 
       final border = Paint()

@@ -544,7 +544,7 @@ class RobotArmGame extends Forge2DGame {
   bool isRandomMode = false;
   final Random _random = Random();
   double _randomChangeTimer = 0;
-  static const double _randomChangeInterval = 0.5; // 0.5秒ごとに方向変更
+  static const double _randomChangeInterval = 0.3; // 0.3秒ごとに方向変更
 
   // ヒットチェック用
   final ValueNotifier<int> hitCount = ValueNotifier<int>(0);
@@ -555,7 +555,7 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 13.5;
+  static const double armLength = 15;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
   static const double enemyRadius = 3.0; // 敵の半径（画面内に収まるサイズ）
@@ -602,7 +602,7 @@ class RobotArmGame extends Forge2DGame {
       ..localAnchorB.setValues(0, -4)  // upperArmの上端
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = 2000.0;
+      ..maxMotorTorque = 8000.0;  // トルクを4倍に増加
     shoulderJoint = RevoluteJoint(shoulderJointDef);
     world.createJoint(shoulderJoint!);
 
@@ -614,7 +614,7 @@ class RobotArmGame extends Forge2DGame {
       ..localAnchorB.setValues(-1, -3.5)  // drillの左上付近
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = 5000.0;
+      ..maxMotorTorque = 15000.0;  // トルクを3倍に増加
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
 
@@ -626,14 +626,14 @@ class RobotArmGame extends Forge2DGame {
   }
 
   Future<void> _spawnEnemies() async {
-    // 敵は1体、右側に配置（アームの最大到達距離ジャストの位置）
+    // 敵は1体、中央右側に配置（アームの最大到達距離ジャストの位置）
     // 敵の端がちょうど腕の先端位置になるように配置
     // tipPosition = shoulderPos.x + armLength
     // enemyEdge = enemyCenter - enemyRadius = tipPosition
     // よって enemyCenter = shoulderPos.x + armLength + enemyRadius
     final enemyPos = Vector2(
       shoulderPos.x + armLength + enemyRadius, // 敵の端がジャスト腕の先端
-      shoulderPos.y, // 肩と同じ高さ
+      0, // 画面中央の高さ
     );
     final enemy = Enemy(position: enemyPos, radius: enemyRadius);
     enemies.add(enemy);
@@ -810,13 +810,13 @@ class RobotArmGame extends Forge2DGame {
   }
 
   void _applyRandomMovement() {
-    // 肩：-4.0 〜 4.0 のランダムな速度
-    final shoulderSpeed = (_random.nextDouble() * 8.0) - 4.0;
+    // 肩：-12.0 〜 12.0 のランダムな速度（3倍に拡大）
+    final shoulderSpeed = (_random.nextDouble() * 24.0) - 12.0;
     controlShoulder(shoulderSpeed);
 
-    // 肘：-6.0 〜 6.0 のランダムな速度（整列中は動かさない）
+    // 肘：-18.0 〜 18.0 のランダムな速度（3倍に拡大、整列中は動かさない）
     if (!_isStraightening) {
-      final elbowSpeed = (_random.nextDouble() * 12.0) - 6.0;
+      final elbowSpeed = (_random.nextDouble() * 36.0) - 18.0;
       controlElbow(elbowSpeed);
     }
   }

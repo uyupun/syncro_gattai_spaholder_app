@@ -297,6 +297,70 @@ class _GameWrapperState extends State<GameWrapper> {
         //     },
         //   ),
         // ),
+        // --- 成功メッセージオーバーレイ ---
+        ValueListenableBuilder<bool>(
+          valueListenable: game.showSuccessMessage,
+          builder: (context, showMessage, child) {
+            if (!showMessage) return const SizedBox.shrink();
+            
+            return Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: () => game.proceedToGameClear(),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          '温泉を救った！',
+                          style: TextStyle(
+                            color: Colors.yellowAccent,
+                            fontSize: 64,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 4,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 15,
+                                color: Colors.orange,
+                                offset: Offset(0, 0),
+                              ),
+                              Shadow(
+                                blurRadius: 30,
+                                color: Colors.red,
+                                offset: Offset(0, 0),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        const Text(
+                          'タップしてクリア画面へ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w300,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 5,
+                                color: Colors.black,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         // --- 中央下：腕伸ばしボタンのみ表示 ---
         Positioned(
           bottom: 30,
@@ -484,6 +548,8 @@ class RobotArmGame extends Forge2DGame {
   final ValueNotifier<int> hitCount = ValueNotifier<int>(0);
   final List<Enemy> enemies = [];
   bool _isCleared = false; // 一度ヒットしたらtrue（重複防止）
+  bool _physicsStoppedOnHit = false; // 物理演算停止フラグ
+  final ValueNotifier<bool> showSuccessMessage = ValueNotifier<bool>(false); // 成功メッセージ表示フラグ
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
@@ -584,18 +650,61 @@ class RobotArmGame extends Forge2DGame {
       final distance = tipPos.distanceTo(enemy.body.position);
       final hitDistance = tipRadius + enemy.radius;
       if (distance < hitDistance) {
-        // 一度ヒットしたらクリア
+        // 一度ヒットしたら物理演算を停止し、成功メッセージを表示
         _isCleared = true;
+        _physicsStoppedOnHit = true;
         hitCount.value++;
-        onGameClear?.call();
+        showSuccessMessage.value = true;
+        
+        // 物理演算を停止
+        _stopAllPhysics();
+        
+        // タップでクリア画面に遷移するように変更（自動遷移は削除）
         return;
       }
     }
   }
 
+  /// タップでゲームクリア画面に遷移
+  void proceedToGameClear() {
+    if (_isCleared) {
+      onGameClear?.call();
+    }
+  }
+
+  /// 物理演算を完全に停止
+  void _stopAllPhysics() {
+    // ランダムモードを停止
+    stopRandomMode();
+    
+    // 整列モードも停止
+    stopStraightening();
+    
+    // 全ての関節のモーターを停止
+    stopShoulder();
+    stopElbow();
+    
+    // 全てのボディの速度を0にして固定
+    shoulder.body.linearVelocity = Vector2.zero();
+    shoulder.body.angularVelocity = 0.0;
+    upperArm.body.linearVelocity = Vector2.zero();
+    upperArm.body.angularVelocity = 0.0;
+    foreArm.body.linearVelocity = Vector2.zero();
+    foreArm.body.angularVelocity = 0.0;
+    
+    // 全てのボディを静的に変更して完全に固定
+    upperArm.body.setType(BodyType.static);
+    foreArm.body.setType(BodyType.static);
+  }
+
   // --- 【重要】強制更新ロジック ---
   @override
   void update(double dt) {
+    // 物理演算が停止されている場合は更新をスキップ
+    if (_physicsStoppedOnHit) {
+      return;
+    }
+
     super.update(dt);
 
     // ランダム動作モード
@@ -636,6 +745,9 @@ class RobotArmGame extends Forge2DGame {
   // --- 操作用メソッド ---
 
   void startStraightening() {
+    // 物理演算が停止されている場合は何もしない
+    if (_physicsStoppedOnHit) return;
+    
     _isStraightening = true;
     _straighteningTimer = 0; // タイマーリセット
     // モーターが邪魔しないようにOFFにする

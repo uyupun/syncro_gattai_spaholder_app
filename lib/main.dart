@@ -41,6 +41,29 @@ class _GameWrapperState extends State<GameWrapper> {
     return Stack(
       children: [
         GameWidget(game: game),
+        // スコア表示
+        Positioned(
+          top: 30,
+          left: 0,
+          right: 0,
+          child: ValueListenableBuilder<int>(
+            valueListenable: game.hitCount,
+            builder: (context, count, child) {
+              return Text(
+                'HIT: $count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(blurRadius: 4, color: Colors.black),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
         Positioned(
           bottom: 30,
           left: 0,
@@ -256,6 +279,16 @@ class RobotArmGame extends Forge2DGame {
   double _randomChangeTimer = 0;
   static const double _randomChangeInterval = 0.5; // 0.5秒ごとに方向変更
 
+  // ヒットチェック用
+  final ValueNotifier<int> hitCount = ValueNotifier<int>(0);
+  final List<Enemy> enemies = [];
+
+  // アームの届く範囲
+  static const double armReachMin = 6.0;
+  static const double armReachMax = 13.0;
+  static final Vector2 shoulderPos = Vector2(0, -7);
+  static const double tipRadius = 0.8; // 先端の当たり判定半径
+
   @override
   Color backgroundColor() => const Color(0xFF222222);
 
@@ -310,6 +343,46 @@ class RobotArmGame extends Forge2DGame {
       ..maxMotorTorque = 5000.0;
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
+
+    // --- 敵を配置 ---
+    await _spawnEnemies();
+  }
+
+  /// アームの届く範囲内のランダムな位置を生成
+  Vector2 _getRandomPositionInArmReach() {
+    final angle = _random.nextDouble() * 2 * pi;
+    final distance = armReachMin + _random.nextDouble() * (armReachMax - armReachMin);
+    return Vector2(
+      shoulderPos.x + cos(angle) * distance,
+      shoulderPos.y + sin(angle) * distance,
+    );
+  }
+
+  Future<void> _spawnEnemies() async {
+    for (int i = 0; i < 5; i++) {
+      final pos = _getRandomPositionInArmReach();
+      final enemy = Enemy(position: pos, radius: 1.0, game: this);
+      enemies.add(enemy);
+      await world.add(enemy);
+    }
+  }
+
+  /// 腕の先端のワールド座標を取得
+  Vector2 get armTipPosition {
+    return foreArm.body.worldPoint(Vector2(0, 3.5));
+  }
+
+  /// Snap Straight押下時に1回だけヒットチェック
+  void _checkHitOnce() {
+    final tipPos = armTipPosition;
+    for (final enemy in enemies) {
+      final distance = tipPos.distanceTo(enemy.body.position);
+      final hitDistance = tipRadius + enemy.radius;
+      if (distance < hitDistance) {
+        hitCount.value++;
+        enemy.respawn();
+      }
+    }
   }
 
   // --- 【重要】強制更新ロジック ---
@@ -349,6 +422,8 @@ class RobotArmGame extends Forge2DGame {
     _isStraightening = true;
     // モーターが邪魔しないようにOFFにする
     stopElbow();
+    // 押した瞬間に1回だけヒットチェック
+    _checkHitOnce();
   }
 
   void stopStraightening() {
@@ -462,5 +537,55 @@ class ArmPart extends BodyComponent {
     final jointPaint = Paint()..color = Colors.white.withValues(alpha: 0.5);
     canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
     canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
+  }
+}
+
+// ---------------------------------------------------------
+// 5. 敵クラス
+// ---------------------------------------------------------
+class Enemy extends BodyComponent {
+  final Vector2 _initialPosition;
+  final double _radius;
+  final RobotArmGame _game;
+
+  Enemy({
+    required Vector2 position,
+    required double radius,
+    required RobotArmGame game,
+  })  : _initialPosition = position.clone(),
+        _radius = radius,
+        _game = game;
+
+  double get radius => _radius;
+
+  @override
+  Body createBody() {
+    final shape = CircleShape()..radius = _radius;
+    final fixtureDef = FixtureDef(shape)
+      ..restitution = 0.5
+      ..density = 1.0
+      ..friction = 0.3;
+    final bodyDef = BodyDef()
+      ..userData = this
+      ..position = _initialPosition
+      ..type = BodyType.static;
+    return world.createBody(bodyDef)..createFixture(fixtureDef);
+  }
+
+  void respawn() {
+    final newPos = _game._getRandomPositionInArmReach();
+    body.setTransform(newPos, 0);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final paint = Paint()..color = Colors.redAccent;
+    canvas.drawCircle(Offset.zero, _radius, paint);
+
+    final border = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.1;
+    canvas.drawCircle(Offset.zero, _radius, border);
   }
 }

@@ -17,10 +17,171 @@ void main() async {
 
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: Scaffold(
-      body: GameWrapper(),
-    ),
+    home: MyApp(),
   ));
+}
+
+// ---------------------------------------------------------
+// 0. アプリ全体の画面管理
+// ---------------------------------------------------------
+enum AppScreen { title, countdown, game }
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  AppScreen _currentScreen = AppScreen.title;
+
+  void _startCountdown() {
+    setState(() {
+      _currentScreen = AppScreen.countdown;
+    });
+  }
+
+  void _startGame() {
+    setState(() {
+      _currentScreen = AppScreen.game;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: switch (_currentScreen) {
+        AppScreen.title => TitleScreen(onStart: _startCountdown),
+        AppScreen.countdown => CountdownScreen(onComplete: _startGame),
+        AppScreen.game => const GameWrapper(),
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------
+// 0.5. タイトル画面
+// ---------------------------------------------------------
+class TitleScreen extends StatelessWidget {
+  final VoidCallback onStart;
+
+  const TitleScreen({super.key, required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onStart,
+      child: Container(
+        color: const Color(0xFF222222),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // タイトル
+              const Text(
+                'ROBOT ARM',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 64,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 8,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 10,
+                      color: Colors.blueAccent,
+                      offset: Offset(0, 0),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 60),
+              // Tap to Start
+              const Text(
+                'Tap to Start',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------
+// 0.6. カウントダウン画面
+// ---------------------------------------------------------
+class CountdownScreen extends StatefulWidget {
+  final VoidCallback onComplete;
+
+  const CountdownScreen({super.key, required this.onComplete});
+
+  @override
+  State<CountdownScreen> createState() => _CountdownScreenState();
+}
+
+class _CountdownScreenState extends State<CountdownScreen> {
+  int _count = 3;
+  bool _showGameStart = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() async {
+    // 3, 2, 1 カウントダウン
+    for (int i = 3; i >= 1; i--) {
+      if (!mounted) return;
+      setState(() {
+        _count = i;
+        _showGameStart = false;
+      });
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    // 0 → ゲームスタート表示
+    if (!mounted) return;
+    setState(() {
+      _count = 0;
+      _showGameStart = true;
+    });
+    await Future.delayed(const Duration(seconds: 1));
+
+    // ゲーム画面へ遷移
+    if (!mounted) return;
+    widget.onComplete();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF222222),
+      child: Center(
+        child: Text(
+          _showGameStart ? 'ゲームスタート' : '$_count',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: _showGameStart ? 48 : 120,
+            fontWeight: FontWeight.bold,
+            shadows: const [
+              Shadow(
+                blurRadius: 10,
+                color: Colors.blueAccent,
+                offset: Offset(0, 0),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------

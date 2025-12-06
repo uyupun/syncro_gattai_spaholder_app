@@ -6,6 +6,7 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'ble_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -97,53 +98,154 @@ class _MyAppState extends State<MyApp> {
 // ---------------------------------------------------------
 // 0.5. タイトル画面
 // ---------------------------------------------------------
-class TitleScreen extends StatelessWidget {
+class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
 
   const TitleScreen({super.key, required this.onStart});
 
   @override
+  State<TitleScreen> createState() => _TitleScreenState();
+}
+
+class _TitleScreenState extends State<TitleScreen> {
+  final BleManager _bleManager = BleManager();
+  bool _isConnecting = false;
+  List<String> _connectedDevices = [];
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 接続デバイス数の変化を監視
+    _bleManager.connectedDevicesStream.listen((devices) {
+      if (mounted) {
+        setState(() {
+          _connectedDevices = devices;
+           _isConnecting = devices.length < 2; // 2台未満なら接続中
+        });
+      }
+    });
+  }
+
+  Future<void> _connectDevices() async {
+    if (_connectedDevices.length >= 2) return; // 既に2台接続済み
+
+    setState(() {
+      _isConnecting = true;
+    });
+
+    try {
+      await _bleManager.scanAndConnect();
+    } catch (e) {
+      print('接続エラー: $e');
+      setState(() {
+        _isError = true;
+        _isConnecting = false;
+      });
+    }
+  }
+
+  bool get _canStart => _connectedDevices.length >= 2;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onStart,
-      child: Container(
-        color: const Color(0xFFFFFFFF),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // タイトル
-              const Text(
-                'ROBOT ARM',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 64,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 8,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 10,
-                      color: Colors.blueAccent,
-                      offset: Offset(0, 0),
-                    ),
-                  ],
+    return Container(
+      color: const Color(0xFFFFFFFF),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // タイトル
+            const Text(
+              'ROBOT ARM',
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 64,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 8,
+                shadows: [
+                  Shadow(
+                    blurRadius: 10,
+                    color: Colors.blueAccent,
+                    offset: Offset(0, 0),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 60),
+            
+            // 接続状況表示
+            Text(
+              '接続デバイス数: ${_connectedDevices.length}/2',
+              style: const TextStyle(
+                color: Colors.black54,
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            if (_isError)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  '接続エラーが発生しました。再度接続をお試しください。',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-              const SizedBox(height: 60),
-              // Tap to Start
-              const Text(
-                'Tap to Start',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w300,
-                ),
+            const SizedBox(height: 30),
+            
+            // 接続ボタン
+            ElevatedButton(
+              onPressed: _isConnecting ? null : _connectDevices,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ],
-          ),
+              child: _isConnecting
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Text('接続中...'),
+                      ],
+                    )
+                  : const Text('デバイス接続'),
+            ),
+            const SizedBox(height: 20),
+            
+            // スタートボタン
+            ElevatedButton(
+              onPressed: _canStart ? widget.onStart : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _canStart ? Colors.green : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              child: const Text('ゲームスタート'),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // 必要に応じてBLEマネージャーのリソースを解放
+    super.dispose();
   }
 }
 

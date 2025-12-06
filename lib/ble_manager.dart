@@ -1,0 +1,234 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+const String DEVICE_NAME = "uyupun-drill"; // "uyupun-drill2";
+const String UUID_SVC_ACCEL_Y = "11111111-2222-3333-4444-555555555555";
+const String UUID_CHR_ACCEL_Y = "11111111-2222-3333-4444-666666666666";
+
+const String UUID_SVC_WATER_PUMP = "22222222-3333-4444-5555-666666666666";
+const String UUID_CHR_WATER_PUMP = "22222222-3333-4444-5555-777777777777";
+
+class AccelData {
+  final String deviceId; // どのM5Stackから来たか
+  final double value; // 加速度(1軸) double値
+
+  AccelData({required this.deviceId, required this.value});
+
+  @override
+  String toString() => 'ID: $deviceId, Val: $value';
+}
+
+class BleManager {
+  // --- シングルトン設定 ---
+  static final BleManager _instance = BleManager._internal();
+  factory BleManager() => _instance;
+  BleManager._internal();
+
+  // --- 定数 ---
+  static const String _targetDeviceName = DEVICE_NAME;
+  static const String _serviceUuid = UUID_SVC_ACCEL_Y;
+  static const String _charUuid = UUID_CHR_ACCEL_Y;
+
+  // --- 管理用変数 ---
+  final Map<String, BluetoothDevice> _devices = {};
+  final Map<String, BluetoothCharacteristic> _characteristics = {};
+  StreamSubscription? _scanSub;
+
+  // --- 定数: ポンプ制御 (送信)  ---
+  static const String _svcPumpUuid = UUID_SVC_WATER_PUMP;
+  static const String _chrPumpUuid = UUID_CHR_WATER_PUMP;
+  BluetoothCharacteristic? _pumpCharacteristic;
+
+  // --- StreamControllers ---
+  final _accelDataController = StreamController<AccelData>.broadcast();
+  Stream<AccelData> get accelDataStream => _accelDataController.stream;
+
+  final _connectedDevicesController =
+      StreamController<List<String>>.broadcast();
+  Stream<List<String>> get connectedDevicesStream =>
+      _connectedDevicesController.stream;
+
+  // --- 【修正】シーケンシャル接続ロジック ---
+  Future<void> scanAndConnect() async {
+    // 既存のスキャンリスナーがあればキャンセル（重複防止）
+    await _scanSub?.cancel();
+
+    _printLog("スキャン開始...");
+
+    try {
+      // Android等での安定性のため、continuousUpdatesをtrueにすることを推奨
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+        continuousUpdates: true, // 重複して発見通知を受け取る設定
+      );
+    } catch (e) {
+      _printLog("スキャン開始エラー: $e");
+      return;
+    }
+
+    _scanSub = FlutterBluePlus.scanResults.listen((results) async {
+      for (ScanResult r in results) {
+        final id = r.device.remoteId.str;
+        final name = r.device.platformName;
+        final advertisementData = r.advertisementData.advName;
+
+        // 既に接続済みのデバイスは無視
+        if (_devices.containsKey(id)) {
+          continue;
+        }
+
+        // UUIDチェック
+        bool hasTargetUuid = r.advertisementData.serviceUuids.any((guid) {
+          String g = guid.toString().toLowerCase();
+          return g == _serviceUuid.toLowerCase() || g == _svcPumpUuid.toLowerCase();
+        });
+
+        // 名前チェック
+        bool isTargetName =
+            name == _targetDeviceName ||
+            name.startsWith(_targetDeviceName) ||
+            advertisementData == _targetDeviceName ||
+            advertisementData.startsWith(_targetDeviceName);
+
+        // print("[BLE] 発見: $name / $advertisementData / $hasTargetUuid"); // デバッグ用ログ
+
+        if (hasTargetUuid || isTargetName) {
+          _printLog("発見: $name ($id) -> 接続のためスキャンを一時停止");
+
+          // 【重要】接続前に必ずスキャンを止める！
+          // これをしないと接続が不安定になり、次のデバイスも見つからなくなります
+          await _scanSub?.cancel(); // リスナー解除
+          await FlutterBluePlus.stopScan(); // ハードウェアスキャン停止
+
+          // 接続処理（完了するまで待機）
+          await _connectToDevice(r.device);
+
+          // _printLog("1秒待機してから次のデバイスを探します...");
+          // 【追加】ここです！休憩を入れます
+          // await Future.delayed(const Duration(seconds: 1));
+
+          // 接続処理が終わったら（成功しても失敗しても）、
+          // 次のデバイスを探すために自分自身を呼び出してスキャンを再開
+          // _printLog("次のデバイスを探すためスキャン再開...");
+          if (_devices.length >= 2) return; // 最大2台まで接続
+          scanAndConnect();
+
+          print("再接続");
+
+          // このループ処理はここで終了
+          return;
+        }
+      }
+    });
+  }
+
+  // --- 内部メソッド: デバイスへの接続処理 ---
+  Future<void> _connectToDevice(BluetoothDevice device) async {
+    String id = device.remoteId.str;
+    String name = device.platformName;
+
+    try {
+      // autoConnect: false で即時接続
+      await device.connect(license: License.free, autoConnect: false);
+
+      _devices[id] = device;
+      _updateConnectedList();
+      _printLog("接続成功: $name");
+
+      List<BluetoothService> services = await device.discoverServices();
+      for (var service in services) {
+        for (var c in service.characteristics) {
+          final charUuid = c.uuid.toString().toLowerCase();
+          if (charUuid == _charUuid.toLowerCase()) {
+            _characteristics[id] = c;
+
+            await c.setNotifyValue(true);
+            c.lastValueStream.listen((value) {
+              _parseAndNotify(id, value);
+            });
+
+            _printLog("通信経路確保: $name");
+          }
+
+          if (charUuid == _chrPumpUuid.toLowerCase()) {
+            // ポンプ用のCharacteristicとして保存
+            _pumpCharacteristic = c;
+            _printLog("ポンプ(送信)経路確保: $name");
+          }
+        }
+      }
+    } catch (e) {
+      _printLog("接続エラー($name): $e");
+      _devices.remove(id);
+      _characteristics.remove(id);
+      _updateConnectedList();
+
+      try {
+        await device.disconnect();
+      } catch (_) {}
+    }
+  }
+
+  // --- 内部メソッド: データ解析 (4byte float) ---
+  void _parseAndNotify(String deviceId, List<int> rawData) {
+    if (rawData.length < 4) return;
+
+    final byteData = ByteData.sublistView(Uint8List.fromList(rawData));
+    final double val = byteData.getFloat32(0, Endian.little);
+
+    _accelDataController.add(AccelData(deviceId: deviceId, value: val));
+  }
+
+  Future<void> sendBool(bool value) async {
+    // _pumpCharacteristic から取得する
+    BluetoothCharacteristic? target = _pumpCharacteristic;
+    
+    if (_pumpCharacteristic == null) {
+      _printLog("送信不可: ポンプ制御用の接続が見つかりません");
+      return;
+    }
+
+    try {
+      // 1 or 0 を送信
+      await target!.write([value ? 1 : 0]);
+      _printLog("ポンプ送信: ${value ? 'ON' : 'OFF'}");
+    } catch (e) {
+      _printLog("送信エラー: $e");
+    }
+  }
+
+  // --- メソッド: 全切断 ---
+  Future<void> disconnectAll() async {
+    await _scanSub?.cancel();
+    // スキャン停止も確実に行う
+    try {
+      await FlutterBluePlus.stopScan();
+    } catch (_) {}
+
+    final devicesCopy = Map<String, BluetoothDevice>.from(_devices);
+
+    for (var device in devicesCopy.values) {
+      await device.disconnect();
+    }
+
+    _devices.clear();
+    _characteristics.clear();
+    _updateConnectedList();
+    _printLog("全切断しました");
+  }
+
+  void _updateConnectedList() {
+    _connectedDevicesController.add(_devices.keys.toList());
+  }
+
+  void _printLog(String text) {
+    print("[BLE] $text");
+  }
+
+  void dispose() {
+    _scanSub?.cancel();
+    _accelDataController.close();
+    _connectedDevicesController.close();
+  }
+}

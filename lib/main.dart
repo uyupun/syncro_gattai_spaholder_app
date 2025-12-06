@@ -555,10 +555,10 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 15;
+  static const double armLength = 15.5;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 3.0; // 敵の半径（画面内に収まるサイズ）
+  static const double enemyRadius = 5.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -566,6 +566,9 @@ class RobotArmGame extends Forge2DGame {
   @override
   Future<void> onLoad() async {
     camera.viewfinder.anchor = Anchor.center;
+
+    // --- 敵を配置 ---
+    await _spawnEnemies();
 
     // --- パーツ生成 ---
     upperArm = ArmPart(
@@ -617,9 +620,6 @@ class RobotArmGame extends Forge2DGame {
       ..maxMotorTorque = 15000.0;  // トルクを3倍に増加
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
-
-    // --- 敵を配置 ---
-    await _spawnEnemies();
 
     // --- 常にランダムモードを有効化 ---
     startRandomMode();
@@ -927,6 +927,7 @@ class ArmPart extends BodyComponent {
 class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
+  Sprite? _sprite;
 
   Enemy({
     required Vector2 position,
@@ -935,6 +936,17 @@ class Enemy extends BodyComponent {
         _radius = radius;
 
   double get radius => _radius;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    try {
+      _sprite = await Sprite.load('rockmonster.png');
+    } catch (e) {
+      // 画像の読み込みに失敗した場合はスプライトをnullのままにする
+      print('Failed to load image: rockmonster.png, error: $e');
+    }
+  }
 
   @override
   Body createBody() {
@@ -957,13 +969,24 @@ class Enemy extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    final paint = Paint()..color = Colors.redAccent;
-    canvas.drawCircle(Offset.zero, _radius, paint);
+    if (_sprite != null) {
+      // 画像を使用してレンダリング（サイズを2倍に）
+      final size = _radius * 2.75; // 直径の2倍
+      _sprite!.render(
+        canvas,
+        size: Vector2.all(size),
+        anchor: Anchor.center,
+      );
+    } else {
+      // 画像がない場合は従来の円描画
+      final paint = Paint()..color = Colors.redAccent;
+      canvas.drawCircle(Offset.zero, _radius, paint);
 
-    final border = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.1;
-    canvas.drawCircle(Offset.zero, _radius, border);
+      final border = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.1;
+      canvas.drawCircle(Offset.zero, _radius, border);
+    }
   }
 }

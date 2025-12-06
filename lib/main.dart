@@ -6,6 +6,7 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:spajam2025_app/ble_debug_page.dart';
 import 'ble_manager.dart';
 
 void main() async {
@@ -20,6 +21,7 @@ void main() async {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: MyApp(),
+    // home: BleDebugPage(),
   ));
 }
 
@@ -422,7 +424,7 @@ class _GameWrapperState extends State<GameWrapper> {
   @override
   void initState() {
     super.initState();
-    game = RobotArmGame(onGameClear: widget.onGameClear);
+    game = RobotArmGame(onGameClear: widget.onGameClear, bleManager: _bleManager);
     
     // BLE データストリームを監視
     _bleManager.accelDataStream.listen((accelData) {
@@ -684,8 +686,9 @@ class ToggleButton extends StatelessWidget {
 // ---------------------------------------------------------
 class RobotArmGame extends Forge2DGame {
   final VoidCallback? onGameClear;
+  final BleManager bleManager;
 
-  RobotArmGame({this.onGameClear}) : super(gravity: Vector2(0, 15), zoom: 20);
+  RobotArmGame({this.onGameClear, required this.bleManager}) : super(gravity: Vector2(0, 15), zoom: 20);
 
   // 【変更点】updateメソッドからアクセスできるようにクラス変数にする
   late ArmPart shoulder;
@@ -835,13 +838,12 @@ class RobotArmGame extends Forge2DGame {
         // 物理演算を停止
         _stopAllPhysics();
 
-        Future.delayed(Duration(seconds: 3), () {
+        Future.delayed(Duration(seconds: 3), () async {
           showSuccessMessage.value = true;
-          BleManager().sendBool(true);
-          
+          await bleManager.sendBool(true);
         });
         FlameAudio.bgm.stop();
-        FlameAudio.play('clear.mp3');
+        FlameAudio.bgm.play('clear.mp3');
 
         // タップでクリア画面に遷移するように変更（自動遷移は削除）
         return;

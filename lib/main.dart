@@ -561,7 +561,7 @@ class RobotArmGame extends Forge2DGame {
   bool isRandomMode = false;
   final Random _random = Random();
   double _randomChangeTimer = 0;
-  static const double _randomChangeInterval = 0.5; // 0.5秒ごとに方向変更
+  static const double _randomChangeInterval = 0.3; // 0.3秒ごとに方向変更
 
   // ヒットチェック用
   final ValueNotifier<int> hitCount = ValueNotifier<int>(0);
@@ -572,10 +572,10 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 13.5;
+  static const double armLength = 15.5;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 3.0; // 敵の半径（画面内に収まるサイズ）
+  static const double enemyRadius = 5.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
@@ -584,39 +584,45 @@ class RobotArmGame extends Forge2DGame {
   Future<void> onLoad() async {
     camera.viewfinder.anchor = Anchor.center;
 
-    // --- パーツ生成 ---
-    // アームを左側に配置
-    shoulder = ArmPart(
-        position: Vector2(-10, -8),
-        size: Vector2(4, 2),
-        isStatic: true,
-        color: Colors.grey);
-    await world.add(shoulder);
+    // --- 敵を配置 ---
+    await _spawnEnemies();
 
+    // --- パーツ生成 ---
     upperArm = ArmPart(
-        position: Vector2(-10, -2),
-        size: Vector2(1.5, 8),
+        position: Vector2(-10, -4),  // shoulderと重なるように調整
+        size: Vector2(4.35, 8),  // 277x509のアスペクト比を保持 (8 * 277/509 ≈ 4.35)
         isStatic: false,
-        color: Colors.blueAccent);
+        color: Colors.blueAccent,
+        imagePath: 'upper_arm.png');
     await world.add(upperArm);
 
     foreArm = ArmPart(
-        position: Vector2(-10, 7),
-        size: Vector2(1.2, 7),
+        position: Vector2(-8.5, 1.5),  // 上腕と重なるように位置調整
+        size: Vector2(4.85, 8),  // 389x642のアスペクト比を保持 (8 * 389/642 ≈ 4.85)
         isStatic: false,
-        color: Colors.lightBlueAccent);
+        color: Colors.lightBlueAccent,
+        imagePath: 'drill.png');
     await world.add(foreArm);
+
+    // アームを左側に配置（画像を使用）
+    shoulder = ArmPart(
+        position: Vector2(-12, 0),  // 上腕より上に配置
+        size: Vector2(16, 16),  // アスペクト比を維持できるよう大きめに設定
+        isStatic: true,
+        color: Colors.grey,
+        imagePath: 'upper_body.png');
+    await world.add(shoulder);
 
     // --- ジョイント生成 ---
     final shoulderJointDef = RevoluteJointDef()
       ..bodyA = shoulder.body
       ..bodyB = upperArm.body
       ..collideConnected = false
-      ..localAnchorA.setValues(0, 1)
-      ..localAnchorB.setValues(0, -3.5)
+      ..localAnchorA.setValues(6, -4.5)  // shoulderの右上
+      ..localAnchorB.setValues(0, -4)  // upperArmの上端
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = 2000.0;
+      ..maxMotorTorque = 8000.0;  // トルクを4倍に増加
     shoulderJoint = RevoluteJoint(shoulderJointDef);
     world.createJoint(shoulderJoint!);
 
@@ -624,30 +630,27 @@ class RobotArmGame extends Forge2DGame {
       ..bodyA = upperArm.body
       ..bodyB = foreArm.body
       ..collideConnected = false
-      ..localAnchorA.setValues(0, 3.5)
-      ..localAnchorB.setValues(0, -3.0)
+      ..localAnchorA.setValues(1.75, 3)  // upper armの右下付近
+      ..localAnchorB.setValues(-1, -3.5)  // drillの左上付近
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = 5000.0;
+      ..maxMotorTorque = 15000.0;  // トルクを3倍に増加
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
-
-    // --- 敵を配置 ---
-    await _spawnEnemies();
 
     // --- 常にランダムモードを有効化 ---
     startRandomMode();
   }
 
   Future<void> _spawnEnemies() async {
-    // 敵は1体、右側に配置（アームの最大到達距離ジャストの位置）
+    // 敵は1体、中央右側に配置（アームの最大到達距離ジャストの位置）
     // 敵の端がちょうど腕の先端位置になるように配置
     // tipPosition = shoulderPos.x + armLength
     // enemyEdge = enemyCenter - enemyRadius = tipPosition
     // よって enemyCenter = shoulderPos.x + armLength + enemyRadius
     final enemyPos = Vector2(
       shoulderPos.x + armLength + enemyRadius, // 敵の端がジャスト腕の先端
-      shoulderPos.y, // 肩と同じ高さ
+      0, // 画面中央の高さ
     );
     final enemy = Enemy(position: enemyPos, radius: enemyRadius);
     enemies.add(enemy);
@@ -824,13 +827,13 @@ class RobotArmGame extends Forge2DGame {
   }
 
   void _applyRandomMovement() {
-    // 肩：-4.0 〜 4.0 のランダムな速度
-    final shoulderSpeed = (_random.nextDouble() * 8.0) - 4.0;
+    // 肩：-12.0 〜 12.0 のランダムな速度（3倍に拡大）
+    final shoulderSpeed = (_random.nextDouble() * 24.0) - 12.0;
     controlShoulder(shoulderSpeed);
 
-    // 肘：-6.0 〜 6.0 のランダムな速度（整列中は動かさない）
+    // 肘：-18.0 〜 18.0 のランダムな速度（3倍に拡大、整列中は動かさない）
     if (!_isStraightening) {
-      final elbowSpeed = (_random.nextDouble() * 12.0) - 6.0;
+      final elbowSpeed = (_random.nextDouble() * 36.0) - 18.0;
       controlElbow(elbowSpeed);
     }
   }
@@ -844,16 +847,33 @@ class ArmPart extends BodyComponent {
   final Vector2 _size;
   final bool _isStatic;
   final Color _color;
+  final String? _imagePath;
+  Sprite? _sprite;
 
   ArmPart({
     required Vector2 position,
     required Vector2 size,
     required bool isStatic,
     required Color color,
+    String? imagePath,
   })  : _pos = position,
         _size = size,
         _isStatic = isStatic,
-        _color = color;
+        _color = color,
+        _imagePath = imagePath;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    if (_imagePath != null) {
+      try {
+        _sprite = await Sprite.load(_imagePath!);
+      } catch (e) {
+        // 画像の読み込みに失敗した場合はスプライトをnullのままにする
+        print('Failed to load image: $_imagePath, error: $e');
+      }
+    }
+  }
 
   @override
   Body createBody() {
@@ -875,18 +895,46 @@ class ArmPart extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    final paint = Paint()..color = _color;
-    final rect = Rect.fromCenter(
-        center: Offset.zero, width: _size.x, height: _size.y);
-    canvas.drawRect(rect, paint);
-    final border = Paint()
-      ..color = Colors.black.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.1;
-    canvas.drawRect(rect, border);
-    final jointPaint = Paint()..color = Colors.black.withValues(alpha: 0.5);
-    canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
-    canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
+    if (_sprite != null) {
+      // 画像を使用してレンダリング（アスペクト比を維持）
+      final spriteSize = _sprite!.srcSize;
+      final aspectRatio = spriteSize.x / spriteSize.y;
+      
+      // 指定されたサイズ内でアスペクト比を維持しながらフィット
+      Vector2 renderSize;
+      if (_size.x / _size.y > aspectRatio) {
+        // 高さに合わせてスケール
+        renderSize = Vector2(_size.y * aspectRatio, _size.y);
+      } else {
+        // 幅に合わせてスケール
+        renderSize = Vector2(_size.x, _size.x / aspectRatio);
+      }
+      
+      _sprite!.render(
+        canvas,
+        size: renderSize,
+        anchor: Anchor.center,
+      );
+    } else {
+      // 画像がない場合は従来の矩形描画
+      final paint = Paint()..color = _color;
+      final rect = Rect.fromCenter(
+          center: Offset.zero, width: _size.x, height: _size.y);
+      canvas.drawRect(rect, paint);
+      final border = Paint()
+        ..color = Colors.black.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.1;
+      canvas.drawRect(rect, border);
+    }
+    
+    // ジョイント位置の表示（画像使用時は透明化）
+    if (_sprite == null) {
+      // 画像がない場合のみジョイント位置を表示
+      final jointPaint = Paint()..color = Colors.black.withValues(alpha: 0.5);
+      canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
+      canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
+    }
   }
 }
 
@@ -896,6 +944,7 @@ class ArmPart extends BodyComponent {
 class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
+  Sprite? _sprite;
 
   Enemy({
     required Vector2 position,
@@ -904,6 +953,17 @@ class Enemy extends BodyComponent {
         _radius = radius;
 
   double get radius => _radius;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    try {
+      _sprite = await Sprite.load('rockmonster.png');
+    } catch (e) {
+      // 画像の読み込みに失敗した場合はスプライトをnullのままにする
+      print('Failed to load image: rockmonster.png, error: $e');
+    }
+  }
 
   @override
   Body createBody() {
@@ -926,13 +986,24 @@ class Enemy extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    final paint = Paint()..color = Colors.cyanAccent;
-    canvas.drawCircle(Offset.zero, _radius, paint);
+    if (_sprite != null) {
+      // 画像を使用してレンダリング（サイズを2倍に）
+      final size = _radius * 2.75; // 直径の2倍
+      _sprite!.render(
+        canvas,
+        size: Vector2.all(size),
+        anchor: Anchor.center,
+      );
+    } else {
+      // 画像がない場合は従来の円描画
+      final paint = Paint()..color = Colors.redAccent;
+      canvas.drawCircle(Offset.zero, _radius, paint);
 
-    final border = Paint()
-      ..color = Colors.black.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.1;
-    canvas.drawCircle(Offset.zero, _radius, border);
+      final border = Paint()
+        ..color = Colors.black.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.1;
+      canvas.drawCircle(Offset.zero, _radius, border);
+    }
   }
 }

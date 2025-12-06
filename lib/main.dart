@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
@@ -150,15 +149,15 @@ class HoldButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 5,
                   offset: const Offset(0, 3))
             ]),
-        child: Icon(icon, size: 32, color: Colors.redAccent.withOpacity(0.8)),
+        child: Icon(icon, size: 32, color: Colors.redAccent.withValues(alpha: 0.8)),
       ),
     );
   }
@@ -337,11 +336,11 @@ class ArmPart extends BodyComponent {
         center: Offset.zero, width: _size.x, height: _size.y);
     canvas.drawRect(rect, paint);
     final border = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.1;
     canvas.drawRect(rect, border);
-    final jointPaint = Paint()..color = Colors.white.withOpacity(0.5);
+    final jointPaint = Paint()..color = Colors.white.withValues(alpha: 0.5);
     canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
     canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
   }

@@ -528,23 +528,23 @@ class _GameWrapperState extends State<GameWrapper> {
           },
         ),
         // --- 中央下：腕伸ばしボタンのみ表示 デバッグボタン ---
-        // Positioned(
-        //   bottom: 30,
-        //   left: 0,
-        //   right: 0,
-        //   child: Center(
-        //     child: Column(
-        //       mainAxisSize: MainAxisSize.min,
-        //       children: [
-        //         HoldButton(
-        //           icon: Icons.vertical_align_center,
-        //           onPressed: () => game.startStraightening(),
-        //           onReleased: () => game.stopStraightening(),
-        //         ),
-        //       ],
-        //     ),
-        //   ),
-        // ),
+        Positioned(
+          bottom: 30,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HoldButton(
+                  icon: Icons.vertical_align_center,
+                  onPressed: () => game.startStraightening(),
+                  onReleased: () => game.stopStraightening(),
+                ),
+              ],
+            ),
+          ),
+        ),
         // --- 以下、非表示にしたボタン群 ---
         // ControlPanel (肩): game.controlShoulder(-3.0), game.controlShoulder(3.0)
         // ControlPanel (肘): game.controlElbow(-5.0), game.controlElbow(5.0)
@@ -620,15 +620,10 @@ class HoldButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 5,
-                  offset: const Offset(0, 3))
-            ]),
-        child: Icon(icon, size: 32, color: Colors.redAccent.withValues(alpha: 0.8)),
+          color: Colors.transparent,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 32, color: Colors.transparent),
       ),
     );
   }
@@ -713,12 +708,22 @@ class RobotArmGame extends Forge2DGame {
   static const double tipRadius = 0.8; // 先端の当たり判定半径
   static const double enemyRadius = 5.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
+  // 背景画像
+  Sprite? _backgroundSprite;
+
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
 
   @override
   Future<void> onLoad() async {
     camera.viewfinder.anchor = Anchor.center;
+
+    // --- 背景画像を読み込み ---
+    try {
+      _backgroundSprite = await Sprite.load('game_background.jpg');
+    } catch (e) {
+      print('Failed to load background image: game_background.jpg, error: $e');
+    }
 
     // --- 敵を配置 ---
     await _spawnEnemies();
@@ -859,6 +864,36 @@ class RobotArmGame extends Forge2DGame {
     // 全てのボディを静的に変更して完全に固定
     upperArm.body.setType(BodyType.static);
     foreArm.body.setType(BodyType.static);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    // 背景画像を描画（薄く表示）
+    if (_backgroundSprite != null) {
+      final paint = Paint()..color = Colors.white.withValues(alpha: 0.5); // 透明度50%（より薄く）
+      canvas.saveLayer(null, paint);
+      
+      // アスペクト比を維持しながら横幅いっぱいに表示
+      final screenSize = size;
+      final spriteSize = _backgroundSprite!.srcSize;
+      final aspectRatio = spriteSize.x / spriteSize.y;
+      
+      // 横幅を画面幅に合わせ、高さはアスペクト比を維持
+      final renderWidth = screenSize.x;
+      final renderHeight = renderWidth / aspectRatio;
+      final renderSize = Vector2(renderWidth, renderHeight);
+      
+      _backgroundSprite!.render(
+        canvas,
+        size: renderSize,
+        anchor: Anchor.center,
+        position: screenSize / 2,
+      );
+      
+      canvas.restore();
+    }
+    
+    super.render(canvas);
   }
 
   // --- 【重要】強制更新ロジック ---

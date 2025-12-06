@@ -717,7 +717,7 @@ class RobotArmGame extends Forge2DGame {
   static const double armLength = 15;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 5.5; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
+  static const double enemyRadius = 6; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -832,13 +832,14 @@ class RobotArmGame extends Forge2DGame {
         _physicsStoppedOnHit = true;
         hitCount.value++;
 
-        Future.delayed(Duration(seconds: 2), () {
-          showSuccessMessage.value = true;
-        });
-
         // 物理演算を停止
         _stopAllPhysics();
 
+        Future.delayed(Duration(seconds: 3), () {
+          showSuccessMessage.value = true;
+          BleManager().sendBool(true);
+          
+        });
         FlameAudio.bgm.stop();
         FlameAudio.play('clear.mp3');
 

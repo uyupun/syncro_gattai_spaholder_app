@@ -284,10 +284,10 @@ class RobotArmGame extends Forge2DGame {
   final List<Enemy> enemies = [];
 
   // アームの届く範囲
-  static const double armReachMin = 6.0;
-  static const double armReachMax = 13.0;
-  static final Vector2 shoulderPos = Vector2(0, -7);
+  static const double armReachMax = 13.0; // 上腕7 + 前腕6
+  static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
+  static const double enemyRadius = 2.0; // 敵の半径（2倍に変更）
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -297,23 +297,23 @@ class RobotArmGame extends Forge2DGame {
     camera.viewfinder.anchor = Anchor.center;
 
     // --- パーツ生成 ---
-    // 変数宣言(final)を削除し、クラス変数への代入に変更
+    // アームを左側に配置
     shoulder = ArmPart(
-        position: Vector2(0, -8),
+        position: Vector2(-10, -8),
         size: Vector2(4, 2),
         isStatic: true,
         color: Colors.grey);
     await world.add(shoulder);
 
     upperArm = ArmPart(
-        position: Vector2(0, -2),
+        position: Vector2(-10, -2),
         size: Vector2(1.5, 8),
         isStatic: false,
         color: Colors.blueAccent);
     await world.add(upperArm);
 
     foreArm = ArmPart(
-        position: Vector2(0, 7),
+        position: Vector2(-10, 7),
         size: Vector2(1.2, 7),
         isStatic: false,
         color: Colors.lightBlueAccent);
@@ -348,23 +348,15 @@ class RobotArmGame extends Forge2DGame {
     await _spawnEnemies();
   }
 
-  /// アームの届く範囲内のランダムな位置を生成
-  Vector2 _getRandomPositionInArmReach() {
-    final angle = _random.nextDouble() * 2 * pi;
-    final distance = armReachMin + _random.nextDouble() * (armReachMax - armReachMin);
-    return Vector2(
-      shoulderPos.x + cos(angle) * distance,
-      shoulderPos.y + sin(angle) * distance,
-    );
-  }
-
   Future<void> _spawnEnemies() async {
-    for (int i = 0; i < 5; i++) {
-      final pos = _getRandomPositionInArmReach();
-      final enemy = Enemy(position: pos, radius: 1.0, game: this);
-      enemies.add(enemy);
-      await world.add(enemy);
-    }
+    // 敵は1体、右側に配置（アームの最大到達距離ジャストの位置）
+    final enemyPos = Vector2(
+      shoulderPos.x + armReachMax, // 右側にアーム距離ジャスト
+      shoulderPos.y, // 肩と同じ高さ
+    );
+    final enemy = Enemy(position: enemyPos, radius: enemyRadius);
+    enemies.add(enemy);
+    await world.add(enemy);
   }
 
   /// 腕の先端のワールド座標を取得
@@ -546,15 +538,12 @@ class ArmPart extends BodyComponent {
 class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
-  final RobotArmGame _game;
 
   Enemy({
     required Vector2 position,
     required double radius,
-    required RobotArmGame game,
   })  : _initialPosition = position.clone(),
-        _radius = radius,
-        _game = game;
+        _radius = radius;
 
   double get radius => _radius;
 
@@ -573,8 +562,8 @@ class Enemy extends BodyComponent {
   }
 
   void respawn() {
-    final newPos = _game._getRandomPositionInArmReach();
-    body.setTransform(newPos, 0);
+    // 同じ位置に戻す（敵は1体固定のため）
+    body.setTransform(_initialPosition, 0);
   }
 
   @override

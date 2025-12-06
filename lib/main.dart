@@ -273,7 +273,7 @@ class RobotArmGame extends Forge2DGame {
 
   bool _isStraightening = false;
   double _straighteningTimer = 0; // 整列タイマー
-  static const double _straighteningDuration = 0.3; // 300ms
+  static const double _straighteningDuration = 0.2; // 200ms
 
   // ランダム動作用
   bool isRandomMode = false;
@@ -286,10 +286,11 @@ class RobotArmGame extends Forge2DGame {
   final List<Enemy> enemies = [];
 
   // アームの届く範囲
-  static const double armReachMax = 13.0; // 上腕7 + 前腕6
+  // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
+  static const double armLength = 13.5;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 5.0; // 敵の半径（さらに大きく）
+  static const double enemyRadius = 3.0; // 敵の半径（画面内に収まるサイズ）
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -352,8 +353,12 @@ class RobotArmGame extends Forge2DGame {
 
   Future<void> _spawnEnemies() async {
     // 敵は1体、右側に配置（アームの最大到達距離ジャストの位置）
+    // 敵の端がちょうど腕の先端位置になるように配置
+    // tipPosition = shoulderPos.x + armLength
+    // enemyEdge = enemyCenter - enemyRadius = tipPosition
+    // よって enemyCenter = shoulderPos.x + armLength + enemyRadius
     final enemyPos = Vector2(
-      shoulderPos.x + armReachMax, // 右側にアーム距離ジャスト
+      shoulderPos.x + armLength + enemyRadius, // 敵の端がジャスト腕の先端
       shoulderPos.y, // 肩と同じ高さ
     );
     final enemy = Enemy(position: enemyPos, radius: enemyRadius);

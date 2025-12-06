@@ -838,9 +838,11 @@ class RobotArmGame extends Forge2DGame {
         // 物理演算を停止
         _stopAllPhysics();
 
-        Future.delayed(Duration(seconds: 3), () async {
+        // 即座にポンプ送信
+        bleManager.sendBool(true);
+
+        Future.delayed(Duration(seconds: 3), () {
           showSuccessMessage.value = true;
-          await bleManager.sendBool(true);
         });
         FlameAudio.bgm.stop();
         FlameAudio.bgm.play('clear.mp3');

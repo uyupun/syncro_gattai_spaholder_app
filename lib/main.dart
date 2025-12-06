@@ -24,7 +24,7 @@ void main() async {
 // ---------------------------------------------------------
 // 0. アプリ全体の画面管理
 // ---------------------------------------------------------
-enum AppScreen { title, countdown, game }
+enum AppScreen { title, countdown, game, gameClear }
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -48,13 +48,26 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _showGameClear() {
+    setState(() {
+      _currentScreen = AppScreen.gameClear;
+    });
+  }
+
+  void _returnToTitle() {
+    setState(() {
+      _currentScreen = AppScreen.title;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: switch (_currentScreen) {
         AppScreen.title => TitleScreen(onStart: _startCountdown),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),
-        AppScreen.game => const GameWrapper(),
+        AppScreen.game => GameWrapper(onGameClear: _showGameClear),
+        AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
       },
     );
   }
@@ -185,17 +198,76 @@ class _CountdownScreenState extends State<CountdownScreen> {
 }
 
 // ---------------------------------------------------------
+// 0.7. ゲームクリア画面
+// ---------------------------------------------------------
+class GameClearScreen extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const GameClearScreen({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        color: const Color(0xFF222222),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'GAME CLEAR!',
+                style: TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 64,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 4,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 10,
+                      color: Colors.green,
+                      offset: Offset(0, 0),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 60),
+              const Text(
+                'Tap to Return',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------
 // 1. UIとゲームを重ねるためのラッパーウィジェット
 // ---------------------------------------------------------
 class GameWrapper extends StatefulWidget {
-  const GameWrapper({super.key});
+  final VoidCallback onGameClear;
+
+  const GameWrapper({super.key, required this.onGameClear});
 
   @override
   State<GameWrapper> createState() => _GameWrapperState();
 }
 
 class _GameWrapperState extends State<GameWrapper> {
-  final RobotArmGame game = RobotArmGame();
+  late final RobotArmGame game;
+
+  @override
+  void initState() {
+    super.initState();
+    game = RobotArmGame(onGameClear: widget.onGameClear);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +494,9 @@ class ToggleButton extends StatelessWidget {
 // 3. ゲームロジック
 // ---------------------------------------------------------
 class RobotArmGame extends Forge2DGame {
-  RobotArmGame() : super(gravity: Vector2(0, 15), zoom: 20);
+  final VoidCallback? onGameClear;
+
+  RobotArmGame({this.onGameClear}) : super(gravity: Vector2(0, 15), zoom: 20);
 
   // 【変更点】updateメソッドからアクセスできるようにクラス変数にする
   late ArmPart shoulder;
@@ -540,7 +614,9 @@ class RobotArmGame extends Forge2DGame {
       final hitDistance = tipRadius + enemy.radius;
       if (distance < hitDistance) {
         hitCount.value++;
-        enemy.respawn();
+        // ヒットしたらゲームクリア画面へ遷移
+        onGameClear?.call();
+        return;
       }
     }
   }

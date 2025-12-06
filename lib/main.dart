@@ -568,16 +568,8 @@ class RobotArmGame extends Forge2DGame {
     camera.viewfinder.anchor = Anchor.center;
 
     // --- パーツ生成 ---
-    // アームを左側に配置（画像を使用）
-    shoulder = ArmPart(
-        position: Vector2(-10, -8),
-        size: Vector2(4, 2),
-        isStatic: true,
-        color: Colors.grey);
-    await world.add(shoulder);
-
     upperArm = ArmPart(
-        position: Vector2(-10, -2),
+        position: Vector2(-10, -4),  // shoulderと重なるように調整
         size: Vector2(4.35, 8),  // 277x509のアスペクト比を保持 (8 * 277/509 ≈ 4.35)
         isStatic: false,
         color: Colors.blueAccent,
@@ -585,20 +577,29 @@ class RobotArmGame extends Forge2DGame {
     await world.add(upperArm);
 
     foreArm = ArmPart(
-        position: Vector2(-6.5, 5.5),  // 上腕と重なるように位置調整
+        position: Vector2(-8.5, 1.5),  // 上腕と重なるように位置調整
         size: Vector2(4.85, 8),  // 389x642のアスペクト比を保持 (8 * 389/642 ≈ 4.85)
         isStatic: false,
         color: Colors.lightBlueAccent,
         imagePath: 'drill.png');
     await world.add(foreArm);
 
+    // アームを左側に配置（画像を使用）
+    shoulder = ArmPart(
+        position: Vector2(-12, 0),  // 上腕より上に配置
+        size: Vector2(16, 16),  // アスペクト比を維持できるよう大きめに設定
+        isStatic: true,
+        color: Colors.grey,
+        imagePath: 'upper_body.png');
+    await world.add(shoulder);
+
     // --- ジョイント生成 ---
     final shoulderJointDef = RevoluteJointDef()
       ..bodyA = shoulder.body
       ..bodyB = upperArm.body
       ..collideConnected = false
-      ..localAnchorA.setValues(0, 1)
-      ..localAnchorB.setValues(0, -3.5)
+      ..localAnchorA.setValues(6, -4.5)  // shoulderの右上
+      ..localAnchorB.setValues(0, -4)  // upperArmの上端
       ..enableLimit = false
       ..enableMotor = false
       ..maxMotorTorque = 2000.0;

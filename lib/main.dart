@@ -297,74 +297,38 @@ class _GameWrapperState extends State<GameWrapper> {
             },
           ),
         ),
+        // --- 中央下：腕伸ばしボタンのみ表示 ---
         Positioned(
           bottom: 30,
           left: 0,
           right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // --- 左：肩の操作 ---
-              ControlPanel(
-                label: "Shoulder (肩)",
-                onLeftDown: () => game.controlShoulder(-3.0),
-                onRightDown: () => game.controlShoulder(3.0),
-                onRelease: () => game.stopShoulder(),
-              ),
-
-              // --- 中央：ボタン群 ---
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ランダム動作ボタン
-                  const Text(
-                    "Random\n(ランダム)",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        shadows: [Shadow(blurRadius: 2, color: Colors.black)]),
-                  ),
-                  const SizedBox(height: 10),
-                  ToggleButton(
-                    icon: Icons.shuffle,
-                    isActive: game.isRandomMode,
-                    onToggle: () {
-                      setState(() {
-                        game.toggleRandomMode();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  // 強制まっすぐボタン
-                  const Text(
-                    "Snap Straight\n(強制整列)",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        shadows: [Shadow(blurRadius: 2, color: Colors.black)]),
-                  ),
-                  const SizedBox(height: 10),
-                  HoldButton(
-                    icon: Icons.vertical_align_center,
-                    onPressed: () => game.startStraightening(),
-                    onReleased: () => game.stopStraightening(),
-                  ),
-                ],
-              ),
-
-              // --- 右：肘の操作 ---
-              ControlPanel(
-                label: "Elbow (肘)",
-                onLeftDown: () => game.controlElbow(-5.0),
-                onRightDown: () => game.controlElbow(5.0),
-                onRelease: () => game.stopElbow(),
-              ),
-            ],
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 強制まっすぐボタン
+                const Text(
+                  "Snap Straight\n(強制整列)",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      shadows: [Shadow(blurRadius: 2, color: Colors.black)]),
+                ),
+                const SizedBox(height: 10),
+                HoldButton(
+                  icon: Icons.vertical_align_center,
+                  onPressed: () => game.startStraightening(),
+                  onReleased: () => game.stopStraightening(),
+                ),
+              ],
+            ),
           ),
         ),
+        // --- 以下、非表示にしたボタン群 ---
+        // ControlPanel (肩): game.controlShoulder(-3.0), game.controlShoulder(3.0)
+        // ControlPanel (肘): game.controlElbow(-5.0), game.controlElbow(5.0)
+        // ToggleButton (ランダム): game.toggleRandomMode()
       ],
     );
   }
@@ -584,6 +548,9 @@ class RobotArmGame extends Forge2DGame {
 
     // --- 敵を配置 ---
     await _spawnEnemies();
+
+    // --- 常にランダムモードを有効化 ---
+    startRandomMode();
   }
 
   Future<void> _spawnEnemies() async {

@@ -1,4 +1,4 @@
-# spajam2025_app
+# syncro_gattai_spaholder_app
 
 A new Flutter project.
 

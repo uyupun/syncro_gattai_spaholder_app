@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
@@ -46,10 +48,31 @@ class _GameWrapperState extends State<GameWrapper> {
                 onRelease: () => game.stopShoulder(),
               ),
 
-              // --- 中央：強制まっすぐボタン ---
+              // --- 中央：ボタン群 ---
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // ランダム動作ボタン
+                  const Text(
+                    "Random\n(ランダム)",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(blurRadius: 2, color: Colors.black)]),
+                  ),
+                  const SizedBox(height: 10),
+                  ToggleButton(
+                    icon: Icons.shuffle,
+                    isActive: game.isRandomMode,
+                    onToggle: () {
+                      setState(() {
+                        game.toggleRandomMode();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  // 強制まっすぐボタン
                   const Text(
                     "Snap Straight\n(強制整列)",
                     textAlign: TextAlign.center,
@@ -60,7 +83,7 @@ class _GameWrapperState extends State<GameWrapper> {
                   ),
                   const SizedBox(height: 10),
                   HoldButton(
-                    icon: Icons.vertical_align_center, // アイコン変更
+                    icon: Icons.vertical_align_center,
                     onPressed: () => game.startStraightening(),
                     onReleased: () => game.stopStraightening(),
                   ),
@@ -163,6 +186,45 @@ class HoldButton extends StatelessWidget {
   }
 }
 
+class ToggleButton extends StatelessWidget {
+  final IconData icon;
+  final bool isActive;
+  final VoidCallback onToggle;
+
+  const ToggleButton({
+    super.key,
+    required this.icon,
+    required this.isActive,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+            color: isActive
+                ? Colors.greenAccent.withValues(alpha: 0.9)
+                : Colors.white.withValues(alpha: 0.9),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 5,
+                  offset: const Offset(0, 3))
+            ]),
+        child: Icon(icon,
+            size: 32,
+            color: isActive
+                ? Colors.white
+                : Colors.redAccent.withValues(alpha: 0.8)),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------
 // 3. ゲームロジック
 // ---------------------------------------------------------
@@ -178,6 +240,12 @@ class RobotArmGame extends Forge2DGame {
   RevoluteJoint? elbowJoint;
 
   bool _isStraightening = false;
+
+  // ランダム動作用
+  bool isRandomMode = false;
+  final Random _random = Random();
+  double _randomChangeTimer = 0;
+  static const double _randomChangeInterval = 0.5; // 0.5秒ごとに方向変更
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -240,6 +308,15 @@ class RobotArmGame extends Forge2DGame {
   void update(double dt) {
     super.update(dt);
 
+    // ランダム動作モード
+    if (isRandomMode) {
+      _randomChangeTimer += dt;
+      if (_randomChangeTimer >= _randomChangeInterval) {
+        _randomChangeTimer = 0;
+        _applyRandomMovement();
+      }
+    }
+
     if (_isStraightening) {
       // 1. 上腕の現在の角度を取得
       final targetAngle = upperArm.body.angle;
@@ -289,6 +366,39 @@ class RobotArmGame extends Forge2DGame {
   void stopElbow() {
     if (elbowJoint == null) return;
     elbowJoint!.enableMotor(false);
+  }
+
+  // --- ランダム動作モード ---
+
+  void startRandomMode() {
+    isRandomMode = true;
+    _randomChangeTimer = 0;
+  }
+
+  void stopRandomMode() {
+    isRandomMode = false;
+    stopShoulder();
+    stopElbow();
+  }
+
+  void toggleRandomMode() {
+    if (isRandomMode) {
+      stopRandomMode();
+    } else {
+      startRandomMode();
+    }
+  }
+
+  void _applyRandomMovement() {
+    // 肩：-4.0 〜 4.0 のランダムな速度
+    final shoulderSpeed = (_random.nextDouble() * 8.0) - 4.0;
+    controlShoulder(shoulderSpeed);
+
+    // 肘：-6.0 〜 6.0 のランダムな速度（整列中は動かさない）
+    if (!_isStraightening) {
+      final elbowSpeed = (_random.nextDouble() * 12.0) - 6.0;
+      controlElbow(elbowSpeed);
+    }
   }
 }
 

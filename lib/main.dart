@@ -6,6 +6,7 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'ble_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,7 +88,7 @@ class _MyAppState extends State<MyApp> {
       body: switch (_currentScreen) {
         AppScreen.title => TitleScreen(onStart: _startCountdown),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),
-        AppScreen.game => GameWrapper(onGameClear: _showGameClear),
+        AppScreen.game => GameWrapper(onGameClear: _returnToTitle),
         AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
       },
     );
@@ -97,53 +98,185 @@ class _MyAppState extends State<MyApp> {
 // ---------------------------------------------------------
 // 0.5. タイトル画面
 // ---------------------------------------------------------
-class TitleScreen extends StatelessWidget {
+class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
 
   const TitleScreen({super.key, required this.onStart});
 
   @override
+  State<TitleScreen> createState() => _TitleScreenState();
+}
+
+class _TitleScreenState extends State<TitleScreen> {
+  final BleManager _bleManager = BleManager();
+  bool _isConnecting = false;
+  List<String> _connectedDevices = BleManager().connectedDevices;
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 接続デバイス数の変化を監視
+    _bleManager.connectedDevicesStream.listen((devices) {
+      if (mounted) {
+        setState(() {
+          _connectedDevices = devices;
+           _isConnecting = devices.length < 2 ? _isConnecting : false; // 2台未満なら接続中
+        });
+      }
+    });
+  }
+
+  Future<void> _connectDevices() async {
+    if (_connectedDevices.length >= 2) return; // 既に2台接続済み
+
+    setState(() {
+      _isConnecting = true;
+    });
+
+    try {
+      await _bleManager.scanAndConnect();
+    } catch (e) {
+      print('接続エラー: $e');
+      setState(() {
+        _isError = true;
+        _isConnecting = false;
+      });
+    }
+  }
+
+  bool get _canStart => _connectedDevices.length >= 2;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onStart,
-      child: Container(
-        color: const Color(0xFFFFFFFF),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // タイトル
-              const Text(
-                'ROBOT ARM',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 64,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 8,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 10,
-                      color: Colors.blueAccent,
-                      offset: Offset(0, 0),
+    return Container(
+      color: const Color(0xFFFFFFFF),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // タイトル画像
+            Image.asset(
+              'assets/images/title.png',
+              width: 500,
+              height: 230,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // 画像読み込みエラー時のフォールバック
+                return const Text(
+                  'ROBOT ARM',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 8,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: Colors.blueAccent,
+                        offset: Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // 接続状況表示
+            Text(
+              '接続デバイス数: ${_connectedDevices.length}/2',
+              style: const TextStyle(
+                color: Colors.black54,
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 接続ボタン
+                if (!_canStart)
+                  ElevatedButton(
+                    onPressed: _isConnecting ? null : _connectDevices,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                  ],
+                    child: _isConnecting
+                        ? const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Text('接続中...'),
+                            ],
+                          )
+                        : const Text('デバイス接続'),
+                  ),
+                if ( _canStart)
+                  ElevatedButton(
+                    onPressed: () {
+                      _bleManager.disconnectAll();
+                      setState(() {
+                        _isConnecting = false;
+                        _isError = false;
+                        _connectedDevices.clear();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    child: const Text('デバイス解除'),
+                  ),
+
+                const SizedBox(width: 20),
+
+                // スタートボタン
+                ElevatedButton(
+                  onPressed: _canStart ? widget.onStart : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _canStart ? Colors.green : Colors.grey,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  child: const Text('ゲームスタート'),
                 ),
-              ),
-              const SizedBox(height: 60),
-              // Tap to Start
-              const Text(
-                'Tap to Start',
+              ],
+            ),
+
+            if (_isError)
+              Text(
+                '接続エラーが発生しました。再度接続をお試しください。',
                 style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w300,
+                  color: Colors.red,
+                  fontSize: 14,
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // 必要に応じてBLEマネージャーのリソースを解放
+    super.dispose();
   }
 }
 
@@ -283,11 +416,34 @@ class GameWrapper extends StatefulWidget {
 
 class _GameWrapperState extends State<GameWrapper> {
   late final RobotArmGame game;
+  final BleManager _bleManager = BleManager();
+  final Map<String, double> _latestValues = {}; // デバイスIDごとの最新値を保存
 
   @override
   void initState() {
     super.initState();
     game = RobotArmGame(onGameClear: widget.onGameClear);
+    
+    // BLE データストリームを監視
+    _bleManager.accelDataStream.listen((accelData) {
+      _latestValues[accelData.deviceId] = accelData.value;
+      _checkStraighteningCondition();
+    });
+  }
+
+  void _checkStraighteningCondition() {
+    // 2つのデバイスからの値を取得
+    final values = _latestValues.values.toList();
+    
+    // 2つの値が存在し、両方とも正の値でかつ1以上の場合
+    if (values.length >= 2) {
+      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 0.5);
+      
+      if (allPositiveAndAboveOne) {
+        // 肘を伸ばすアクション（強制整列）を実行
+        game.startStraightening();
+      }
+    }
   }
 
   @override
@@ -338,7 +494,7 @@ class _GameWrapperState extends State<GameWrapper> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
-                          '温泉を救った！',
+                          '温泉が帰ってきた！',
                           style: TextStyle(
                             color: Colors.yellowAccent,
                             fontSize: 64,
@@ -360,7 +516,7 @@ class _GameWrapperState extends State<GameWrapper> {
                         ),
                         const SizedBox(height: 30),
                         const Text(
-                          'タップしてクリア画面へ',
+                          'タップして戻る',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -382,7 +538,7 @@ class _GameWrapperState extends State<GameWrapper> {
             );
           },
         ),
-        // --- 中央下：腕伸ばしボタンのみ表示 ---
+        // --- 中央下：腕伸ばしボタンのみ表示 デバッグボタン ---
         Positioned(
           bottom: 30,
           left: 0,
@@ -391,15 +547,6 @@ class _GameWrapperState extends State<GameWrapper> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 強制まっすぐボタン
-                const Text(
-                  "Snap Straight\n(強制整列)",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
                 HoldButton(
                   icon: Icons.vertical_align_center,
                   onPressed: () => game.startStraightening(),
@@ -484,15 +631,10 @@ class HoldButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 5,
-                  offset: const Offset(0, 3))
-            ]),
-        child: Icon(icon, size: 32, color: Colors.redAccent.withValues(alpha: 0.8)),
+          color: Colors.transparent,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 32, color: Colors.transparent),
       ),
     );
   }
@@ -572,10 +714,13 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 15.5;
+  static const double armLength = 15;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 5.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
+  static const double enemyRadius = 6; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
+
+  // 背景画像
+  Sprite? _backgroundSprite;
 
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
@@ -583,6 +728,13 @@ class RobotArmGame extends Forge2DGame {
   @override
   Future<void> onLoad() async {
     camera.viewfinder.anchor = Anchor.center;
+
+    // --- 背景画像を読み込み ---
+    try {
+      _backgroundSprite = await Sprite.load('game_background.jpg');
+    } catch (e) {
+      print('Failed to load background image: game_background.jpg, error: $e');
+    }
 
     // --- 敵を配置 ---
     await _spawnEnemies();
@@ -672,15 +824,25 @@ class RobotArmGame extends Forge2DGame {
       final distance = tipPos.distanceTo(enemy.body.position);
       final hitDistance = tipRadius + enemy.radius;
       if (distance < hitDistance) {
+        // 敵の画像を変更
+        enemy.onHit();
+        
         // 一度ヒットしたら物理演算を停止し、成功メッセージを表示
         _isCleared = true;
         _physicsStoppedOnHit = true;
         hitCount.value++;
-        showSuccessMessage.value = true;
-        
+
         // 物理演算を停止
         _stopAllPhysics();
-        
+
+        Future.delayed(Duration(seconds: 3), () {
+          showSuccessMessage.value = true;
+          BleManager().sendBool(true);
+          
+        });
+        FlameAudio.bgm.stop();
+        FlameAudio.play('clear.mp3');
+
         // タップでクリア画面に遷移するように変更（自動遷移は削除）
         return;
       }
@@ -717,6 +879,36 @@ class RobotArmGame extends Forge2DGame {
     // 全てのボディを静的に変更して完全に固定
     upperArm.body.setType(BodyType.static);
     foreArm.body.setType(BodyType.static);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    // 背景画像を描画（薄く表示）
+    if (_backgroundSprite != null) {
+      final paint = Paint()..color = Colors.white.withValues(alpha: 0.5); // 透明度50%（より薄く）
+      canvas.saveLayer(null, paint);
+      
+      // アスペクト比を維持しながら横幅いっぱいに表示
+      final screenSize = size;
+      final spriteSize = _backgroundSprite!.srcSize;
+      final aspectRatio = spriteSize.x / spriteSize.y;
+      
+      // 横幅を画面幅に合わせ、高さはアスペクト比を維持
+      final renderWidth = screenSize.x;
+      final renderHeight = renderWidth / aspectRatio;
+      final renderSize = Vector2(renderWidth, renderHeight);
+      
+      _backgroundSprite!.render(
+        canvas,
+        size: renderSize,
+        anchor: Anchor.center,
+        position: screenSize / 2,
+      );
+      
+      canvas.restore();
+    }
+    
+    super.render(canvas);
   }
 
   // --- 【重要】強制更新ロジック ---
@@ -945,6 +1137,8 @@ class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
   Sprite? _sprite;
+  Sprite? _splashSprite;
+  bool _isHit = false;
 
   Enemy({
     required Vector2 position,
@@ -959,10 +1153,16 @@ class Enemy extends BodyComponent {
     await super.onLoad();
     try {
       _sprite = await Sprite.load('rockmonster.png');
+      _splashSprite = await Sprite.load('rockmonster_splashA.png');
     } catch (e) {
       // 画像の読み込みに失敗した場合はスプライトをnullのままにする
-      print('Failed to load image: rockmonster.png, error: $e');
+      print('Failed to load image: $e');
     }
+  }
+
+  /// 敵がヒットされた時に呼び出される
+  void onHit() {
+    _isHit = true;
   }
 
   @override
@@ -986,17 +1186,20 @@ class Enemy extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    if (_sprite != null) {
+    // ヒット状態に応じて画像を切り替え
+    final currentSprite = _isHit ? _splashSprite : _sprite;
+    
+    if (currentSprite != null) {
       // 画像を使用してレンダリング（サイズを2倍に）
-      final size = _radius * 2.75; // 直径の2倍
-      _sprite!.render(
+      final size = _radius * 2.5; // 直径の2倍
+      currentSprite.render(
         canvas,
         size: Vector2.all(size),
         anchor: Anchor.center,
       );
     } else {
       // 画像がない場合は従来の円描画
-      final paint = Paint()..color = Colors.redAccent;
+      final paint = Paint()..color = _isHit ? Colors.orange : Colors.redAccent;
       canvas.drawCircle(Offset.zero, _radius, paint);
 
       final border = Paint()

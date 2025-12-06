@@ -34,9 +34,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // 一時的にゲーム画面から開始
-  // AppScreen _currentScreen = AppScreen.title;
-  AppScreen _currentScreen = AppScreen.game;
+  AppScreen _currentScreen = AppScreen.title;
 
   void _startCountdown() {
     setState(() {

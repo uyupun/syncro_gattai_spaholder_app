@@ -88,7 +88,7 @@ class _MyAppState extends State<MyApp> {
       body: switch (_currentScreen) {
         AppScreen.title => TitleScreen(onStart: _startCountdown),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),
-        AppScreen.game => GameWrapper(onGameClear: _showGameClear),
+        AppScreen.game => GameWrapper(onGameClear: _returnToTitle),
         AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
       },
     );
@@ -155,25 +155,33 @@ class _TitleScreenState extends State<TitleScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // タイトル
-            const Text(
-              'ROBOT ARM',
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 8,
-                shadows: [
-                  Shadow(
-                    blurRadius: 10,
-                    color: Colors.blueAccent,
-                    offset: Offset(0, 0),
+            // タイトル画像
+            Image.asset(
+              'assets/images/title.png',
+              width: 500,
+              height: 230,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // 画像読み込みエラー時のフォールバック
+                return const Text(
+                  'ROBOT ARM',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 8,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: Colors.blueAccent,
+                        offset: Offset(0, 0),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
-            const SizedBox(height: 60),
-            
+
             // 接続状況表示
             Text(
               '接続デバイス数: ${_connectedDevices.length}/2',
@@ -183,79 +191,82 @@ class _TitleScreenState extends State<TitleScreen> {
                 fontWeight: FontWeight.w400,
               ),
             ),
-            if (_isError)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  '接続エラーが発生しました。再度接続をお試しください。',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 30),
-            
-            // 接続ボタン
-            if (!_canStart)
-              ElevatedButton(
-                onPressed: _isConnecting ? null : _connectDevices,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                child: _isConnecting
-                    ? const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Text('接続中...'),
-                        ],
-                      )
-                    : const Text('デバイス接続'),
-              ),
-            if ( _canStart)
-              ElevatedButton(
-                onPressed: () {
-                  _bleManager.disconnectAll();
-                  setState(() {
-                    _isConnecting = false;
-                    _isError = false;
-                    _connectedDevices.clear();
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                child: const Text('デバイス解除'),
-              ),
+            const SizedBox(height: 10),
 
-            const SizedBox(height: 20),
-            
-            // スタートボタン
-            ElevatedButton(
-              onPressed: _canStart ? widget.onStart : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _canStart ? Colors.green : Colors.grey,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              child: const Text('ゲームスタート'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 接続ボタン
+                if (!_canStart)
+                  ElevatedButton(
+                    onPressed: _isConnecting ? null : _connectDevices,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    child: _isConnecting
+                        ? const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Text('接続中...'),
+                            ],
+                          )
+                        : const Text('デバイス接続'),
+                  ),
+                if ( _canStart)
+                  ElevatedButton(
+                    onPressed: () {
+                      _bleManager.disconnectAll();
+                      setState(() {
+                        _isConnecting = false;
+                        _isError = false;
+                        _connectedDevices.clear();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    child: const Text('デバイス解除'),
+                  ),
+
+                const SizedBox(width: 20),
+
+                // スタートボタン
+                ElevatedButton(
+                  onPressed: _canStart ? widget.onStart : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _canStart ? Colors.green : Colors.grey,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  child: const Text('ゲームスタート'),
+                ),
+              ],
             ),
+
+            if (_isError)
+              Text(
+                '接続エラーが発生しました。再度接続をお試しください。',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                ),
+              ),
           ],
         ),
       ),
@@ -505,7 +516,7 @@ class _GameWrapperState extends State<GameWrapper> {
                         ),
                         const SizedBox(height: 30),
                         const Text(
-                          'タップしてクリア画面へ',
+                          'タップして戻る',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -703,10 +714,10 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 14;
+  static const double armLength = 15;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 6.0; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
+  static const double enemyRadius = 5.5; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -827,7 +838,10 @@ class RobotArmGame extends Forge2DGame {
 
         // 物理演算を停止
         _stopAllPhysics();
-        
+
+        FlameAudio.bgm.stop();
+        FlameAudio.play('clear.mp3');
+
         // タップでクリア画面に遷移するように変更（自動遷移は削除）
         return;
       }

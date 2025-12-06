@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,25 +37,45 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
 
+  @override
+  void initState() {
+    super.initState();
+    // タイトル画面のBGMを再生
+    _playBgm('title.mp3');
+  }
+
+  /// BGMを切り替える（現在のBGMを停止して新しいBGMをループ再生）
+  void _playBgm(String filename) {
+    FlameAudio.bgm.stop();
+    FlameAudio.bgm.play(filename);
+  }
+
   void _startCountdown() {
     setState(() {
       _currentScreen = AppScreen.countdown;
     });
+    // カウントダウン中はタイトルBGMを継続
   }
 
   void _startGame() {
+    // ゲーム画面のBGMに切り替え
+    _playBgm('game.mp3');
     setState(() {
       _currentScreen = AppScreen.game;
     });
   }
 
   void _showGameClear() {
+    // クリア画面のBGMに切り替え
+    _playBgm('clear.mp3');
     setState(() {
       _currentScreen = AppScreen.gameClear;
     });
   }
 
   void _returnToTitle() {
+    // タイトル画面のBGMに切り替え
+    _playBgm('title.mp3');
     setState(() {
       _currentScreen = AppScreen.title;
     });

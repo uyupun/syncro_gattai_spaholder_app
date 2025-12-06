@@ -1087,6 +1087,25 @@ class ArmPart extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
+    // ドリル（前腕）の場合、先端の当たり判定を可視化
+    if (_imagePath == 'drill.png') {
+      // ドリル先端の当たり判定（半透明の青い円）
+      final tipRadius = 0.8; // RobotArmGameのtipRadiusと同じ値
+      final tipOffset = Offset(2.0, 3.5); // 右下位置に変更
+      
+      final hitboxPaint = Paint()
+        ..color = Colors.transparent // Colors.blue.withValues(alpha: 0.3)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(tipOffset, tipRadius, hitboxPaint);
+      
+      // 当たり判定の境界線
+      final hitboxBorder = Paint()
+        ..color = Colors.transparent // Colors.blue.withValues(alpha: 0.8)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.2;
+      canvas.drawCircle(tipOffset, tipRadius, hitboxBorder);
+    }
+    
     if (_sprite != null) {
       // 画像を使用してレンダリング（アスペクト比を維持）
       final spriteSize = _sprite!.srcSize;
@@ -1187,6 +1206,19 @@ class Enemy extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
+    // 衝突判定の可視化（半透明の赤い円）
+    final hitboxPaint = Paint()
+      ..color = Colors.transparent // Colors.red.withValues(alpha: 0.3)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset.zero, _radius, hitboxPaint);
+    
+    // 衝突判定の境界線
+    final hitboxBorder = Paint()
+      ..color = Colors.transparent // Colors.red.withValues(alpha: 0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.2;
+    canvas.drawCircle(Offset.zero, _radius, hitboxBorder);
+    
     // ヒット状態に応じて画像を切り替え
     final currentSprite = _isHit ? _splashSprite : _sprite;
     

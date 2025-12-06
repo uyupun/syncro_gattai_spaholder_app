@@ -272,6 +272,8 @@ class RobotArmGame extends Forge2DGame {
   RevoluteJoint? elbowJoint;
 
   bool _isStraightening = false;
+  double _straighteningTimer = 0; // 整列タイマー
+  static const double _straighteningDuration = 0.3; // 300ms
 
   // ランダム動作用
   bool isRandomMode = false;
@@ -287,7 +289,7 @@ class RobotArmGame extends Forge2DGame {
   static const double armReachMax = 13.0; // 上腕7 + 前腕6
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
-  static const double enemyRadius = 2.0; // 敵の半径（2倍に変更）
+  static const double enemyRadius = 5.0; // 敵の半径（さらに大きく）
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -392,19 +394,28 @@ class RobotArmGame extends Forge2DGame {
     }
 
     if (_isStraightening) {
+      // タイマーを進める
+      _straighteningTimer += dt;
+
       // 1. 上腕の現在の角度を取得
       final targetAngle = upperArm.body.angle;
-      
+
       // 2. 上腕の回転速度を取得
       final targetAngularVelocity = upperArm.body.angularVelocity;
 
       // 3. 物理演算を無視して、前腕の状態を強制上書き(setTransform)
-      //    位置(position)はそのまま、角度(angle)だけ上書きします。
-      //    (位置の微妙なズレはジョイントが勝手に補正してくれます)
       foreArm.body.setTransform(foreArm.body.position, targetAngle);
 
-      // 4. 慣性も同期させる（これがないと、整列した瞬間に回転の勢いでズレようとする）
+      // 4. 慣性も同期させる
       foreArm.body.angularVelocity = targetAngularVelocity;
+
+      // 5. 300msの間、毎フレームヒットチェック
+      _checkHitOnce();
+
+      // 6. 300ms経過したら自動で解除
+      if (_straighteningTimer >= _straighteningDuration) {
+        stopStraightening();
+      }
     }
   }
 
@@ -412,18 +423,20 @@ class RobotArmGame extends Forge2DGame {
 
   void startStraightening() {
     _isStraightening = true;
+    _straighteningTimer = 0; // タイマーリセット
     // モーターが邪魔しないようにOFFにする
     stopElbow();
-    // 押した瞬間に1回だけヒットチェック
-    _checkHitOnce();
+    stopShoulder(); // 肩も固定
   }
 
   void stopStraightening() {
     _isStraightening = false;
+    _straighteningTimer = 0;
   }
 
   void controlShoulder(double speed) {
-    if (shoulderJoint == null) return;
+    // 整列中は肩も固定
+    if (_isStraightening || shoulderJoint == null) return;
     shoulderJoint!.enableMotor(true);
     shoulderJoint!.motorSpeed = speed;
   }

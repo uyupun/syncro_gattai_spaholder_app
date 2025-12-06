@@ -274,29 +274,29 @@ class _GameWrapperState extends State<GameWrapper> {
     return Stack(
       children: [
         GameWidget(game: game),
-        // スコア表示
-        Positioned(
-          top: 30,
-          left: 0,
-          right: 0,
-          child: ValueListenableBuilder<int>(
-            valueListenable: game.hitCount,
-            builder: (context, count, child) {
-              return Text(
-                'HIT: $count',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(blurRadius: 4, color: Colors.black),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
+        // スコア表示（非表示）
+        // Positioned(
+        //   top: 30,
+        //   left: 0,
+        //   right: 0,
+        //   child: ValueListenableBuilder<int>(
+        //     valueListenable: game.hitCount,
+        //     builder: (context, count, child) {
+        //       return Text(
+        //         'HIT: $count',
+        //         textAlign: TextAlign.center,
+        //         style: const TextStyle(
+        //           color: Colors.white,
+        //           fontSize: 32,
+        //           fontWeight: FontWeight.bold,
+        //           shadows: [
+        //             Shadow(blurRadius: 4, color: Colors.black),
+        //           ],
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ),
         // --- 中央下：腕伸ばしボタンのみ表示 ---
         Positioned(
           bottom: 30,
@@ -483,6 +483,7 @@ class RobotArmGame extends Forge2DGame {
   // ヒットチェック用
   final ValueNotifier<int> hitCount = ValueNotifier<int>(0);
   final List<Enemy> enemies = [];
+  bool _isCleared = false; // 一度ヒットしたらtrue（重複防止）
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
@@ -575,13 +576,17 @@ class RobotArmGame extends Forge2DGame {
 
   /// Snap Straight押下時に1回だけヒットチェック
   void _checkHitOnce() {
+    // 既にクリア済みなら何もしない
+    if (_isCleared) return;
+
     final tipPos = armTipPosition;
     for (final enemy in enemies) {
       final distance = tipPos.distanceTo(enemy.body.position);
       final hitDistance = tipRadius + enemy.radius;
       if (distance < hitDistance) {
+        // 一度ヒットしたらクリア
+        _isCleared = true;
         hitCount.value++;
-        // ヒットしたらゲームクリア画面へ遷移
         onGameClear?.call();
         return;
       }

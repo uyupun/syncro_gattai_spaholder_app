@@ -110,7 +110,7 @@ class TitleScreen extends StatefulWidget {
 class _TitleScreenState extends State<TitleScreen> {
   final BleManager _bleManager = BleManager();
   bool _isConnecting = false;
-  List<String> _connectedDevices = [];
+  List<String> _connectedDevices = BleManager().connectedDevices;
   bool _isError = false;
 
   @override
@@ -121,7 +121,7 @@ class _TitleScreenState extends State<TitleScreen> {
       if (mounted) {
         setState(() {
           _connectedDevices = devices;
-           _isConnecting = devices.length < 2; // 2台未満なら接続中
+           _isConnecting = devices.length < 2 ? _isConnecting : false; // 2台未満なら接続中
         });
       }
     });
@@ -197,32 +197,52 @@ class _TitleScreenState extends State<TitleScreen> {
             const SizedBox(height: 30),
             
             // 接続ボタン
-            ElevatedButton(
-              onPressed: _isConnecting ? null : _connectDevices,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              child: _isConnecting
-                  ? const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            if (!_canStart)
+              ElevatedButton(
+                onPressed: _isConnecting ? null : _connectDevices,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                child: _isConnecting
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 10),
-                        Text('接続中...'),
-                      ],
-                    )
-                  : const Text('デバイス接続'),
-            ),
+                          SizedBox(width: 10),
+                          Text('接続中...'),
+                        ],
+                      )
+                    : const Text('デバイス接続'),
+              ),
+            if ( _canStart)
+              ElevatedButton(
+                onPressed: () {
+                  _bleManager.disconnectAll();
+                  setState(() {
+                    _isConnecting = false;
+                    _isError = false;
+                    _connectedDevices.clear();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                child: const Text('デバイス解除'),
+              ),
+
             const SizedBox(height: 20),
             
             // スタートボタン
@@ -385,11 +405,34 @@ class GameWrapper extends StatefulWidget {
 
 class _GameWrapperState extends State<GameWrapper> {
   late final RobotArmGame game;
+  final BleManager _bleManager = BleManager();
+  final Map<String, double> _latestValues = {}; // デバイスIDごとの最新値を保存
 
   @override
   void initState() {
     super.initState();
     game = RobotArmGame(onGameClear: widget.onGameClear);
+    
+    // BLE データストリームを監視
+    _bleManager.accelDataStream.listen((accelData) {
+      _latestValues[accelData.deviceId] = accelData.value;
+      _checkStraighteningCondition();
+    });
+  }
+
+  void _checkStraighteningCondition() {
+    // 2つのデバイスからの値を取得
+    final values = _latestValues.values.toList();
+    
+    // 2つの値が存在し、両方とも正の値でかつ1以上の場合
+    if (values.length >= 2) {
+      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 1.0);
+      
+      if (allPositiveAndAboveOne) {
+        // 肘を伸ばすアクション（強制整列）を実行
+        game.startStraightening();
+      }
+    }
   }
 
   @override
@@ -485,32 +528,32 @@ class _GameWrapperState extends State<GameWrapper> {
           },
         ),
         // --- 中央下：腕伸ばしボタンのみ表示 ---
-        Positioned(
-          bottom: 30,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 強制まっすぐボタン
-                const Text(
-                  "Snap Straight\n(強制整列)",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                HoldButton(
-                  icon: Icons.vertical_align_center,
-                  onPressed: () => game.startStraightening(),
-                  onReleased: () => game.stopStraightening(),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // Positioned(
+        //   bottom: 30,
+        //   left: 0,
+        //   right: 0,
+        //   child: Center(
+        //     child: Column(
+        //       mainAxisSize: MainAxisSize.min,
+        //       children: [
+        //         // 強制まっすぐボタン
+        //         const Text(
+        //           "Snap Straight\n(強制整列)",
+        //           textAlign: TextAlign.center,
+        //           style: TextStyle(
+        //               color: Colors.black87,
+        //               fontWeight: FontWeight.bold),
+        //         ),
+        //         const SizedBox(height: 10),
+        //         HoldButton(
+        //           icon: Icons.vertical_align_center,
+        //           onPressed: () => game.startStraightening(),
+        //           onReleased: () => game.stopStraightening(),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
         // --- 以下、非表示にしたボタン群 ---
         // ControlPanel (肩): game.controlShoulder(-3.0), game.controlShoulder(3.0)
         // ControlPanel (肘): game.controlElbow(-5.0), game.controlElbow(5.0)

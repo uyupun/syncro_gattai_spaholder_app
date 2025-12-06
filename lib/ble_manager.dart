@@ -32,6 +32,7 @@ class BleManager {
 
   // --- 管理用変数 ---
   final Map<String, BluetoothDevice> _devices = {};
+  List<String> get connectedDevices => _devices.keys.toList();
   final Map<String, BluetoothCharacteristic> _characteristics = {};
   StreamSubscription? _scanSub;
 

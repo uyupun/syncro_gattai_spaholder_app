@@ -34,7 +34,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  AppScreen _currentScreen = AppScreen.title;
+  // 一時的にゲーム画面から開始
+  // AppScreen _currentScreen = AppScreen.title;
+  AppScreen _currentScreen = AppScreen.game;
 
   void _startCountdown() {
     setState(() {
@@ -566,7 +568,7 @@ class RobotArmGame extends Forge2DGame {
     camera.viewfinder.anchor = Anchor.center;
 
     // --- パーツ生成 ---
-    // アームを左側に配置
+    // アームを左側に配置（画像を使用）
     shoulder = ArmPart(
         position: Vector2(-10, -8),
         size: Vector2(4, 2),
@@ -576,16 +578,18 @@ class RobotArmGame extends Forge2DGame {
 
     upperArm = ArmPart(
         position: Vector2(-10, -2),
-        size: Vector2(1.5, 8),
+        size: Vector2(4.35, 8),  // 277x509のアスペクト比を保持 (8 * 277/509 ≈ 4.35)
         isStatic: false,
-        color: Colors.blueAccent);
+        color: Colors.blueAccent,
+        imagePath: 'upper_arm.png');
     await world.add(upperArm);
 
     foreArm = ArmPart(
-        position: Vector2(-10, 7),
-        size: Vector2(1.2, 7),
+        position: Vector2(-6.5, 5.5),  // 上腕と重なるように位置調整
+        size: Vector2(4.85, 8),  // 389x642のアスペクト比を保持 (8 * 389/642 ≈ 4.85)
         isStatic: false,
-        color: Colors.lightBlueAccent);
+        color: Colors.lightBlueAccent,
+        imagePath: 'drill.png');
     await world.add(foreArm);
 
     // --- ジョイント生成 ---
@@ -605,8 +609,8 @@ class RobotArmGame extends Forge2DGame {
       ..bodyA = upperArm.body
       ..bodyB = foreArm.body
       ..collideConnected = false
-      ..localAnchorA.setValues(0, 3.5)
-      ..localAnchorB.setValues(0, -3.0)
+      ..localAnchorA.setValues(1.75, 3)  // upper armの右下付近
+      ..localAnchorB.setValues(-1, -3.5)  // drillの左上付近
       ..enableLimit = false
       ..enableMotor = false
       ..maxMotorTorque = 5000.0;
@@ -825,16 +829,33 @@ class ArmPart extends BodyComponent {
   final Vector2 _size;
   final bool _isStatic;
   final Color _color;
+  final String? _imagePath;
+  Sprite? _sprite;
 
   ArmPart({
     required Vector2 position,
     required Vector2 size,
     required bool isStatic,
     required Color color,
+    String? imagePath,
   })  : _pos = position,
         _size = size,
         _isStatic = isStatic,
-        _color = color;
+        _color = color,
+        _imagePath = imagePath;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    if (_imagePath != null) {
+      try {
+        _sprite = await Sprite.load(_imagePath!);
+      } catch (e) {
+        // 画像の読み込みに失敗した場合はスプライトをnullのままにする
+        print('Failed to load image: $_imagePath, error: $e');
+      }
+    }
+  }
 
   @override
   Body createBody() {
@@ -856,18 +877,46 @@ class ArmPart extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    final paint = Paint()..color = _color;
-    final rect = Rect.fromCenter(
-        center: Offset.zero, width: _size.x, height: _size.y);
-    canvas.drawRect(rect, paint);
-    final border = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.1;
-    canvas.drawRect(rect, border);
-    final jointPaint = Paint()..color = Colors.white.withValues(alpha: 0.5);
-    canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
-    canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
+    if (_sprite != null) {
+      // 画像を使用してレンダリング（アスペクト比を維持）
+      final spriteSize = _sprite!.srcSize;
+      final aspectRatio = spriteSize.x / spriteSize.y;
+      
+      // 指定されたサイズ内でアスペクト比を維持しながらフィット
+      Vector2 renderSize;
+      if (_size.x / _size.y > aspectRatio) {
+        // 高さに合わせてスケール
+        renderSize = Vector2(_size.y * aspectRatio, _size.y);
+      } else {
+        // 幅に合わせてスケール
+        renderSize = Vector2(_size.x, _size.x / aspectRatio);
+      }
+      
+      _sprite!.render(
+        canvas,
+        size: renderSize,
+        anchor: Anchor.center,
+      );
+    } else {
+      // 画像がない場合は従来の矩形描画
+      final paint = Paint()..color = _color;
+      final rect = Rect.fromCenter(
+          center: Offset.zero, width: _size.x, height: _size.y);
+      canvas.drawRect(rect, paint);
+      final border = Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.1;
+      canvas.drawRect(rect, border);
+    }
+    
+    // ジョイント位置の表示（画像使用時は透明化）
+    if (_sprite == null) {
+      // 画像がない場合のみジョイント位置を表示
+      final jointPaint = Paint()..color = Colors.white.withValues(alpha: 0.3);
+      canvas.drawCircle(Offset(0, -_size.y / 2 + 0.5), 0.4, jointPaint);
+      canvas.drawCircle(Offset(0, _size.y / 2 - 0.5), 0.4, jointPaint);
+    }
   }
 }
 

@@ -714,7 +714,7 @@ class RobotArmGame extends Forge2DGame {
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
-  static const double armLength = 15;
+  static const double armLength = 14;
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
   static const double enemyRadius = 6; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
@@ -1171,7 +1171,8 @@ class Enemy extends BodyComponent {
     final fixtureDef = FixtureDef(shape)
       ..restitution = 0.5
       ..density = 1.0
-      ..friction = 0.3;
+      ..friction = 0.3
+      ..isSensor = true;  // センサーとして設定（物理的な衝突を無効化、貫通する）
     final bodyDef = BodyDef()
       ..userData = this
       ..position = _initialPosition

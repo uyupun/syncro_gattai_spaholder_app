@@ -153,9 +153,11 @@ class BleManager {
           }
 
           if (charUuid == _chrPumpUuid.toLowerCase()) {
-            // ポンプ用のCharacteristicとして保存
-            _pumpCharacteristic = c;
-            _printLog("ポンプ(送信)経路確保: $name");
+            // ポンプ用のCharacteristicとして保存（既に設定済みなら上書きしない）
+            if (_pumpCharacteristic == null) {
+              _pumpCharacteristic = c;
+              _printLog("ポンプ(送信)経路確保: $name");
+            }
           }
         }
       }
@@ -215,6 +217,7 @@ class BleManager {
 
     _devices.clear();
     _characteristics.clear();
+    _pumpCharacteristic = null;
     _updateConnectedList();
     _printLog("全切断しました");
   }

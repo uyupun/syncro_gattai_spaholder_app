@@ -852,8 +852,10 @@ class RobotArmGame extends Forge2DGame {
   }
 
   /// タップでゲームクリア画面に遷移
-  void proceedToGameClear() {
+  void proceedToGameClear() async {
     if (_isCleared) {
+      // 遷移前にポンプ送信を保証
+      await bleManager.sendBool(true);
       onGameClear?.call();
     }
   }

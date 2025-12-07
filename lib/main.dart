@@ -113,7 +113,7 @@ class _TitleScreenState extends State<TitleScreen> {
   final BleManager _bleManager = BleManager();
   bool _isConnecting = false;
   List<String> _connectedDevices = BleManager().connectedDevices;
-  bool _isError = false;
+  // bool _isError = false;
 
   @override
   void initState() {
@@ -141,7 +141,7 @@ class _TitleScreenState extends State<TitleScreen> {
     } catch (e) {
       print('接続エラー: $e');
       setState(() {
-        _isError = true;
+        // _isError = true;
         _isConnecting = false;
       });
     }
@@ -232,7 +232,7 @@ class _TitleScreenState extends State<TitleScreen> {
                       _bleManager.disconnectAll();
                       setState(() {
                         _isConnecting = false;
-                        _isError = false;
+                        // _isError = false;
                         _connectedDevices.clear();
                       });
                     },
@@ -261,14 +261,14 @@ class _TitleScreenState extends State<TitleScreen> {
               ],
             ),
 
-            if (_isError)
-              Text(
-                '接続エラーが発生しました。再度接続をお試しください。',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 14,
-                ),
-              ),
+            // if (_isError)
+            //   Text(
+            //     '接続エラーが発生しました。再度接続をお試しください。',
+            //     style: TextStyle(
+            //       color: Colors.red,
+            //       fontSize: 14,
+            //     ),
+            //   ),
           ],
         ),
       ),

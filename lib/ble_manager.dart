@@ -65,7 +65,7 @@ class BleManager {
       );
     } catch (e) {
       _printLog("スキャン開始エラー: $e");
-      return;
+      rethrow;
     }
 
     _scanSub = FlutterBluePlus.scanResults.listen((results) async {

@@ -39,7 +39,7 @@ class BleManager {
   // --- 定数: ポンプ制御 (送信)  ---
   static const String _svcPumpUuid = UUID_SVC_WATER_PUMP;
   static const String _chrPumpUuid = UUID_CHR_WATER_PUMP;
-  BluetoothCharacteristic? _pumpCharacteristic;
+  final List<BluetoothCharacteristic> _pumpCharacteristics = [];
 
   // --- StreamControllers ---
   final _accelDataController = StreamController<AccelData>.broadcast();
@@ -153,11 +153,9 @@ class BleManager {
           }
 
           if (charUuid == _chrPumpUuid.toLowerCase()) {
-            // ポンプ用のCharacteristicとして保存（既に設定済みなら上書きしない）
-            if (_pumpCharacteristic == null) {
-              _pumpCharacteristic = c;
-              _printLog("ポンプ(送信)経路確保: $name");
-            }
+            // ポンプ用のCharacteristicをリストに追加
+            _pumpCharacteristics.add(c);
+            _printLog("ポンプ(送信)経路確保: $name");
           }
         }
       }
@@ -184,20 +182,19 @@ class BleManager {
   }
 
   Future<void> sendBool(bool value) async {
-    // _pumpCharacteristic から取得する
-    BluetoothCharacteristic? target = _pumpCharacteristic;
-    
-    if (_pumpCharacteristic == null) {
+    if (_pumpCharacteristics.isEmpty) {
       _printLog("送信不可: ポンプ制御用の接続が見つかりません");
       return;
     }
 
-    try {
-      // 1 or 0 を送信
-      await target!.write([value ? 1 : 0], withoutResponse: true);
-      _printLog("ポンプ送信: ${value ? 'ON' : 'OFF'}");
-    } catch (e) {
-      _printLog("送信エラー: $e");
+    // 全てのポンプCharacteristicに送信
+    for (final c in _pumpCharacteristics) {
+      try {
+        await c.write([value ? 1 : 0], withoutResponse: true);
+        _printLog("ポンプ送信: ${value ? 'ON' : 'OFF'}");
+      } catch (e) {
+        _printLog("送信エラー: $e");
+      }
     }
   }
 
@@ -217,7 +214,7 @@ class BleManager {
 
     _devices.clear();
     _characteristics.clear();
-    _pumpCharacteristic = null;
+    _pumpCharacteristics.clear();
     _updateConnectedList();
     _printLog("全切断しました");
   }

@@ -439,7 +439,7 @@ class _GameWrapperState extends State<GameWrapper> {
     
     // 2つの値が存在し、両方とも正の値でかつ1以上の場合
     if (values.length >= 2) {
-      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 0.5);
+      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 0.3);
       
       if (allPositiveAndAboveOne) {
         // 肘を伸ばすアクション（強制整列）を実行

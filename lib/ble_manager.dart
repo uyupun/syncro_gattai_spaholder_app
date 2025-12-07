@@ -55,19 +55,16 @@ class BleManager {
     // 既存のスキャンリスナーがあればキャンセル（重複防止）
     await _scanSub?.cancel();
 
-    _printLog("スキャン開始...");
-
-    try {
-      // Android等での安定性のため、continuousUpdatesをtrueにすることを推奨
-      await FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 15),
-        continuousUpdates: true, // 重複して発見通知を受け取る設定
-      );
-    } catch (e) {
-      _printLog("スキャン開始エラー: $e");
+    // Bluetoothの状態を確認
+    final adapterState = await FlutterBluePlus.adapterState.first;
+    if (adapterState != BluetoothAdapterState.on) {
+      _printLog("Bluetoothがオフです");
       return;
     }
 
+    _printLog("スキャン開始...");
+
+    // リスナーを先に設定してからスキャン開始（結果の見逃し防止）
     _scanSub = FlutterBluePlus.scanResults.listen((results) async {
       for (ScanResult r in results) {
         final id = r.device.remoteId.str;
@@ -122,6 +119,17 @@ class BleManager {
         }
       }
     });
+
+    // スキャン開始（リスナー設定後）
+    try {
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+        continuousUpdates: true,
+      );
+    } catch (e) {
+      _printLog("スキャン開始エラー: $e");
+      await _scanSub?.cancel();
+    }
   }
 
   // --- 内部メソッド: デバイスへの接続処理 ---

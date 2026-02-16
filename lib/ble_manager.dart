@@ -1,56 +1,45 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-const String DEVICE_NAME = "uyupun-drill"; // "uyupun-drill2";
-const String UUID_SVC_ACCEL_Y = "11111111-2222-3333-4444-555555555555";
-const String UUID_CHR_ACCEL_Y = "11111111-2222-3333-4444-666666666666";
+import 'interfaces/ble_service.dart';
+import 'models/accel_data.dart';
 
-const String UUID_SVC_WATER_PUMP = "22222222-3333-4444-5555-666666666666";
-const String UUID_CHR_WATER_PUMP = "22222222-3333-4444-5555-777777777777";
-
-class AccelData {
-  final String deviceId; // どのM5Stackから来たか
-  final double value; // 加速度(1軸) double値
-
-  AccelData({required this.deviceId, required this.value});
-
-  @override
-  String toString() => 'ID: $deviceId, Val: $value';
-}
-
-class BleManager {
+class BleManager implements BleService {
   // --- シングルトン設定 ---
   static final BleManager _instance = BleManager._internal();
   factory BleManager() => _instance;
   BleManager._internal();
 
   // --- 定数 ---
-  static const String _targetDeviceName = DEVICE_NAME;
-  static const String _serviceUuid = UUID_SVC_ACCEL_Y;
-  static const String _charUuid = UUID_CHR_ACCEL_Y;
+  static const String _targetDeviceName = "uyupun-drill";
+  static const String _serviceUuid = "11111111-2222-3333-4444-555555555555";
+  static const String _charUuid = "11111111-2222-3333-4444-666666666666";
 
   // --- 管理用変数 ---
   final Map<String, BluetoothDevice> _devices = {};
-  List<String> get connectedDevices => _devices.keys.toList();
+  @override
+  List<String> get connectedDevices => List.unmodifiable(_devices.keys);
   final Map<String, BluetoothCharacteristic> _characteristics = {};
   StreamSubscription? _scanSub;
 
   // --- 定数: ポンプ制御 (送信)  ---
-  static const String _svcPumpUuid = UUID_SVC_WATER_PUMP;
-  static const String _chrPumpUuid = UUID_CHR_WATER_PUMP;
+  static const String _svcPumpUuid = "22222222-3333-4444-5555-666666666666";
+  static const String _chrPumpUuid = "22222222-3333-4444-5555-777777777777";
   final List<BluetoothCharacteristic> _pumpCharacteristics = [];
 
   // --- StreamControllers ---
   final _accelDataController = StreamController<AccelData>.broadcast();
+  @override
   Stream<AccelData> get accelDataStream => _accelDataController.stream;
 
   final _connectedDevicesController =
       StreamController<List<String>>.broadcast();
+  @override
   Stream<List<String>> get connectedDevicesStream =>
       _connectedDevicesController.stream;
 
-  // --- 【修正】シーケンシャル接続ロジック ---
+  @override
   Future<void> scanAndConnect() async {
     // 既存のスキャンリスナーがあればキャンセル（重複防止）
     await _scanSub?.cancel();
@@ -115,7 +104,7 @@ class BleManager {
           if (_devices.length >= 2) return; // 最大2台まで接続
           scanAndConnect();
 
-          print("再接続");
+          debugPrint("再接続");
 
           // このループ処理はここで終了
           return;
@@ -181,6 +170,7 @@ class BleManager {
     _accelDataController.add(AccelData(deviceId: deviceId, value: val));
   }
 
+  @override
   Future<void> sendBool(bool value) async {
     if (_pumpCharacteristics.isEmpty) {
       _printLog("送信不可: ポンプ制御用の接続が見つかりません");
@@ -198,7 +188,7 @@ class BleManager {
     }
   }
 
-  // --- メソッド: 全切断 ---
+  @override
   Future<void> disconnectAll() async {
     await _scanSub?.cancel();
     // スキャン停止も確実に行う
@@ -224,9 +214,10 @@ class BleManager {
   }
 
   void _printLog(String text) {
-    print("[BLE] $text");
+    debugPrint("[BLE] $text");
   }
 
+  @override
   void dispose() {
     _scanSub?.cancel();
     _accelDataController.close();

@@ -30,4 +30,3 @@ mise exec -- flutter run -d emulator --dart-define=USE_MOCK_BLE=true
 ```
 
 VSCodeの場合は、`.vscode/launch.json` に定義済みの「Mock BLE」起動構成を使用してください。
->>>>>>> 1775328ee4c7d6ed5cb5634a009baf97c0b37450

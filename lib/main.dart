@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flame/components.dart';
@@ -6,8 +7,13 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:spajam2025_app/ble_debug_page.dart';
+
+import 'accessors/ble_mock_accessor.dart';
 import 'ble_manager.dart';
+import 'interfaces/ble_service.dart';
+import 'models/accel_data.dart';
+
+const bool kUseMockBle = bool.fromEnvironment('USE_MOCK_BLE');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,12 +45,19 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
+  final BleService _bleService =
+      kUseMockBle ? BleMockAccessor() : BleManager();
 
   @override
   void initState() {
     super.initState();
-    // タイトル画面のBGMを再生
     _playBgm('title.mp3');
+  }
+
+  @override
+  void dispose() {
+    _bleService.dispose();
+    super.dispose();
   }
 
   /// BGMを切り替える（現在のBGMを停止して新しいBGMをループ再生）
@@ -88,9 +101,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: switch (_currentScreen) {
-        AppScreen.title => TitleScreen(onStart: _startCountdown),
+        AppScreen.title => TitleScreen(onStart: _startCountdown, bleService: _bleService),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),
-        AppScreen.game => GameWrapper(onGameClear: _returnToTitle),
+        AppScreen.game => GameWrapper(onGameClear: _returnToTitle, bleService: _bleService),
         AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
       },
     );
@@ -102,28 +115,29 @@ class _MyAppState extends State<MyApp> {
 // ---------------------------------------------------------
 class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
+  final BleService bleService;
 
-  const TitleScreen({super.key, required this.onStart});
+  const TitleScreen({super.key, required this.onStart, required this.bleService});
 
   @override
   State<TitleScreen> createState() => _TitleScreenState();
 }
 
 class _TitleScreenState extends State<TitleScreen> {
-  final BleManager _bleManager = BleManager();
+  BleService get _bleService => widget.bleService;
   bool _isConnecting = false;
-  List<String> _connectedDevices = BleManager().connectedDevices;
-  // bool _isError = false;
+  List<String> _connectedDevices = [];
+  StreamSubscription<List<String>>? _devicesSub;
 
   @override
   void initState() {
     super.initState();
-    // 接続デバイス数の変化を監視
-    _bleManager.connectedDevicesStream.listen((devices) {
+    _connectedDevices = _bleService.connectedDevices.toList();
+    _devicesSub = _bleService.connectedDevicesStream.listen((devices) {
       if (mounted) {
         setState(() {
           _connectedDevices = devices;
-           _isConnecting = devices.length < 2 ? _isConnecting : false; // 2台未満なら接続中
+           _isConnecting = devices.length < 2 ? _isConnecting : false;
         });
       }
     });
@@ -137,7 +151,7 @@ class _TitleScreenState extends State<TitleScreen> {
     });
 
     try {
-      await _bleManager.scanAndConnect();
+      await _bleService.scanAndConnect();
     } catch (e) {
       print('接続エラー: $e');
       setState(() {
@@ -229,7 +243,7 @@ class _TitleScreenState extends State<TitleScreen> {
                 if ( _canStart)
                   ElevatedButton(
                     onPressed: () {
-                      _bleManager.disconnectAll();
+                      _bleService.disconnectAll();
                       setState(() {
                         _isConnecting = false;
                         // _isError = false;
@@ -277,7 +291,7 @@ class _TitleScreenState extends State<TitleScreen> {
 
   @override
   void dispose() {
-    // 必要に応じてBLEマネージャーのリソースを解放
+    _devicesSub?.cancel();
     super.dispose();
   }
 }
@@ -409,8 +423,9 @@ class GameClearScreen extends StatelessWidget {
 // ---------------------------------------------------------
 class GameWrapper extends StatefulWidget {
   final VoidCallback onGameClear;
+  final BleService bleService;
 
-  const GameWrapper({super.key, required this.onGameClear});
+  const GameWrapper({super.key, required this.onGameClear, required this.bleService});
 
   @override
   State<GameWrapper> createState() => _GameWrapperState();
@@ -418,16 +433,16 @@ class GameWrapper extends StatefulWidget {
 
 class _GameWrapperState extends State<GameWrapper> {
   late final RobotArmGame game;
-  final BleManager _bleManager = BleManager();
-  final Map<String, double> _latestValues = {}; // デバイスIDごとの最新値を保存
+  BleService get _bleService => widget.bleService;
+  final Map<String, double> _latestValues = {};
+  StreamSubscription<AccelData>? _accelSub;
 
   @override
   void initState() {
     super.initState();
-    game = RobotArmGame(onGameClear: widget.onGameClear, bleManager: _bleManager);
-    
-    // BLE データストリームを監視
-    _bleManager.accelDataStream.listen((accelData) {
+    game = RobotArmGame(onGameClear: widget.onGameClear, bleService: _bleService);
+
+    _accelSub = _bleService.accelDataStream.listen((accelData) {
       _latestValues[accelData.deviceId] = accelData.value;
       _checkStraighteningCondition();
     });
@@ -446,6 +461,12 @@ class _GameWrapperState extends State<GameWrapper> {
         game.startStraightening();
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _accelSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -686,9 +707,9 @@ class ToggleButton extends StatelessWidget {
 // ---------------------------------------------------------
 class RobotArmGame extends Forge2DGame {
   final VoidCallback? onGameClear;
-  final BleManager bleManager;
+  final BleService bleService;
 
-  RobotArmGame({this.onGameClear, required this.bleManager}) : super(gravity: Vector2(0, 15), zoom: 20);
+  RobotArmGame({this.onGameClear, required this.bleService}) : super(gravity: Vector2(0, 15), zoom: 20);
 
   // 【変更点】updateメソッドからアクセスできるようにクラス変数にする
   late ArmPart shoulder;
@@ -838,10 +859,14 @@ class RobotArmGame extends Forge2DGame {
         // 物理演算を停止
         _stopAllPhysics();
 
-        Future.delayed(Duration(seconds: 3), () async {
+        unawaited(Future.delayed(const Duration(seconds: 3), () async {
           showSuccessMessage.value = true;
-          await bleManager.sendBool(true);
-        });
+          try {
+            await bleService.sendBool(true);
+          } catch (e) {
+            debugPrint('sendBool error: $e');
+          }
+        }));
         FlameAudio.bgm.stop();
         FlameAudio.bgm.play('clear.mp3');
 

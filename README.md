@@ -14,3 +14,17 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## BLEモックモード
+
+M5Stack実機なしで開発・テストする場合、`--dart-define` で `USE_MOCK_BLE=true` を指定してモックBLEモードで起動できます。
+
+```bash
+# iOSシミュレータ
+mise exec -- flutter run -d iPhone --dart-define=USE_MOCK_BLE=true
+
+# Androidエミュレータ
+mise exec -- flutter run -d emulator --dart-define=USE_MOCK_BLE=true
+```
+
+VSCodeの場合は、`.vscode/launch.json` に定義済みの「Mock BLE」起動構成を使用してください。

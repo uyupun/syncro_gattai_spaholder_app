@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Default",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "Mock BLE",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=USE_MOCK_BLE=true"
+      ]
+    }
+  ]
+}

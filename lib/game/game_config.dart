@@ -1,33 +1,25 @@
 import 'dart:convert';
 
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class GameConfig {
-  static GameConfig instance = GameConfig();
+  final Vector2 gravity;
+  final double zoom;
+  final double shoulderTorque;
+  final double elbowTorque;
 
-  // 物理パラメータ
-  Vector2 gravity;
-  double zoom;
-  double shoulderTorque;
-  double elbowTorque;
+  final double armLength;
+  final Vector2 shoulderPos;
+  final double tipRadius;
 
-  // アーム
-  double armLength;
-  Vector2 shoulderPos;
-  double tipRadius;
+  final double enemyRadius;
 
-  // 敵
-  double enemyRadius;
+  final double straighteningDuration;
+  final double randomChangeInterval;
 
-  // タイミング
-  double straighteningDuration;
-  double randomChangeInterval;
-
-  // ランダム速度範囲
-  double shoulderSpeedRange;
-  double elbowSpeedRange;
+  final double shoulderSpeedRange;
+  final double elbowSpeedRange;
 
   GameConfig({
     Vector2? gravity,
@@ -54,6 +46,8 @@ class GameConfig {
         randomChangeInterval = randomChangeInterval ?? 0.3,
         shoulderSpeedRange = shoulderSpeedRange ?? 24.0,
         elbowSpeedRange = elbowSpeedRange ?? 36.0;
+
+  factory GameConfig.defaultConfig() => GameConfig();
 
   factory GameConfig.fromJson(Map<String, dynamic> json) {
     return GameConfig(
@@ -106,29 +100,43 @@ class GameConfig {
   static Future<GameConfig> loadFromAsset() async {
     try {
       final jsonStr = await rootBundle.loadString('assets/game_config.json');
-      instance = GameConfig.fromJson(
+      return GameConfig.fromJson(
         jsonDecode(jsonStr) as Map<String, dynamic>,
       );
-    } catch (e) {
-      debugPrint('Failed to load game_config.json, using defaults: $e');
-      instance = GameConfig();
+    } catch (_) {
+      return GameConfig.defaultConfig();
     }
-    return instance;
   }
 
-  void reset() {
-    final defaults = GameConfig();
-    gravity = defaults.gravity;
-    zoom = defaults.zoom;
-    shoulderTorque = defaults.shoulderTorque;
-    elbowTorque = defaults.elbowTorque;
-    armLength = defaults.armLength;
-    shoulderPos = defaults.shoulderPos;
-    tipRadius = defaults.tipRadius;
-    enemyRadius = defaults.enemyRadius;
-    straighteningDuration = defaults.straighteningDuration;
-    randomChangeInterval = defaults.randomChangeInterval;
-    shoulderSpeedRange = defaults.shoulderSpeedRange;
-    elbowSpeedRange = defaults.elbowSpeedRange;
+  GameConfig copyWith({
+    Vector2? gravity,
+    double? zoom,
+    double? shoulderTorque,
+    double? elbowTorque,
+    double? armLength,
+    Vector2? shoulderPos,
+    double? tipRadius,
+    double? enemyRadius,
+    double? straighteningDuration,
+    double? randomChangeInterval,
+    double? shoulderSpeedRange,
+    double? elbowSpeedRange,
+  }) {
+    return GameConfig(
+      gravity: gravity ?? this.gravity,
+      zoom: zoom ?? this.zoom,
+      shoulderTorque: shoulderTorque ?? this.shoulderTorque,
+      elbowTorque: elbowTorque ?? this.elbowTorque,
+      armLength: armLength ?? this.armLength,
+      shoulderPos: shoulderPos ?? this.shoulderPos,
+      tipRadius: tipRadius ?? this.tipRadius,
+      enemyRadius: enemyRadius ?? this.enemyRadius,
+      straighteningDuration:
+          straighteningDuration ?? this.straighteningDuration,
+      randomChangeInterval:
+          randomChangeInterval ?? this.randomChangeInterval,
+      shoulderSpeedRange: shoulderSpeedRange ?? this.shoulderSpeedRange,
+      elbowSpeedRange: elbowSpeedRange ?? this.elbowSpeedRange,
+    );
   }
 }

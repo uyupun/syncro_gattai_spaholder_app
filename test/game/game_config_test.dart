@@ -1,12 +1,11 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/game/game_config.dart';
 
 void main() {
   group('GameConfig', () {
-    setUp(() {
-      GameConfig.instance = GameConfig();
-    });
-
     test('デフォルト値が既存定数と一致', () {
       final config = GameConfig();
       expect(config.gravity.x, 0);
@@ -23,6 +22,12 @@ void main() {
       expect(config.randomChangeInterval, 0.3);
       expect(config.shoulderSpeedRange, 24.0);
       expect(config.elbowSpeedRange, 36.0);
+    });
+
+    test('defaultConfig でデフォルト値が返る', () {
+      final config = GameConfig.defaultConfig();
+      expect(config.zoom, 20.0);
+      expect(config.gravity.y, 15);
     });
 
     test('fromJson で全フィールド正しく読込', () {
@@ -82,24 +87,76 @@ void main() {
       expect(restored.elbowSpeedRange, original.elbowSpeedRange);
     });
 
-    test('reset でデフォルト値に復元される', () {
-      final config = GameConfig();
-      config.zoom = 99.0;
-      config.shoulderTorque = 1.0;
-      config.gravity.y = 50.0;
-
-      config.reset();
-
-      expect(config.zoom, 20.0);
-      expect(config.shoulderTorque, 8000.0);
-      expect(config.gravity.y, 15);
-    });
-
     test('fromJson で欠損フィールドはデフォルト値', () {
       final config = GameConfig.fromJson({});
       expect(config.gravity.y, 15);
       expect(config.zoom, 20.0);
       expect(config.shoulderTorque, 8000.0);
+    });
+
+    test('copyWith で指定フィールドのみ変更される', () {
+      final original = GameConfig();
+      final modified = original.copyWith(zoom: 50.0, elbowTorque: 999.0);
+
+      expect(modified.zoom, 50.0);
+      expect(modified.elbowTorque, 999.0);
+      expect(modified.shoulderTorque, original.shoulderTorque);
+      expect(modified.gravity.y, original.gravity.y);
+      expect(modified.armLength, original.armLength);
+    });
+
+    test('copyWith で元のインスタンスは変更されない', () {
+      final original = GameConfig();
+      original.copyWith(zoom: 99.0);
+
+      expect(original.zoom, 20.0);
+    });
+
+    group('loadFromAsset', () {
+      TestWidgetsFlutterBinding.ensureInitialized();
+
+      tearDown(() {
+        rootBundle.evict('assets/game_config.json');
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMessageHandler('flutter/assets', null);
+      });
+
+      test('JSONファイルから読み込める', () async {
+        final testConfig = {
+          'zoom': 42.0,
+          'shoulderTorque': 7777.0,
+        };
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMessageHandler('flutter/assets', (message) async {
+          final key = utf8.decode(message!.buffer.asUint8List());
+          if (key == 'assets/game_config.json') {
+            return ByteData.sublistView(
+              utf8.encoder.convert(jsonEncode(testConfig)),
+            );
+          }
+          return null;
+        });
+
+        final config = await GameConfig.loadFromAsset();
+        expect(config.zoom, 42.0);
+        expect(config.shoulderTorque, 7777.0);
+        expect(config.gravity.y, 15);
+      });
+
+      test('ファイルが無い場合はデフォルト値', () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMessageHandler('flutter/assets', (message) async {
+          final key = utf8.decode(message!.buffer.asUint8List());
+          if (key == 'assets/game_config.json') {
+            return ByteData.sublistView(utf8.encoder.convert('invalid'));
+          }
+          return null;
+        });
+
+        final config = await GameConfig.loadFromAsset();
+        expect(config.zoom, 20.0);
+        expect(config.shoulderTorque, 8000.0);
+      });
     });
   });
 }

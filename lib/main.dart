@@ -24,11 +24,13 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: MyApp(),
-    // home: BleDebugPage(),
-  ));
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: MyApp(),
+      // home: BleDebugPage(),
+    ),
+  );
 }
 
 // ---------------------------------------------------------
@@ -45,8 +47,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
-  final BleService _bleService =
-      kUseMockBle ? BleMockAccessor() : BleManager();
+  final BleService _bleService = kUseMockBle ? BleMockAccessor() : BleManager();
 
   @override
   void initState() {
@@ -102,9 +103,15 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: switch (_currentScreen) {
-        AppScreen.title => TitleScreen(onStart: _startCountdown, bleService: _bleService),
+        AppScreen.title => TitleScreen(
+          onStart: _startCountdown,
+          bleService: _bleService,
+        ),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),
-        AppScreen.game => GameWrapper(onGameClear: _returnToTitle, bleService: _bleService),
+        AppScreen.game => GameWrapper(
+          onGameClear: _returnToTitle,
+          bleService: _bleService,
+        ),
         AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
       },
     );
@@ -118,7 +125,11 @@ class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
   final BleService bleService;
 
-  const TitleScreen({super.key, required this.onStart, required this.bleService});
+  const TitleScreen({
+    super.key,
+    required this.onStart,
+    required this.bleService,
+  });
 
   @override
   State<TitleScreen> createState() => _TitleScreenState();
@@ -138,7 +149,7 @@ class _TitleScreenState extends State<TitleScreen> {
       if (mounted) {
         setState(() {
           _connectedDevices = devices;
-           _isConnecting = devices.length < 2 ? _isConnecting : false;
+          _isConnecting = devices.length < 2 ? _isConnecting : false;
         });
       }
     });
@@ -220,8 +231,14 @@ class _TitleScreenState extends State<TitleScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     child: _isConnecting
                         ? const Row(
@@ -232,7 +249,9 @@ class _TitleScreenState extends State<TitleScreen> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 10),
@@ -241,7 +260,7 @@ class _TitleScreenState extends State<TitleScreen> {
                           )
                         : const Text('デバイス接続'),
                   ),
-                if ( _canStart)
+                if (_canStart)
                   ElevatedButton(
                     onPressed: () {
                       _bleService.disconnectAll();
@@ -254,8 +273,14 @@ class _TitleScreenState extends State<TitleScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     child: const Text('デバイス解除'),
                   ),
@@ -268,8 +293,14 @@ class _TitleScreenState extends State<TitleScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _canStart ? Colors.green : Colors.grey,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                    textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   child: const Text('ゲームスタート'),
                 ),
@@ -426,7 +457,11 @@ class GameWrapper extends StatefulWidget {
   final VoidCallback onGameClear;
   final BleService bleService;
 
-  const GameWrapper({super.key, required this.onGameClear, required this.bleService});
+  const GameWrapper({
+    super.key,
+    required this.onGameClear,
+    required this.bleService,
+  });
 
   @override
   State<GameWrapper> createState() => _GameWrapperState();
@@ -441,7 +476,10 @@ class _GameWrapperState extends State<GameWrapper> {
   @override
   void initState() {
     super.initState();
-    game = RobotArmGame(onGameClear: widget.onGameClear, bleService: _bleService);
+    game = RobotArmGame(
+      onGameClear: widget.onGameClear,
+      bleService: _bleService,
+    );
 
     _accelSub = _bleService.accelDataStream.listen((accelData) {
       _latestValues[accelData.deviceId] = accelData.value;
@@ -452,11 +490,13 @@ class _GameWrapperState extends State<GameWrapper> {
   void _checkStraighteningCondition() {
     // 2つのデバイスからの値を取得
     final values = _latestValues.values.toList();
-    
+
     // 2つの値が存在し、両方とも正の値でかつ1以上の場合
     if (values.length >= 2) {
-      final allPositiveAndAboveOne = values.every((value) => value > 0 && value >= 0.3);
-      
+      final allPositiveAndAboveOne = values.every(
+        (value) => value > 0 && value >= 0.3,
+      );
+
       if (allPositiveAndAboveOne) {
         // 肘を伸ばすアクション（強制整列）を実行
         game.startStraightening();
@@ -503,7 +543,7 @@ class _GameWrapperState extends State<GameWrapper> {
           valueListenable: game.showSuccessMessage,
           builder: (context, showMessage, child) {
             if (!showMessage) return const SizedBox.shrink();
-            
+
             return Positioned(
               top: 0,
               left: 0,
@@ -611,22 +651,27 @@ class ControlPanel extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 10),
         Row(
           children: [
             HoldButton(
-                icon: Icons.rotate_left,
-                onPressed: onLeftDown,
-                onReleased: onRelease),
+              icon: Icons.rotate_left,
+              onPressed: onLeftDown,
+              onReleased: onRelease,
+            ),
             const SizedBox(width: 10),
             HoldButton(
-                icon: Icons.rotate_right,
-                onPressed: onRightDown,
-                onReleased: onRelease),
+              icon: Icons.rotate_right,
+              onPressed: onRightDown,
+              onReleased: onRelease,
+            ),
           ],
         ),
       ],
@@ -683,21 +728,25 @@ class ToggleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: isActive
-                ? Colors.greenAccent.withValues(alpha: 0.9)
-                : Colors.white.withValues(alpha: 0.9),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 5,
-                  offset: const Offset(0, 3))
-            ]),
-        child: Icon(icon,
-            size: 32,
-            color: isActive
-                ? Colors.white
-                : Colors.redAccent.withValues(alpha: 0.8)),
+          color: isActive
+              ? Colors.greenAccent.withValues(alpha: 0.9)
+              : Colors.white.withValues(alpha: 0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: 32,
+          color: isActive
+              ? Colors.white
+              : Colors.redAccent.withValues(alpha: 0.8),
+        ),
       ),
     );
   }
@@ -710,7 +759,8 @@ class RobotArmGame extends Forge2DGame {
   final VoidCallback? onGameClear;
   final BleService bleService;
 
-  RobotArmGame({this.onGameClear, required this.bleService}) : super(gravity: Vector2(0, 15), zoom: 20);
+  RobotArmGame({this.onGameClear, required this.bleService})
+    : super(gravity: Vector2(0, 15), zoom: 20);
 
   // 【変更点】updateメソッドからアクセスできるようにクラス変数にする
   late ArmPart shoulder;
@@ -735,7 +785,9 @@ class RobotArmGame extends Forge2DGame {
   final List<Enemy> enemies = [];
   bool _isCleared = false; // 一度ヒットしたらtrue（重複防止）
   bool _physicsStoppedOnHit = false; // 物理演算停止フラグ
-  final ValueNotifier<bool> showSuccessMessage = ValueNotifier<bool>(false); // 成功メッセージ表示フラグ
+  final ValueNotifier<bool> showSuccessMessage = ValueNotifier<bool>(
+    false,
+  ); // 成功メッセージ表示フラグ
 
   // アームの届く範囲
   // 上腕ジョイント間: 7, 前腕ジョイント〜先端: 6.5 → 合計13.5
@@ -766,28 +818,31 @@ class RobotArmGame extends Forge2DGame {
 
     // --- パーツ生成 ---
     upperArm = ArmPart(
-        position: Vector2(-10, -4),  // shoulderと重なるように調整
-        size: Vector2(4.35, 8),  // 277x509のアスペクト比を保持 (8 * 277/509 ≈ 4.35)
-        isStatic: false,
-        color: Colors.blueAccent,
-        imagePath: 'upper_arm.png');
+      position: Vector2(-10, -4), // shoulderと重なるように調整
+      size: Vector2(4.35, 8), // 277x509のアスペクト比を保持 (8 * 277/509 ≈ 4.35)
+      isStatic: false,
+      color: Colors.blueAccent,
+      imagePath: 'upper_arm.png',
+    );
     await world.add(upperArm);
 
     foreArm = ArmPart(
-        position: Vector2(-8.5, 1.5),  // 上腕と重なるように位置調整
-        size: Vector2(4.85, 8),  // 389x642のアスペクト比を保持 (8 * 389/642 ≈ 4.85)
-        isStatic: false,
-        color: Colors.lightBlueAccent,
-        imagePath: 'drill.png');
+      position: Vector2(-8.5, 1.5), // 上腕と重なるように位置調整
+      size: Vector2(4.85, 8), // 389x642のアスペクト比を保持 (8 * 389/642 ≈ 4.85)
+      isStatic: false,
+      color: Colors.lightBlueAccent,
+      imagePath: 'drill.png',
+    );
     await world.add(foreArm);
 
     // アームを左側に配置（画像を使用）
     shoulder = ArmPart(
-        position: Vector2(-12, 0),  // 上腕より上に配置
-        size: Vector2(16, 16),  // アスペクト比を維持できるよう大きめに設定
-        isStatic: true,
-        color: Colors.grey,
-        imagePath: 'upper_body.png');
+      position: Vector2(-12, 0), // 上腕より上に配置
+      size: Vector2(16, 16), // アスペクト比を維持できるよう大きめに設定
+      isStatic: true,
+      color: Colors.grey,
+      imagePath: 'upper_body.png',
+    );
     await world.add(shoulder);
 
     // --- ジョイント生成 ---
@@ -795,11 +850,11 @@ class RobotArmGame extends Forge2DGame {
       ..bodyA = shoulder.body
       ..bodyB = upperArm.body
       ..collideConnected = false
-      ..localAnchorA.setValues(6, -4.5)  // shoulderの右上
-      ..localAnchorB.setValues(0, -4)  // upperArmの上端
+      ..localAnchorA.setValues(6, -4.5) // shoulderの右上
+      ..localAnchorB.setValues(0, -4) // upperArmの上端
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = 8000.0;  // トルクを4倍に増加
+      ..maxMotorTorque = 8000.0; // トルクを4倍に増加
     shoulderJoint = RevoluteJoint(shoulderJointDef);
     world.createJoint(shoulderJoint!);
 
@@ -807,11 +862,11 @@ class RobotArmGame extends Forge2DGame {
       ..bodyA = upperArm.body
       ..bodyB = foreArm.body
       ..collideConnected = false
-      ..localAnchorA.setValues(1.75, 3)  // upper armの右下付近
-      ..localAnchorB.setValues(-1, -3.5)  // drillの左上付近
+      ..localAnchorA.setValues(1.75, 3) // upper armの右下付近
+      ..localAnchorB.setValues(-1, -3.5) // drillの左上付近
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = 15000.0;  // トルクを3倍に増加
+      ..maxMotorTorque = 15000.0; // トルクを3倍に増加
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
 
@@ -851,7 +906,7 @@ class RobotArmGame extends Forge2DGame {
       if (distance < hitDistance) {
         // 敵の画像を変更
         enemy.onHit();
-        
+
         // 一度ヒットしたら物理演算を停止し、成功メッセージを表示
         _isCleared = true;
         _physicsStoppedOnHit = true;
@@ -860,14 +915,16 @@ class RobotArmGame extends Forge2DGame {
         // 物理演算を停止
         _stopAllPhysics();
 
-        unawaited(Future.delayed(const Duration(seconds: 3), () async {
-          showSuccessMessage.value = true;
-          try {
-            await bleService.sendBool(true);
-          } catch (e) {
-            debugPrint('sendBool error: $e');
-          }
-        }));
+        unawaited(
+          Future.delayed(const Duration(seconds: 3), () async {
+            showSuccessMessage.value = true;
+            try {
+              await bleService.sendBool(true);
+            } catch (e) {
+              debugPrint('sendBool error: $e');
+            }
+          }),
+        );
         FlameAudio.bgm.stop();
         FlameAudio.bgm.play('clear.mp3');
 
@@ -888,14 +945,14 @@ class RobotArmGame extends Forge2DGame {
   void _stopAllPhysics() {
     // ランダムモードを停止
     stopRandomMode();
-    
+
     // 整列モードも停止
     stopStraightening();
-    
+
     // 全ての関節のモーターを停止
     stopShoulder();
     stopElbow();
-    
+
     // 全てのボディの速度を0にして固定
     shoulder.body.linearVelocity = Vector2.zero();
     shoulder.body.angularVelocity = 0.0;
@@ -903,7 +960,7 @@ class RobotArmGame extends Forge2DGame {
     upperArm.body.angularVelocity = 0.0;
     foreArm.body.linearVelocity = Vector2.zero();
     foreArm.body.angularVelocity = 0.0;
-    
+
     // 全てのボディを静的に変更して完全に固定
     upperArm.body.setType(BodyType.static);
     foreArm.body.setType(BodyType.static);
@@ -913,29 +970,30 @@ class RobotArmGame extends Forge2DGame {
   void render(Canvas canvas) {
     // 背景画像を描画（薄く表示）
     if (_backgroundSprite != null) {
-      final paint = Paint()..color = Colors.white.withValues(alpha: 0.5); // 透明度50%（より薄く）
+      final paint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.5); // 透明度50%（より薄く）
       canvas.saveLayer(null, paint);
-      
+
       // アスペクト比を維持しながら横幅いっぱいに表示
       final screenSize = size;
       final spriteSize = _backgroundSprite!.srcSize;
       final aspectRatio = spriteSize.x / spriteSize.y;
-      
+
       // 横幅を画面幅に合わせ、高さはアスペクト比を維持
       final renderWidth = screenSize.x;
       final renderHeight = renderWidth / aspectRatio;
       final renderSize = Vector2(renderWidth, renderHeight);
-      
+
       _backgroundSprite!.render(
         canvas,
         size: renderSize,
         anchor: Anchor.center,
         position: screenSize / 2,
       );
-      
+
       canvas.restore();
     }
-    
+
     super.render(canvas);
   }
 
@@ -989,7 +1047,7 @@ class RobotArmGame extends Forge2DGame {
   void startStraightening() {
     // 物理演算が停止されている場合は何もしない
     if (_physicsStoppedOnHit) return;
-    
+
     _isStraightening = true;
     _straighteningTimer = 0; // タイマーリセット
     // モーターが邪魔しないようにOFFにする
@@ -1076,11 +1134,11 @@ class ArmPart extends BodyComponent {
     required bool isStatic,
     required Color color,
     String? imagePath,
-  })  : _pos = position,
-        _size = size,
-        _isStatic = isStatic,
-        _color = color,
-        _imagePath = imagePath;
+  }) : _pos = position,
+       _size = size,
+       _isStatic = isStatic,
+       _color = color,
+       _imagePath = imagePath;
 
   @override
   Future<void> onLoad() async {
@@ -1120,25 +1178,27 @@ class ArmPart extends BodyComponent {
       // ドリル先端の当たり判定（半透明の青い円）
       final tipRadius = 0.8; // RobotArmGameのtipRadiusと同じ値
       final tipOffset = Offset(2.0, 3.5); // 右下位置に変更
-      
+
       final hitboxPaint = Paint()
-        ..color = Colors.transparent // Colors.blue.withValues(alpha: 0.3)
+        ..color = Colors
+            .transparent // Colors.blue.withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(tipOffset, tipRadius, hitboxPaint);
-      
+
       // 当たり判定の境界線
       final hitboxBorder = Paint()
-        ..color = Colors.transparent // Colors.blue.withValues(alpha: 0.8)
+        ..color = Colors
+            .transparent // Colors.blue.withValues(alpha: 0.8)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.2;
       canvas.drawCircle(tipOffset, tipRadius, hitboxBorder);
     }
-    
+
     if (_sprite != null) {
       // 画像を使用してレンダリング（アスペクト比を維持）
       final spriteSize = _sprite!.srcSize;
       final aspectRatio = spriteSize.x / spriteSize.y;
-      
+
       // 指定されたサイズ内でアスペクト比を維持しながらフィット
       Vector2 renderSize;
       if (_size.x / _size.y > aspectRatio) {
@@ -1148,17 +1208,16 @@ class ArmPart extends BodyComponent {
         // 幅に合わせてスケール
         renderSize = Vector2(_size.x, _size.x / aspectRatio);
       }
-      
-      _sprite!.render(
-        canvas,
-        size: renderSize,
-        anchor: Anchor.center,
-      );
+
+      _sprite!.render(canvas, size: renderSize, anchor: Anchor.center);
     } else {
       // 画像がない場合は従来の矩形描画
       final paint = Paint()..color = _color;
       final rect = Rect.fromCenter(
-          center: Offset.zero, width: _size.x, height: _size.y);
+        center: Offset.zero,
+        width: _size.x,
+        height: _size.y,
+      );
       canvas.drawRect(rect, paint);
       final border = Paint()
         ..color = Colors.black.withValues(alpha: 0.5)
@@ -1166,7 +1225,7 @@ class ArmPart extends BodyComponent {
         ..strokeWidth = 0.1;
       canvas.drawRect(rect, border);
     }
-    
+
     // ジョイント位置の表示（画像使用時は透明化）
     if (_sprite == null) {
       // 画像がない場合のみジョイント位置を表示
@@ -1187,11 +1246,9 @@ class Enemy extends BodyComponent {
   Sprite? _splashSprite;
   bool _isHit = false;
 
-  Enemy({
-    required Vector2 position,
-    required double radius,
-  })  : _initialPosition = position.clone(),
-        _radius = radius;
+  Enemy({required Vector2 position, required double radius})
+    : _initialPosition = position.clone(),
+      _radius = radius;
 
   double get radius => _radius;
 
@@ -1219,7 +1276,7 @@ class Enemy extends BodyComponent {
       ..restitution = 0.5
       ..density = 1.0
       ..friction = 0.3
-      ..isSensor = true;  // センサーとして設定（物理的な衝突を無効化、貫通する）
+      ..isSensor = true; // センサーとして設定（物理的な衝突を無効化、貫通する）
     final bodyDef = BodyDef()
       ..userData = this
       ..position = _initialPosition
@@ -1236,20 +1293,22 @@ class Enemy extends BodyComponent {
   void render(Canvas canvas) {
     // 衝突判定の可視化（半透明の赤い円）
     final hitboxPaint = Paint()
-      ..color = Colors.transparent // Colors.red.withValues(alpha: 0.3)
+      ..color = Colors
+          .transparent // Colors.red.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset.zero, _radius, hitboxPaint);
-    
+
     // 衝突判定の境界線
     final hitboxBorder = Paint()
-      ..color = Colors.transparent // Colors.red.withValues(alpha: 0.8)
+      ..color = Colors
+          .transparent // Colors.red.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.2;
     canvas.drawCircle(Offset.zero, _radius, hitboxBorder);
-    
+
     // ヒット状態に応じて画像を切り替え
     final currentSprite = _isHit ? _splashSprite : _sprite;
-    
+
     if (currentSprite != null) {
       // 画像を使用してレンダリング（サイズを2倍に）
       final size = _radius * 2.5; // 直径の2倍

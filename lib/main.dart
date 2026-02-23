@@ -82,6 +82,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  // ignore: unused_element
   void _showGameClear() {
     // クリア画面のBGMに切り替え
     _playBgm('clear.mp3');
@@ -1144,7 +1145,7 @@ class ArmPart extends BodyComponent {
     await super.onLoad();
     if (_imagePath != null) {
       try {
-        _sprite = await Sprite.load(_imagePath!);
+        _sprite = await Sprite.load(_imagePath);
       } catch (e) {
         // 画像の読み込みに失敗した場合はスプライトをnullのままにする
         print('Failed to load image: $_imagePath, error: $e');

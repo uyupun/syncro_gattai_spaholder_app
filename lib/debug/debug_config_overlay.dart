@@ -10,21 +10,29 @@ import '../game/game_config.dart';
 /// デバッグ用のゲーム設定オーバーレイ。
 /// [Stack] の子として配置すること。リリースビルドでは非表示。
 class DebugConfigOverlay extends StatefulWidget {
+  final GameConfig initialConfig;
+  final ValueChanged<GameConfig> onConfigChanged;
   final VoidCallback onClose;
 
-  const DebugConfigOverlay({super.key, required this.onClose});
+  const DebugConfigOverlay({
+    super.key,
+    required this.initialConfig,
+    required this.onConfigChanged,
+    required this.onClose,
+  });
 
   @override
   State<DebugConfigOverlay> createState() => _DebugConfigOverlayState();
 }
 
 class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
-  GameConfig get _config => GameConfig.instance;
+  late GameConfig _config = widget.initialConfig;
 
   void _updateConfig(GameConfig Function(GameConfig) updater) {
     setState(() {
-      GameConfig.instance = updater(_config);
+      _config = updater(_config);
     });
+    widget.onConfigChanged(_config);
   }
 
   void _export() {
@@ -45,9 +53,11 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
   }
 
   void _reset() {
+    final defaultConfig = GameConfig.defaultConfig();
     setState(() {
-      GameConfig.instance = GameConfig.defaultConfig();
+      _config = defaultConfig;
     });
+    widget.onConfigChanged(defaultConfig);
   }
 
   @override
@@ -63,58 +73,116 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
         color: Colors.black.withValues(alpha: 0.85),
         child: Column(
           children: [
-            _buildHeader(),
+            _ConfigHeader(
+              onReset: _reset,
+              onExport: _export,
+              onClose: widget.onClose,
+            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 children: [
-                  _buildSlider('gravity.y', _config.gravity.y, 0, 50, 0.5,
-                      (v) => _updateConfig((c) => c.copyWith(gravity: Vector2(c.gravity.x, v)))),
-                  _buildSlider('zoom', _config.zoom, 5, 50, 1,
-                      (v) => _updateConfig((c) => c.copyWith(zoom: v))),
-                  _buildSlider(
-                      'shoulderTorque',
-                      _config.shoulderTorque,
-                      1000,
-                      30000,
-                      500,
-                      (v) => _updateConfig((c) => c.copyWith(shoulderTorque: v))),
-                  _buildSlider('elbowTorque', _config.elbowTorque, 1000, 50000,
-                      500, (v) => _updateConfig((c) => c.copyWith(elbowTorque: v))),
-                  _buildSlider('armLength', _config.armLength, 5, 30, 0.5,
-                      (v) => _updateConfig((c) => c.copyWith(armLength: v))),
-                  _buildSlider('tipRadius', _config.tipRadius, 0.1, 3.0, 0.1,
-                      (v) => _updateConfig((c) => c.copyWith(tipRadius: v))),
-                  _buildSlider('enemyRadius', _config.enemyRadius, 1, 15, 0.5,
-                      (v) => _updateConfig((c) => c.copyWith(enemyRadius: v))),
-                  _buildSlider(
-                      'straighteningDuration',
-                      _config.straighteningDuration,
-                      0.05,
-                      1.0,
-                      0.05,
-                      (v) => _updateConfig((c) => c.copyWith(straighteningDuration: v))),
-                  _buildSlider(
-                      'randomChangeInterval',
-                      _config.randomChangeInterval,
-                      0.1,
-                      2.0,
-                      0.05,
-                      (v) => _updateConfig((c) => c.copyWith(randomChangeInterval: v))),
-                  _buildSlider(
-                      'shoulderSpeedRange',
-                      _config.shoulderSpeedRange,
-                      5,
-                      60,
-                      1,
-                      (v) => _updateConfig((c) => c.copyWith(shoulderSpeedRange: v))),
-                  _buildSlider(
-                      'elbowSpeedRange',
-                      _config.elbowSpeedRange,
-                      5,
-                      80,
-                      1,
-                      (v) => _updateConfig((c) => c.copyWith(elbowSpeedRange: v))),
+                  _ConfigSliderTile(
+                    label: 'gravity.y',
+                    value: _config.gravity.y,
+                    min: 0,
+                    max: 50,
+                    step: 0.5,
+                    onChanged: (v) => _updateConfig(
+                      (c) => c.copyWith(gravity: Vector2(c.gravity.x, v)),
+                    ),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'zoom',
+                    value: _config.zoom,
+                    min: 5,
+                    max: 50,
+                    step: 1,
+                    onChanged: (v) => _updateConfig((c) => c.copyWith(zoom: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'shoulderTorque',
+                    value: _config.shoulderTorque,
+                    min: 1000,
+                    max: 30000,
+                    step: 500,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(shoulderTorque: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'elbowTorque',
+                    value: _config.elbowTorque,
+                    min: 1000,
+                    max: 50000,
+                    step: 500,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(elbowTorque: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'armLength',
+                    value: _config.armLength,
+                    min: 5,
+                    max: 30,
+                    step: 0.5,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(armLength: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'tipRadius',
+                    value: _config.tipRadius,
+                    min: 0.1,
+                    max: 3.0,
+                    step: 0.1,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(tipRadius: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'enemyRadius',
+                    value: _config.enemyRadius,
+                    min: 1,
+                    max: 15,
+                    step: 0.5,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(enemyRadius: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'straighteningDuration',
+                    value: _config.straighteningDuration,
+                    min: 0.05,
+                    max: 1.0,
+                    step: 0.05,
+                    onChanged: (v) => _updateConfig(
+                      (c) => c.copyWith(straighteningDuration: v),
+                    ),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'randomChangeInterval',
+                    value: _config.randomChangeInterval,
+                    min: 0.1,
+                    max: 2.0,
+                    step: 0.05,
+                    onChanged: (v) => _updateConfig(
+                      (c) => c.copyWith(randomChangeInterval: v),
+                    ),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'shoulderSpeedRange',
+                    value: _config.shoulderSpeedRange,
+                    min: 5,
+                    max: 60,
+                    step: 1,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(shoulderSpeedRange: v)),
+                  ),
+                  _ConfigSliderTile(
+                    label: 'elbowSpeedRange',
+                    value: _config.elbowSpeedRange,
+                    min: 5,
+                    max: 80,
+                    step: 1,
+                    onChanged: (v) =>
+                        _updateConfig((c) => c.copyWith(elbowSpeedRange: v)),
+                  ),
                 ],
               ),
             ),
@@ -123,8 +191,21 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
       ),
     );
   }
+}
 
-  Widget _buildHeader() {
+class _ConfigHeader extends StatelessWidget {
+  final VoidCallback onReset;
+  final VoidCallback onExport;
+  final VoidCallback onClose;
+
+  const _ConfigHeader({
+    required this.onReset,
+    required this.onExport,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(
@@ -140,31 +221,43 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.restart_alt, color: Colors.orange, size: 20),
-            onPressed: _reset,
+            onPressed: onReset,
             tooltip: 'Reset',
           ),
           IconButton(
             icon: const Icon(Icons.copy, color: Colors.cyan, size: 20),
-            onPressed: _export,
+            onPressed: onExport,
             tooltip: 'Export JSON',
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white, size: 20),
-            onPressed: widget.onClose,
+            onPressed: onClose,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSlider(
-    String label,
-    double value,
-    double min,
-    double max,
-    double step,
-    ValueChanged<double> onChanged,
-  ) {
+class _ConfigSliderTile extends StatelessWidget {
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final double step;
+  final ValueChanged<double> onChanged;
+
+  const _ConfigSliderTile({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.step,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final divisions = ((max - min) / step).round();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),

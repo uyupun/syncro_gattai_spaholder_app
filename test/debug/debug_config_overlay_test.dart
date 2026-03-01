@@ -4,16 +4,20 @@ import 'package:spajam2025_app/debug/debug_config_overlay.dart';
 import 'package:spajam2025_app/game/game_config.dart';
 
 void main() {
-  setUp(() {
-    GameConfig.instance = GameConfig();
-  });
-
-  Widget buildTestWidget({required VoidCallback onClose}) {
+  Widget buildTestWidget({
+    GameConfig? initialConfig,
+    ValueChanged<GameConfig>? onConfigChanged,
+    VoidCallback? onClose,
+  }) {
     return MaterialApp(
       home: Scaffold(
         body: Stack(
           children: [
-            DebugConfigOverlay(onClose: onClose),
+            DebugConfigOverlay(
+              initialConfig: initialConfig ?? GameConfig(),
+              onConfigChanged: onConfigChanged ?? (_) {},
+              onClose: onClose ?? () {},
+            ),
           ],
         ),
       ),
@@ -22,12 +26,12 @@ void main() {
 
   group('DebugConfigOverlay', () {
     testWidgets('ヘッダーにConfig表示', (tester) async {
-      await tester.pumpWidget(buildTestWidget(onClose: () {}));
+      await tester.pumpWidget(buildTestWidget());
       expect(find.text('Config'), findsOneWidget);
     });
 
     testWidgets('全パラメータのSliderが表示される', (tester) async {
-      await tester.pumpWidget(buildTestWidget(onClose: () {}));
+      await tester.pumpWidget(buildTestWidget());
 
       for (final label in [
         'gravity.y',
@@ -55,17 +59,22 @@ void main() {
     });
 
     testWidgets('リセットボタンでデフォルト値に復元', (tester) async {
-      GameConfig.instance.zoom = 99.0;
+      GameConfig? received;
+      await tester.pumpWidget(
+        buildTestWidget(
+          initialConfig: GameConfig(zoom: 99.0),
+          onConfigChanged: (c) => received = c,
+        ),
+      );
 
-      await tester.pumpWidget(buildTestWidget(onClose: () {}));
       await tester.tap(find.byIcon(Icons.restart_alt));
       await tester.pump();
 
-      expect(GameConfig.instance.zoom, 20.0);
+      expect(received?.zoom, 20.0);
     });
 
     testWidgets('エクスポートボタンでSnackBar表示', (tester) async {
-      await tester.pumpWidget(buildTestWidget(onClose: () {}));
+      await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.byIcon(Icons.copy));
       await tester.pump();
 

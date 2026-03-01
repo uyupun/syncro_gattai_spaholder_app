@@ -1,0 +1,14 @@
+{
+  "gravity": { "x": 0, "y": 15 },
+  "zoom": 20.0,
+  "shoulderTorque": 8000.0,
+  "elbowTorque": 15000.0,
+  "armLength": 14.0,
+  "shoulderPos": { "x": -10, "y": -7 },
+  "tipRadius": 0.8,
+  "enemyRadius": 6.0,
+  "straighteningDuration": 0.2,
+  "randomChangeInterval": 0.3,
+  "shoulderSpeedRange": 24.0,
+  "elbowSpeedRange": 36.0
+}

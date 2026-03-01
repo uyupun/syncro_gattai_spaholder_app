@@ -1,2 +1,10 @@
+[settings]
+# フックなどの一部機能は試験的機能の扱いのため有効化する
+experimental = true
+
 [tools]
 flutter = "3.38.4"
+
+[hooks]
+# mise install後に実行される
+postinstall = "sh hooks/install-hooks.sh"

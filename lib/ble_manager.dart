@@ -71,7 +71,8 @@ class BleManager implements BleService {
         // UUIDチェック
         bool hasTargetUuid = r.advertisementData.serviceUuids.any((guid) {
           String g = guid.toString().toLowerCase();
-          return g == _serviceUuid.toLowerCase() || g == _svcPumpUuid.toLowerCase();
+          return g == _serviceUuid.toLowerCase() ||
+              g == _svcPumpUuid.toLowerCase();
         });
 
         // 名前チェック

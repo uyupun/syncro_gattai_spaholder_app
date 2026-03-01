@@ -38,8 +38,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
-  final BleService _bleService =
-      kUseMockBle ? BleMockAccessor() : BleManager();
+  final BleService _bleService = kUseMockBle ? BleMockAccessor() : BleManager();
 
   @override
   void initState() {
@@ -86,9 +85,15 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: switch (_currentScreen) {
-        AppScreen.title => TitleScreen(onStart: _startCountdown, bleService: _bleService),
+        AppScreen.title => TitleScreen(
+          onStart: _startCountdown,
+          bleService: _bleService,
+        ),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),
-        AppScreen.game => GameWrapper(onGameClear: _returnToTitle, bleService: _bleService),
+        AppScreen.game => GameWrapper(
+          onGameClear: _returnToTitle,
+          bleService: _bleService,
+        ),
         AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
       },
     );

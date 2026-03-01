@@ -45,8 +45,8 @@ class BleMockAccessor implements BleService {
     _dataTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _phase = (_phase + 0.1) % (2 * pi);
       for (final (index, id) in _connected.indexed) {
-        final value = sin(_phase + index * 1.5) * 0.5 +
-            _random.nextDouble() * 0.1;
+        final value =
+            sin(_phase + index * 1.5) * 0.5 + _random.nextDouble() * 0.1;
         _accelDataController.add(AccelData(deviceId: id, value: value));
       }
     });

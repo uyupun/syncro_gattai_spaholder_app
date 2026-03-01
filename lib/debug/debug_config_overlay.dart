@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +21,12 @@ class DebugConfigOverlay extends StatefulWidget {
 class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
   GameConfig get _config => GameConfig.instance;
 
+  void _updateConfig(GameConfig Function(GameConfig) updater) {
+    setState(() {
+      GameConfig.instance = updater(_config);
+    });
+  }
+
   void _export() {
     final json = const JsonEncoder.withIndent('  ').convert(_config.toJson());
     Clipboard.setData(ClipboardData(text: json));
@@ -39,7 +46,7 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
 
   void _reset() {
     setState(() {
-      _config.reset();
+      GameConfig.instance = GameConfig.defaultConfig();
     });
   }
 
@@ -62,52 +69,52 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 children: [
                   _buildSlider('gravity.y', _config.gravity.y, 0, 50, 0.5,
-                      (v) => _config.gravity.y = v),
+                      (v) => _updateConfig((c) => c.copyWith(gravity: Vector2(c.gravity.x, v)))),
                   _buildSlider('zoom', _config.zoom, 5, 50, 1,
-                      (v) => _config.zoom = v),
+                      (v) => _updateConfig((c) => c.copyWith(zoom: v))),
                   _buildSlider(
                       'shoulderTorque',
                       _config.shoulderTorque,
                       1000,
                       30000,
                       500,
-                      (v) => _config.shoulderTorque = v),
+                      (v) => _updateConfig((c) => c.copyWith(shoulderTorque: v))),
                   _buildSlider('elbowTorque', _config.elbowTorque, 1000, 50000,
-                      500, (v) => _config.elbowTorque = v),
+                      500, (v) => _updateConfig((c) => c.copyWith(elbowTorque: v))),
                   _buildSlider('armLength', _config.armLength, 5, 30, 0.5,
-                      (v) => _config.armLength = v),
+                      (v) => _updateConfig((c) => c.copyWith(armLength: v))),
                   _buildSlider('tipRadius', _config.tipRadius, 0.1, 3.0, 0.1,
-                      (v) => _config.tipRadius = v),
+                      (v) => _updateConfig((c) => c.copyWith(tipRadius: v))),
                   _buildSlider('enemyRadius', _config.enemyRadius, 1, 15, 0.5,
-                      (v) => _config.enemyRadius = v),
+                      (v) => _updateConfig((c) => c.copyWith(enemyRadius: v))),
                   _buildSlider(
                       'straighteningDuration',
                       _config.straighteningDuration,
                       0.05,
                       1.0,
                       0.05,
-                      (v) => _config.straighteningDuration = v),
+                      (v) => _updateConfig((c) => c.copyWith(straighteningDuration: v))),
                   _buildSlider(
                       'randomChangeInterval',
                       _config.randomChangeInterval,
                       0.1,
                       2.0,
                       0.05,
-                      (v) => _config.randomChangeInterval = v),
+                      (v) => _updateConfig((c) => c.copyWith(randomChangeInterval: v))),
                   _buildSlider(
                       'shoulderSpeedRange',
                       _config.shoulderSpeedRange,
                       5,
                       60,
                       1,
-                      (v) => _config.shoulderSpeedRange = v),
+                      (v) => _updateConfig((c) => c.copyWith(shoulderSpeedRange: v))),
                   _buildSlider(
                       'elbowSpeedRange',
                       _config.elbowSpeedRange,
                       5,
                       80,
                       1,
-                      (v) => _config.elbowSpeedRange = v),
+                      (v) => _updateConfig((c) => c.copyWith(elbowSpeedRange: v))),
                 ],
               ),
             ),
@@ -192,11 +199,7 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
               min: min,
               max: max,
               divisions: divisions,
-              onChanged: (v) {
-                setState(() {
-                  onChanged(v);
-                });
-              },
+              onChanged: onChanged,
             ),
           ),
         ],

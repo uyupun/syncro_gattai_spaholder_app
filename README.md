@@ -1,19 +1,21 @@
-# syncro_gattai_spaholder_app
+# 真黒合体スパホルダー
 
-A new Flutter project.
+## 環境構築
 
-## Getting Started
+```bash
+mise trust
+mise install
+flutter pub get
+flutter run
+```
 
-This project is a starting point for a Flutter application.
+### プリコミット
 
-A few resources to get you started if this is your first Flutter project:
+`mise install` のタイミングで以下が実行される。もし、実行されなかった場合は手動で実行する。
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+sh hooks/install-hooks.sh
+```
 
 ## BLEモックモード
 

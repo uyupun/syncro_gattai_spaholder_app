@@ -34,18 +34,18 @@ class GameConfig {
     double? randomChangeInterval,
     double? shoulderSpeedRange,
     double? elbowSpeedRange,
-  })  : gravity = gravity ?? Vector2(0, 15),
-        zoom = zoom ?? 20.0,
-        shoulderTorque = shoulderTorque ?? 8000.0,
-        elbowTorque = elbowTorque ?? 15000.0,
-        armLength = armLength ?? 14.0,
-        shoulderPos = shoulderPos ?? Vector2(-10, -7),
-        tipRadius = tipRadius ?? 0.8,
-        enemyRadius = enemyRadius ?? 6.0,
-        straighteningDuration = straighteningDuration ?? 0.2,
-        randomChangeInterval = randomChangeInterval ?? 0.3,
-        shoulderSpeedRange = shoulderSpeedRange ?? 24.0,
-        elbowSpeedRange = elbowSpeedRange ?? 36.0;
+  }) : gravity = gravity ?? Vector2(0, 15),
+       zoom = zoom ?? 20.0,
+       shoulderTorque = shoulderTorque ?? 8000.0,
+       elbowTorque = elbowTorque ?? 15000.0,
+       armLength = armLength ?? 14.0,
+       shoulderPos = shoulderPos ?? Vector2(-10, -7),
+       tipRadius = tipRadius ?? 0.8,
+       enemyRadius = enemyRadius ?? 6.0,
+       straighteningDuration = straighteningDuration ?? 0.2,
+       randomChangeInterval = randomChangeInterval ?? 0.3,
+       shoulderSpeedRange = shoulderSpeedRange ?? 24.0,
+       elbowSpeedRange = elbowSpeedRange ?? 36.0;
 
   factory GameConfig.defaultConfig() => GameConfig();
 
@@ -69,14 +69,11 @@ class GameConfig {
           : null,
       tipRadius: (json['tipRadius'] as num?)?.toDouble(),
       enemyRadius: (json['enemyRadius'] as num?)?.toDouble(),
-      straighteningDuration:
-          (json['straighteningDuration'] as num?)?.toDouble(),
-      randomChangeInterval:
-          (json['randomChangeInterval'] as num?)?.toDouble(),
-      shoulderSpeedRange:
-          (json['shoulderSpeedRange'] as num?)?.toDouble(),
-      elbowSpeedRange:
-          (json['elbowSpeedRange'] as num?)?.toDouble(),
+      straighteningDuration: (json['straighteningDuration'] as num?)
+          ?.toDouble(),
+      randomChangeInterval: (json['randomChangeInterval'] as num?)?.toDouble(),
+      shoulderSpeedRange: (json['shoulderSpeedRange'] as num?)?.toDouble(),
+      elbowSpeedRange: (json['elbowSpeedRange'] as num?)?.toDouble(),
     );
   }
 
@@ -100,9 +97,7 @@ class GameConfig {
   static Future<GameConfig> loadFromAsset() async {
     try {
       final jsonStr = await rootBundle.loadString('assets/game_config.json');
-      return GameConfig.fromJson(
-        jsonDecode(jsonStr) as Map<String, dynamic>,
-      );
+      return GameConfig.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
     } catch (_) {
       return GameConfig.defaultConfig();
     }
@@ -133,8 +128,7 @@ class GameConfig {
       enemyRadius: enemyRadius ?? this.enemyRadius,
       straighteningDuration:
           straighteningDuration ?? this.straighteningDuration,
-      randomChangeInterval:
-          randomChangeInterval ?? this.randomChangeInterval,
+      randomChangeInterval: randomChangeInterval ?? this.randomChangeInterval,
       shoulderSpeedRange: shoulderSpeedRange ?? this.shoulderSpeedRange,
       elbowSpeedRange: elbowSpeedRange ?? this.elbowSpeedRange,
     );

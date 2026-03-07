@@ -35,20 +35,16 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay> {
     widget.onConfigChanged(_config);
   }
 
-  void _export() {
+  Future<void> _export() async {
     final json = const JsonEncoder.withIndent('  ').convert(_config.toJson());
-    Clipboard.setData(ClipboardData(text: json));
+    await Clipboard.setData(ClipboardData(text: json));
     if (mounted) {
-      try {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('JSONをクリップボードにコピーしました'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } catch (_) {
-        // Scaffold不在の場合はクリップボードコピーのみ
-      }
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text('JSONをクリップボードにコピーしました'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 

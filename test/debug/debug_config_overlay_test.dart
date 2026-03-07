@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/debug/debug_config_overlay.dart';
 import 'package:spajam2025_app/game/game_config.dart';
@@ -74,9 +75,20 @@ void main() {
     });
 
     testWidgets('エクスポートボタンでSnackBar表示', (tester) async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async => null,
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.byIcon(Icons.copy));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('JSONをクリップボードにコピーしました'), findsOneWidget);
     });

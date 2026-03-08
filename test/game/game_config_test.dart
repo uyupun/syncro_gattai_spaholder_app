@@ -119,6 +119,7 @@ void main() {
         rootBundle.evict('assets/game_config.json');
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMessageHandler('flutter/assets', null);
+        GameConfig.instance = GameConfig();
       });
 
       test('JSONファイルから読み込める', () async {
@@ -138,6 +139,7 @@ void main() {
         expect(config.zoom, 42.0);
         expect(config.shoulderTorque, 7777.0);
         expect(config.gravity.y, 15);
+        expect(GameConfig.instance.zoom, 42.0);
       });
 
       test('ファイルが無い場合はデフォルト値', () async {
@@ -153,6 +155,7 @@ void main() {
         final config = await GameConfig.loadFromAsset();
         expect(config.zoom, 20.0);
         expect(config.shoulderTorque, 8000.0);
+        expect(GameConfig.instance.zoom, 20.0);
       });
     });
   });

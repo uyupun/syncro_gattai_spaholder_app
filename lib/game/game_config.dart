@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class GameConfig {
+  static GameConfig instance = GameConfig();
+
   final Vector2 gravity;
   final double zoom;
   final double shoulderTorque;
@@ -97,10 +100,14 @@ class GameConfig {
   static Future<GameConfig> loadFromAsset() async {
     try {
       final jsonStr = await rootBundle.loadString('assets/game_config.json');
-      return GameConfig.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
-    } catch (_) {
-      return GameConfig.defaultConfig();
+      instance = GameConfig.fromJson(
+        jsonDecode(jsonStr) as Map<String, dynamic>,
+      );
+    } catch (e) {
+      debugPrint('Failed to load game_config.json, using defaults: $e');
+      instance = GameConfig.defaultConfig();
     }
+    return instance;
   }
 
   GameConfig copyWith({

@@ -2,10 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/game/arm_layout_config.dart';
 
 void main() {
-  setUp(() {
-    ArmLayoutConfig.instance = ArmLayoutConfig();
-  });
-
   group('ArmLayoutConfig', () {
     test('デフォルト値が正しい', () {
       final config = ArmLayoutConfig();

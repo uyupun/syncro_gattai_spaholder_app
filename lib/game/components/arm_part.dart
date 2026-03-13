@@ -2,9 +2,6 @@ import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
-import '../arm_layout_config.dart';
-import '../game_config.dart';
-
 class ArmPart extends BodyComponent {
   final Vector2 _pos;
   final Vector2 _size;
@@ -12,6 +9,8 @@ class ArmPart extends BodyComponent {
   final Color _color;
   final String? _imagePath;
   final bool isDrill;
+  final double _tipRadius;
+  final Offset _tipOffset;
   Sprite? _sprite;
 
   ArmPart({
@@ -21,18 +20,24 @@ class ArmPart extends BodyComponent {
     required Color color,
     String? imagePath,
     this.isDrill = false,
-  })  : _pos = position,
-        _size = size,
-        _isStatic = isStatic,
-        _color = color,
-        _imagePath = imagePath;
+    double? tipRadius,
+    Offset? tipOffset,
+  }) : _pos = position,
+       _size = size,
+       _isStatic = isStatic,
+       _color = color,
+       _imagePath = imagePath,
+       _tipRadius = tipRadius ?? 0.0,
+       _tipOffset = tipOffset ?? Offset.zero {
+    assert(!isDrill || _tipRadius > 0, 'isDrill=true requires tipRadius > 0');
+  }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     if (_imagePath != null) {
       try {
-        _sprite = await Sprite.load(_imagePath!);
+        _sprite = await Sprite.load(_imagePath);
       } catch (e) {
         // 画像の読み込みに失敗した場合はスプライトをnullのままにする
         debugPrint('Failed to load image: $_imagePath, error: $e');
@@ -62,21 +67,19 @@ class ArmPart extends BodyComponent {
   void render(Canvas canvas) {
     // ドリル（前腕）の場合、先端の当たり判定を可視化
     if (isDrill) {
-      final tipRadius = GameConfig.instance.tipRadius;
-      final t = ArmLayoutConfig.instance.tipOffset;
-      final tipOffset = Offset(t.x, t.y);
-
       final hitboxPaint = Paint()
-        ..color = Colors.transparent // Colors.blue.withValues(alpha: 0.3)
+        ..color = Colors
+            .transparent // Colors.blue.withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(tipOffset, tipRadius, hitboxPaint);
+      canvas.drawCircle(_tipOffset, _tipRadius, hitboxPaint);
 
       // 当たり判定の境界線
       final hitboxBorder = Paint()
-        ..color = Colors.transparent // Colors.blue.withValues(alpha: 0.8)
+        ..color = Colors
+            .transparent // Colors.blue.withValues(alpha: 0.8)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.2;
-      canvas.drawCircle(tipOffset, tipRadius, hitboxBorder);
+      canvas.drawCircle(_tipOffset, _tipRadius, hitboxBorder);
     }
 
     if (_sprite != null) {
@@ -94,16 +97,15 @@ class ArmPart extends BodyComponent {
         renderSize = Vector2(_size.x, _size.x / aspectRatio);
       }
 
-      _sprite!.render(
-        canvas,
-        size: renderSize,
-        anchor: Anchor.center,
-      );
+      _sprite!.render(canvas, size: renderSize, anchor: Anchor.center);
     } else {
       // 画像がない場合は従来の矩形描画
       final paint = Paint()..color = _color;
       final rect = Rect.fromCenter(
-          center: Offset.zero, width: _size.x, height: _size.y);
+        center: Offset.zero,
+        width: _size.x,
+        height: _size.y,
+      );
       canvas.drawRect(rect, paint);
       final border = Paint()
         ..color = Colors.black.withValues(alpha: 0.5)

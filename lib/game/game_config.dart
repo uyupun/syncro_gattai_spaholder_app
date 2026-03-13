@@ -5,8 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class GameConfig {
-  static GameConfig instance = GameConfig();
-
   final Vector2 gravity;
   final double zoom;
   final double shoulderTorque;
@@ -100,14 +98,11 @@ class GameConfig {
   static Future<GameConfig> loadFromAsset() async {
     try {
       final jsonStr = await rootBundle.loadString('assets/game_config.json');
-      instance = GameConfig.fromJson(
-        jsonDecode(jsonStr) as Map<String, dynamic>,
-      );
+      return GameConfig.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
     } catch (e) {
       debugPrint('Failed to load game_config.json, using defaults: $e');
-      instance = GameConfig.defaultConfig();
+      return GameConfig.defaultConfig();
     }
-    return instance;
   }
 
   GameConfig copyWith({

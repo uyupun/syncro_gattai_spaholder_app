@@ -17,9 +17,17 @@ import 'game_config.dart';
 class RobotArmGame extends Forge2DGame {
   final VoidCallback? onGameClear;
   final BleService bleService;
+  final GameConfig _config;
+  final ArmLayoutConfig _layout;
 
-  RobotArmGame({this.onGameClear, required this.bleService})
-      : super(gravity: GameConfig.instance.gravity, zoom: GameConfig.instance.zoom);
+  RobotArmGame({
+    this.onGameClear,
+    required this.bleService,
+    required GameConfig config,
+    required ArmLayoutConfig layout,
+  }) : _config = config,
+       _layout = layout,
+       super(gravity: config.gravity, zoom: config.zoom);
 
   late ArmPart shoulder;
   late ArmPart upperArm;
@@ -65,31 +73,34 @@ class RobotArmGame extends Forge2DGame {
     await _spawnEnemies();
 
     // --- パーツ生成 ---
-    final layout = ArmLayoutConfig.instance;
-
     upperArm = ArmPart(
-        position: layout.upperArmPosition,
-        size: layout.upperArmSize,
-        isStatic: false,
-        color: Colors.blueAccent,
-        imagePath: GameImage.upperArm.path);
+      position: _layout.upperArmPosition,
+      size: _layout.upperArmSize,
+      isStatic: false,
+      color: Colors.blueAccent,
+      imagePath: GameImage.upperArm.path,
+    );
     await world.add(upperArm);
 
     foreArm = ArmPart(
-        position: layout.foreArmPosition,
-        size: layout.foreArmSize,
-        isStatic: false,
-        color: Colors.lightBlueAccent,
-        imagePath: GameImage.drill.path,
-        isDrill: true);
+      position: _layout.foreArmPosition,
+      size: _layout.foreArmSize,
+      isStatic: false,
+      color: Colors.lightBlueAccent,
+      imagePath: GameImage.drill.path,
+      isDrill: true,
+      tipRadius: _config.tipRadius,
+      tipOffset: Offset(_layout.tipOffset.x, _layout.tipOffset.y),
+    );
     await world.add(foreArm);
 
     shoulder = ArmPart(
-        position: layout.shoulderPosition,
-        size: layout.shoulderSize,
-        isStatic: true,
-        color: Colors.grey,
-        imagePath: GameImage.upperBody.path);
+      position: _layout.shoulderPosition,
+      size: _layout.shoulderSize,
+      isStatic: true,
+      color: Colors.grey,
+      imagePath: GameImage.upperBody.path,
+    );
     await world.add(shoulder);
 
     // --- ジョイント生成 ---
@@ -97,11 +108,11 @@ class RobotArmGame extends Forge2DGame {
       ..bodyA = shoulder.body
       ..bodyB = upperArm.body
       ..collideConnected = false
-      ..localAnchorA.setFrom(layout.shoulderAnchorA)
-      ..localAnchorB.setFrom(layout.shoulderAnchorB)
+      ..localAnchorA.setFrom(_layout.shoulderAnchorA)
+      ..localAnchorB.setFrom(_layout.shoulderAnchorB)
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = GameConfig.instance.shoulderTorque;
+      ..maxMotorTorque = _config.shoulderTorque;
     shoulderJoint = RevoluteJoint(shoulderJointDef);
     world.createJoint(shoulderJoint!);
 
@@ -109,11 +120,11 @@ class RobotArmGame extends Forge2DGame {
       ..bodyA = upperArm.body
       ..bodyB = foreArm.body
       ..collideConnected = false
-      ..localAnchorA.setFrom(layout.elbowAnchorA)
-      ..localAnchorB.setFrom(layout.elbowAnchorB)
+      ..localAnchorA.setFrom(_layout.elbowAnchorA)
+      ..localAnchorB.setFrom(_layout.elbowAnchorB)
       ..enableLimit = false
       ..enableMotor = false
-      ..maxMotorTorque = GameConfig.instance.elbowTorque;
+      ..maxMotorTorque = _config.elbowTorque;
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
 
@@ -123,17 +134,17 @@ class RobotArmGame extends Forge2DGame {
 
   Future<void> _spawnEnemies() async {
     final enemyPos = Vector2(
-      GameConfig.instance.shoulderPos.x + GameConfig.instance.armLength + GameConfig.instance.enemyRadius,
+      _config.shoulderPos.x + _config.armLength + _config.enemyRadius,
       0,
     );
-    final enemy = Enemy(position: enemyPos, radius: GameConfig.instance.enemyRadius);
+    final enemy = Enemy(position: enemyPos, radius: _config.enemyRadius);
     enemies.add(enemy);
     await world.add(enemy);
   }
 
   /// 腕の先端のワールド座標を取得
   Vector2 get armTipPosition {
-    return foreArm.body.worldPoint(Vector2(0, ArmLayoutConfig.instance.armTipLocalY));
+    return foreArm.body.worldPoint(Vector2(0, _layout.armTipLocalY));
   }
 
   /// Snap Straight押下時に1回だけヒットチェック
@@ -143,7 +154,7 @@ class RobotArmGame extends Forge2DGame {
     final tipPos = armTipPosition;
     for (final enemy in enemies) {
       final distance = tipPos.distanceTo(enemy.body.position);
-      final hitDistance = GameConfig.instance.tipRadius + enemy.radius;
+      final hitDistance = _config.tipRadius + enemy.radius;
       if (distance < hitDistance) {
         enemy.onHit();
 
@@ -152,14 +163,16 @@ class RobotArmGame extends Forge2DGame {
 
         _stopAllPhysics();
 
-        unawaited(Future.delayed(const Duration(seconds: 3), () async {
-          showSuccessMessage.value = true;
-          try {
-            await bleService.sendBool(true);
-          } catch (e) {
-            debugPrint('sendBool error: $e');
-          }
-        }));
+        unawaited(
+          Future.delayed(const Duration(seconds: 3), () async {
+            showSuccessMessage.value = true;
+            try {
+              await bleService.sendBool(true);
+            } catch (e) {
+              debugPrint('sendBool error: $e');
+            }
+          }),
+        );
         FlameAudio.bgm.stop();
         FlameAudio.bgm.play(GameAudio.clear.path);
 
@@ -230,7 +243,7 @@ class RobotArmGame extends Forge2DGame {
 
     if (isRandomMode) {
       _randomChangeTimer += dt;
-      if (_randomChangeTimer >= GameConfig.instance.randomChangeInterval) {
+      if (_randomChangeTimer >= _config.randomChangeInterval) {
         _randomChangeTimer = 0;
         _applyRandomMovement();
       }
@@ -247,7 +260,7 @@ class RobotArmGame extends Forge2DGame {
 
       _checkHitOnce();
 
-      if (_straighteningTimer >= GameConfig.instance.straighteningDuration) {
+      if (_straighteningTimer >= _config.straighteningDuration) {
         stopStraightening();
       }
     }
@@ -305,12 +318,12 @@ class RobotArmGame extends Forge2DGame {
   }
 
   void _applyRandomMovement() {
-    final sRange = GameConfig.instance.shoulderSpeedRange;
+    final sRange = _config.shoulderSpeedRange;
     final shoulderSpeed = (_random.nextDouble() * sRange) - sRange / 2;
     controlShoulder(shoulderSpeed);
 
     if (!_isStraightening) {
-      final eRange = GameConfig.instance.elbowSpeedRange;
+      final eRange = _config.elbowSpeedRange;
       final elbowSpeed = (_random.nextDouble() * eRange) - eRange / 2;
       controlElbow(elbowSpeed);
     }

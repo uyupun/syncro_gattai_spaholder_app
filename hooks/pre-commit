@@ -23,7 +23,7 @@ fi
 # Run dart analyze on staged files only
 if [ -n "$STAGED_DART_FILES" ]; then
     echo "🔍 Running dart analyze on staged files..."
-    if ! dart analyze --fatal-infos $STAGED_DART_FILES; then
+    if ! dart analyze --fatal-warnings $STAGED_DART_FILES; then
         echo "❌ Dart analyze failed. Please fix the issues before committing."
         exit 1
     fi

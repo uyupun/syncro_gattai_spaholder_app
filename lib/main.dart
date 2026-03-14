@@ -795,6 +795,7 @@ class RobotArmGame extends Forge2DGame {
   static final Vector2 shoulderPos = Vector2(-10, -7); // 左側に配置
   static const double tipRadius = 0.8; // 先端の当たり判定半径
   static const double enemyRadius = 6; // 敵の半径（画像サイズに合わせて拡大、ただし画像より少し小さく）
+  static const double enemySpriteScale = 2.5;
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -884,7 +885,11 @@ class RobotArmGame extends Forge2DGame {
       shoulderPos.x + armLength + enemyRadius, // 敵の端がジャスト腕の先端
       0, // 画面中央の高さ
     );
-    final enemy = Enemy(position: enemyPos, radius: enemyRadius);
+    final enemy = Enemy(
+      position: enemyPos,
+      radius: enemyRadius,
+      spriteScale: enemySpriteScale,
+    );
     enemies.add(enemy);
     await world.add(enemy);
   }
@@ -1242,13 +1247,18 @@ class ArmPart extends BodyComponent {
 class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
+  final double _spriteScale;
   Sprite? _sprite;
   Sprite? _splashSprite;
   bool _isHit = false;
 
-  Enemy({required Vector2 position, required double radius})
-    : _initialPosition = position.clone(),
-      _radius = radius;
+  Enemy({
+    required Vector2 position,
+    required double radius,
+    required double spriteScale,
+  }) : _initialPosition = position.clone(),
+       _radius = radius,
+       _spriteScale = spriteScale;
 
   double get radius => _radius;
 
@@ -1311,7 +1321,7 @@ class Enemy extends BodyComponent {
 
     if (currentSprite != null) {
       // 画像を使用してレンダリング（サイズを2倍に）
-      final size = _radius * 2.5; // 直径の2倍
+      final size = _radius * _spriteScale;
       currentSprite.render(
         canvas,
         size: Vector2.all(size),

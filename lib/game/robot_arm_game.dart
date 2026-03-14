@@ -12,6 +12,7 @@ import '../resources/game_image.dart';
 import 'arm_layout_config.dart';
 import 'components/arm_part.dart';
 import 'components/enemy.dart';
+import 'enemy_config.dart';
 import 'game_config.dart';
 
 class RobotArmGame extends Forge2DGame {
@@ -19,14 +20,17 @@ class RobotArmGame extends Forge2DGame {
   final BleService bleService;
   final GameConfig _config;
   final ArmLayoutConfig _layout;
+  final EnemyConfig _enemyConfig;
 
   RobotArmGame({
     this.onGameClear,
     required this.bleService,
     required GameConfig config,
     required ArmLayoutConfig layout,
+    required EnemyConfig enemyConfig,
   }) : _config = config,
        _layout = layout,
+       _enemyConfig = enemyConfig,
        super(gravity: config.gravity, zoom: config.zoom);
 
   late ArmPart shoulder;
@@ -137,7 +141,11 @@ class RobotArmGame extends Forge2DGame {
       _config.shoulderPos.x + _config.armLength + _config.enemyRadius,
       0,
     );
-    final enemy = Enemy(position: enemyPos, radius: _config.enemyRadius);
+    final enemy = Enemy(
+      position: enemyPos,
+      radius: _config.enemyRadius,
+      spriteScale: _enemyConfig.spriteScale,
+    );
     enemies.add(enemy);
     await world.add(enemy);
   }

@@ -3,11 +3,11 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
 import '../../resources/game_image.dart';
-import '../enemy_config.dart';
 
 class Enemy extends BodyComponent {
   final Vector2 _initialPosition;
   final double _radius;
+  final double _spriteScale;
   Sprite? _sprite;
   Sprite? _splashSprite;
   bool _isHit = false;
@@ -15,8 +15,10 @@ class Enemy extends BodyComponent {
   Enemy({
     required Vector2 position,
     required double radius,
-  })  : _initialPosition = position.clone(),
-        _radius = radius;
+    required double spriteScale,
+  }) : _initialPosition = position.clone(),
+       _radius = radius,
+       _spriteScale = spriteScale;
 
   double get radius => _radius;
 
@@ -44,7 +46,7 @@ class Enemy extends BodyComponent {
       ..restitution = 0.5
       ..density = 1.0
       ..friction = 0.3
-      ..isSensor = true;  // センサーとして設定（物理的な衝突を無効化、貫通する）
+      ..isSensor = true; // センサーとして設定（物理的な衝突を無効化、貫通する）
     final bodyDef = BodyDef()
       ..userData = this
       ..position = _initialPosition
@@ -56,13 +58,15 @@ class Enemy extends BodyComponent {
   void render(Canvas canvas) {
     // 衝突判定の可視化（半透明の赤い円）
     final hitboxPaint = Paint()
-      ..color = Colors.transparent // Colors.red.withValues(alpha: 0.3)
+      ..color = Colors
+          .transparent // Colors.red.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset.zero, _radius, hitboxPaint);
 
     // 衝突判定の境界線
     final hitboxBorder = Paint()
-      ..color = Colors.transparent // Colors.red.withValues(alpha: 0.8)
+      ..color = Colors
+          .transparent // Colors.red.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.2;
     canvas.drawCircle(Offset.zero, _radius, hitboxBorder);
@@ -72,7 +76,7 @@ class Enemy extends BodyComponent {
 
     if (currentSprite != null) {
       // 画像を使用してレンダリング（サイズを2倍に）
-      final size = _radius * EnemyConfig.instance.spriteScale;
+      final size = _radius * _spriteScale;
       currentSprite.render(
         canvas,
         size: Vector2.all(size),

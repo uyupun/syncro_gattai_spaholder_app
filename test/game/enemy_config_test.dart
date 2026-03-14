@@ -2,10 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/game/enemy_config.dart';
 
 void main() {
-  setUp(() {
-    EnemyConfig.instance = EnemyConfig();
-  });
-
   group('EnemyConfig', () {
     test('デフォルト値が正しい', () {
       final config = EnemyConfig();

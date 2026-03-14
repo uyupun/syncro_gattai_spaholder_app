@@ -21,10 +21,7 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: MyApp(),
-  ));
+  runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: MyApp()));
 }
 
 enum AppScreen { title, countdown, game, gameClear }

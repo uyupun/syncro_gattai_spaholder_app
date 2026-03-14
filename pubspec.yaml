@@ -25,4 +25,6 @@ flutter:
   assets:
     - assets/images/
     - assets/audio/
+    - assets/arm_layout.json
+    - assets/enemy_config.json
     - assets/game_config.json

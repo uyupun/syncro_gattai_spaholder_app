@@ -18,10 +18,7 @@ void main() {
     testWidgets('初期表示でデバイス接続ボタンとスタートボタンが表示される', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: TitleScreen(
-            onStart: () {},
-            bleService: mockBle,
-          ),
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
         ),
       );
 
@@ -32,10 +29,7 @@ void main() {
     testWidgets('未接続時はスタートボタンが無効', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: TitleScreen(
-            onStart: () {},
-            bleService: mockBle,
-          ),
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
         ),
       );
 
@@ -49,10 +43,7 @@ void main() {
     testWidgets('接続デバイス数が表示される', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: TitleScreen(
-            onStart: () {},
-            bleService: mockBle,
-          ),
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
         ),
       );
 

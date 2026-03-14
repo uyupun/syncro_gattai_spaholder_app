@@ -1,0 +1,26 @@
+{
+  "upperArm": {
+    "position": { "x": -10, "y": -4 },
+    "size": { "x": 4.35, "y": 8 }
+  },
+  "foreArm": {
+    "position": { "x": -8.5, "y": 1.5 },
+    "size": { "x": 4.85, "y": 8 }
+  },
+  "shoulder": {
+    "position": { "x": -12, "y": 0 },
+    "size": { "x": 16, "y": 16 }
+  },
+  "joints": {
+    "shoulder": {
+      "anchorA": { "x": 6, "y": -4.5 },
+      "anchorB": { "x": 0, "y": -4 }
+    },
+    "elbow": {
+      "anchorA": { "x": 1.75, "y": 3 },
+      "anchorB": { "x": -1, "y": -3.5 }
+    }
+  },
+  "tipOffset": { "x": 2.0, "y": 3.5 },
+  "armTipLocalY": 3.5
+}

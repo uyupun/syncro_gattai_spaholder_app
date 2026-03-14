@@ -8,7 +8,11 @@ class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
   final BleService bleService;
 
-  const TitleScreen({super.key, required this.onStart, required this.bleService});
+  const TitleScreen({
+    super.key,
+    required this.onStart,
+    required this.bleService,
+  });
 
   @override
   State<TitleScreen> createState() => _TitleScreenState();
@@ -109,8 +113,14 @@ class _TitleScreenState extends State<TitleScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     child: _isConnecting
                         ? const Row(
@@ -121,7 +131,9 @@ class _TitleScreenState extends State<TitleScreen> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 10),
@@ -130,7 +142,7 @@ class _TitleScreenState extends State<TitleScreen> {
                           )
                         : const Text('デバイス接続'),
                   ),
-                if ( _canStart)
+                if (_canStart)
                   ElevatedButton(
                     onPressed: () {
                       _bleService.disconnectAll();
@@ -142,8 +154,14 @@ class _TitleScreenState extends State<TitleScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     child: const Text('デバイス解除'),
                   ),
@@ -156,8 +174,14 @@ class _TitleScreenState extends State<TitleScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _canStart ? Colors.green : Colors.grey,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                    textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   child: const Text('ゲームスタート'),
                 ),

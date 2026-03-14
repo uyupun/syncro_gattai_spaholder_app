@@ -6,10 +6,7 @@ import 'interfaces/ble_service.dart';
 import 'models/accel_data.dart';
 
 class BleManager implements BleService {
-  // --- シングルトン設定 ---
-  static final BleManager _instance = BleManager._internal();
-  factory BleManager() => _instance;
-  BleManager._internal();
+  BleManager();
 
   // --- 定数 ---
   static const String _targetDeviceName = "uyupun-drill";

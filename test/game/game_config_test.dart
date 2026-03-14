@@ -122,20 +122,17 @@ void main() {
       });
 
       test('JSONファイルから読み込める', () async {
-        final testConfig = {
-          'zoom': 42.0,
-          'shoulderTorque': 7777.0,
-        };
+        final testConfig = {'zoom': 42.0, 'shoulderTorque': 7777.0};
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMessageHandler('flutter/assets', (message) async {
-          final key = utf8.decode(message!.buffer.asUint8List());
-          if (key == 'assets/game_config.json') {
-            return ByteData.sublistView(
-              utf8.encoder.convert(jsonEncode(testConfig)),
-            );
-          }
-          return null;
-        });
+              final key = utf8.decode(message!.buffer.asUint8List());
+              if (key == 'assets/game_config.json') {
+                return ByteData.sublistView(
+                  utf8.encoder.convert(jsonEncode(testConfig)),
+                );
+              }
+              return null;
+            });
 
         final config = await GameConfig.loadFromAsset();
         expect(config.zoom, 42.0);
@@ -146,12 +143,12 @@ void main() {
       test('ファイルが無い場合はデフォルト値', () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMessageHandler('flutter/assets', (message) async {
-          final key = utf8.decode(message!.buffer.asUint8List());
-          if (key == 'assets/game_config.json') {
-            return ByteData.sublistView(utf8.encoder.convert('invalid'));
-          }
-          return null;
-        });
+              final key = utf8.decode(message!.buffer.asUint8List());
+              if (key == 'assets/game_config.json') {
+                return ByteData.sublistView(utf8.encoder.convert('invalid'));
+              }
+              return null;
+            });
 
         final config = await GameConfig.loadFromAsset();
         expect(config.zoom, 20.0);

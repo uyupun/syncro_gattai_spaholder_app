@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class GameConfig {
@@ -98,7 +99,8 @@ class GameConfig {
     try {
       final jsonStr = await rootBundle.loadString('assets/game_config.json');
       return GameConfig.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to load game_config.json, using defaults: $e');
       return GameConfig.defaultConfig();
     }
   }

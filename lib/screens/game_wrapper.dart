@@ -8,6 +8,7 @@ import '../debug/debug_config_overlay.dart';
 import '../game/arm_layout_config.dart';
 import '../game/enemy_config.dart';
 import '../game/game_config.dart';
+import '../game/hp_bar_config.dart';
 import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
 import '../models/accel_data.dart';
@@ -28,25 +29,25 @@ class GameWrapper extends StatefulWidget {
 }
 
 class _GameWrapperState extends State<GameWrapper> {
-  late final RobotArmGame game;
   BleService get _bleService => widget.bleService;
   final Map<String, double> _latestValues = {};
   StreamSubscription<AccelData>? _accelSub;
   bool _showDebugOverlay = false;
+
+  // 全Config state
   GameConfig _config = GameConfig();
+  ArmLayoutConfig _layout = ArmLayoutConfig();
+  EnemyConfig _enemyConfig = EnemyConfig();
+  HpBarConfig _enemyHpConfig = HpBarConfig();
+
+  // ゲーム再生成用キー
+  int _gameKey = 0;
+  late RobotArmGame _game;
 
   @override
   void initState() {
     super.initState();
-    final layout = ArmLayoutConfig();
-    final enemyConfig = EnemyConfig();
-    game = RobotArmGame(
-      onGameClear: widget.onGameClear,
-      bleService: _bleService,
-      config: _config,
-      layout: layout,
-      enemyConfig: enemyConfig,
-    );
+    _game = _createGame();
 
     _accelSub = _bleService.accelDataStream.listen((accelData) {
       _latestValues[accelData.deviceId] = accelData.value;
@@ -54,19 +55,36 @@ class _GameWrapperState extends State<GameWrapper> {
     });
   }
 
+  RobotArmGame _createGame() {
+    return RobotArmGame(
+      onGameClear: widget.onGameClear,
+      bleService: _bleService,
+      config: _config,
+      layout: _layout,
+      enemyConfig: _enemyConfig,
+      enemyHpConfig: _enemyHpConfig,
+    );
+  }
+
+  // Why: Config変更時にjoint/fixtureを個別再構築するのは複雑。
+  // ゲーム全体を再生成し、ValueKey変更でGameWidgetに再描画を強制する。
+  void _recreateGame() {
+    setState(() {
+      _gameKey++;
+      _game = _createGame();
+    });
+  }
+
   void _checkStraighteningCondition() {
-    // 2つのデバイスからの値を取得
     final values = _latestValues.values.toList();
 
-    // 2つの値が存在し、両方とも正の値でかつ1以上の場合
     if (values.length >= 2) {
       final allPositiveAndAboveOne = values.every(
         (value) => value > 0 && value >= 0.3,
       );
 
       if (allPositiveAndAboveOne) {
-        // 肘を伸ばすアクション（強制整列）を実行
-        game.startStraightening();
+        _game.startStraightening();
       }
     }
   }
@@ -81,9 +99,9 @@ class _GameWrapperState extends State<GameWrapper> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        GameWidget(game: game),
+        GameWidget(key: ValueKey(_gameKey), game: _game),
         ValueListenableBuilder<bool>(
-          valueListenable: game.showSuccessMessage,
+          valueListenable: _game.showSuccessMessage,
           builder: (context, showMessage, child) {
             if (!showMessage) return const SizedBox.shrink();
 
@@ -93,7 +111,7 @@ class _GameWrapperState extends State<GameWrapper> {
               right: 0,
               bottom: 0,
               child: GestureDetector(
-                onTap: () => game.proceedToGameClear(),
+                onTap: () => _game.proceedToGameClear(),
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.7),
                   child: Center(
@@ -145,7 +163,6 @@ class _GameWrapperState extends State<GameWrapper> {
             );
           },
         ),
-        // --- 中央下：腕伸ばしボタンのみ表示 デバッグボタン ---
         Positioned(
           bottom: 30,
           left: 0,
@@ -156,8 +173,8 @@ class _GameWrapperState extends State<GameWrapper> {
               children: [
                 HoldButton(
                   icon: Icons.vertical_align_center,
-                  onPressed: () => game.startStraightening(),
-                  onReleased: () => game.stopStraightening(),
+                  onPressed: () => _game.startStraightening(),
+                  onReleased: () => _game.stopStraightening(),
                 ),
               ],
             ),
@@ -176,8 +193,24 @@ class _GameWrapperState extends State<GameWrapper> {
         if (kDebugMode && _showDebugOverlay)
           DebugConfigOverlay(
             initialConfig: _config,
+            initialLayout: _layout,
+            initialEnemyConfig: _enemyConfig,
+            initialEnemyHpConfig: _enemyHpConfig,
             onConfigChanged: (newConfig) {
-              setState(() => _config = newConfig);
+              _config = newConfig;
+              _recreateGame();
+            },
+            onLayoutChanged: (newLayout) {
+              _layout = newLayout;
+              _recreateGame();
+            },
+            onEnemyConfigChanged: (newEnemyConfig) {
+              _enemyConfig = newEnemyConfig;
+              _recreateGame();
+            },
+            onEnemyHpConfigChanged: (newHpConfig) {
+              _enemyHpConfig = newHpConfig;
+              _recreateGame();
             },
             onClose: () => setState(() => _showDebugOverlay = false),
           ),

@@ -1,10 +1,9 @@
-import 'dart:convert';
-
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
-class GameConfig {
+import '../interfaces/json_exportable.dart';
+import '../mixins/asset_loadable.dart';
+
+class GameConfig implements JsonExportable {
   final Vector2 gravity;
   final double zoom;
   final double shoulderTorque;
@@ -78,6 +77,7 @@ class GameConfig {
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'gravity': {'x': gravity.x, 'y': gravity.y},
@@ -96,13 +96,11 @@ class GameConfig {
   }
 
   static Future<GameConfig> loadFromAsset() async {
-    try {
-      final jsonStr = await rootBundle.loadString('assets/game_config.json');
-      return GameConfig.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
-    } catch (e) {
-      debugPrint('Failed to load game_config.json, using defaults: $e');
-      return GameConfig.defaultConfig();
-    }
+    return AssetLoadable.loadFromAsset<GameConfig>(
+      'assets/game_config.json',
+      GameConfig.fromJson,
+      GameConfig.defaultConfig,
+    );
   }
 
   GameConfig copyWith({

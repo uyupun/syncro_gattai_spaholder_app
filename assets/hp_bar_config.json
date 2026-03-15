@@ -1,0 +1,16 @@
+{
+  "player": {
+    "maxHp": 100,
+    "barPositionX": 0,
+    "barPositionY": 0,
+    "barSizeX": 100,
+    "barSizeY": 10
+  },
+  "enemy": {
+    "maxHp": 100,
+    "barPositionX": 0,
+    "barPositionY": 0,
+    "barSizeX": 100,
+    "barSizeY": 10
+  }
+}

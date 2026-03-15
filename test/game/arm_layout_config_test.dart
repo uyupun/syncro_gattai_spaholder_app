@@ -1,32 +1,28 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/game/arm_layout_config.dart';
-
-void expectFloat32(double actual, double expected) {
-  expect(actual, Float32List.fromList([expected])[0]);
-}
+import 'package:spajam2025_app/game/part_config.dart';
+import 'package:spajam2025_app/interfaces/json_exportable.dart';
 
 void main() {
   group('ArmLayoutConfig', () {
     test('デフォルト値が正しい', () {
       final config = ArmLayoutConfig();
-      expect(config.upperArmPosition.x, -10);
-      expectFloat32(config.upperArmPosition.y, -4);
-      expectFloat32(config.upperArmSize.x, 4.35);
-      expect(config.upperArmSize.y, 8);
-      expectFloat32(config.foreArmPosition.x, -8.5);
-      expectFloat32(config.foreArmSize.x, 4.85);
-      expect(config.shoulderPosition.x, -12);
-      expect(config.shoulderSize.x, 16);
-      expect(config.shoulderAnchorA.x, 6);
-      expectFloat32(config.shoulderAnchorA.y, -4.5);
-      expect(config.shoulderAnchorB.x, 0);
-      expectFloat32(config.elbowAnchorA.x, 1.75);
-      expectFloat32(config.elbowAnchorB.y, -3.5);
-      expect(config.tipOffset.x, 2.0);
-      expectFloat32(config.tipOffset.y, 3.5);
-      expectFloat32(config.armTipLocalY, 3.5);
+      expect(config.upperArm.positionX, -10);
+      expect(config.upperArm.positionY, -4);
+      expect(config.upperArm.sizeX, 4.35);
+      expect(config.upperArm.sizeY, 8);
+      expect(config.foreArm.positionX, -8.5);
+      expect(config.foreArm.sizeX, 4.85);
+      expect(config.shoulder.positionX, -12);
+      expect(config.shoulder.sizeX, 16);
+      expect(config.shoulderJoint.anchorAX, 6);
+      expect(config.shoulderJoint.anchorAY, -4.5);
+      expect(config.shoulderJoint.anchorBX, 0);
+      expect(config.elbowJoint.anchorAX, 1.75);
+      expect(config.elbowJoint.anchorBY, -3.5);
+      expect(config.tipOffsetX, 2.0);
+      expect(config.tipOffsetY, 3.5);
+      expect(config.armTipLocalY, 3.5);
     });
 
     test('fromJsonで全フィールド正しく読込', () {
@@ -58,20 +54,53 @@ void main() {
       };
 
       final config = ArmLayoutConfig.fromJson(json);
-      expectFloat32(config.upperArmPosition.x, -5.0);
-      expectFloat32(config.foreArmSize.y, 7.0);
-      expectFloat32(config.shoulderPosition.x, -8.0);
-      expectFloat32(config.shoulderAnchorA.x, 4.0);
-      expectFloat32(config.elbowAnchorB.y, -2.5);
-      expectFloat32(config.tipOffset.x, 1.0);
-      expectFloat32(config.armTipLocalY, 4.0);
+      expect(config.upperArm.positionX, -5.0);
+      expect(config.foreArm.sizeY, 7.0);
+      expect(config.shoulder.positionX, -8.0);
+      expect(config.shoulderJoint.anchorAX, 4.0);
+      expect(config.elbowJoint.anchorBY, -2.5);
+      expect(config.tipOffsetX, 1.0);
+      expect(config.armTipLocalY, 4.0);
     });
 
     test('fromJsonで欠損フィールドはデフォルト値', () {
       final config = ArmLayoutConfig.fromJson({});
-      expect(config.upperArmPosition.x, -10);
-      expectFloat32(config.tipOffset.y, 3.5);
-      expectFloat32(config.armTipLocalY, 3.5);
+      expect(config.upperArm.positionX, -10);
+      expect(config.tipOffsetY, 3.5);
+      expect(config.armTipLocalY, 3.5);
+    });
+
+    test('copyWithで指定フィールドのみ変更される', () {
+      final original = ArmLayoutConfig();
+      final newUpperArm = PartConfig(
+        positionX: 99,
+        positionY: 99,
+        sizeX: 99,
+        sizeY: 99,
+      );
+      final modified = original.copyWith(upperArm: newUpperArm);
+
+      expect(modified.upperArm.positionX, 99);
+      expect(modified.foreArm.positionX, original.foreArm.positionX);
+      expect(modified.shoulder.positionX, original.shoulder.positionX);
+    });
+
+    test('toJson/fromJsonラウンドトリップで値が保持される', () {
+      final original = ArmLayoutConfig();
+      final json = original.toJson();
+      final restored = ArmLayoutConfig.fromJson(json);
+
+      expect(restored.upperArm.positionX, original.upperArm.positionX);
+      expect(restored.foreArm.sizeY, original.foreArm.sizeY);
+      expect(restored.shoulderJoint.anchorAX, original.shoulderJoint.anchorAX);
+      expect(restored.elbowJoint.anchorBY, original.elbowJoint.anchorBY);
+      expect(restored.tipOffsetX, original.tipOffsetX);
+      expect(restored.armTipLocalY, original.armTipLocalY);
+    });
+
+    test('JsonExportableを実装している', () {
+      final config = ArmLayoutConfig();
+      expect(config, isA<JsonExportable>());
     });
   });
 }

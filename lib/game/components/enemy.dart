@@ -2,12 +2,16 @@ import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
+import '../../interfaces/damageable.dart';
+import '../../interfaces/hp_readable.dart';
 import '../../resources/game_image.dart';
 
-class Enemy extends BodyComponent {
+class Enemy extends BodyComponent implements HpReadable, Damageable {
   final Vector2 _initialPosition;
   final double _radius;
   final double _spriteScale;
+  final double _maxHp;
+  double _currentHp;
   Sprite? _sprite;
   Sprite? _splashSprite;
   bool _isHit = false;
@@ -16,11 +20,26 @@ class Enemy extends BodyComponent {
     required Vector2 position,
     required double radius,
     required double spriteScale,
+    double maxHp = 100,
   }) : _initialPosition = position.clone(),
        _radius = radius,
-       _spriteScale = spriteScale;
+       _spriteScale = spriteScale,
+       _maxHp = maxHp,
+       _currentHp = maxHp;
 
   double get radius => _radius;
+
+  @override
+  double get hp => _currentHp;
+
+  @override
+  double get maxHp => _maxHp;
+
+  @override
+  void takeDamage(double amount) {
+    // Why: HpBarのhpRatioが負値になると描画が壊れるためclampで下限0を保証
+    _currentHp = (_currentHp - amount).clamp(0, _maxHp);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -29,12 +48,10 @@ class Enemy extends BodyComponent {
       _sprite = await Sprite.load(GameImage.rockmonster.path);
       _splashSprite = await Sprite.load(GameImage.rockmonsterSplash.path);
     } catch (e) {
-      // 画像の読み込みに失敗した場合はスプライトをnullのままにする
       debugPrint('Failed to load image: $e');
     }
   }
 
-  /// 敵がヒットされた時に呼び出される
   void onHit() {
     _isHit = true;
   }
@@ -46,7 +63,7 @@ class Enemy extends BodyComponent {
       ..restitution = 0.5
       ..density = 1.0
       ..friction = 0.3
-      ..isSensor = true; // センサーとして設定（物理的な衝突を無効化、貫通する）
+      ..isSensor = true;
     final bodyDef = BodyDef()
       ..userData = this
       ..position = _initialPosition
@@ -56,26 +73,20 @@ class Enemy extends BodyComponent {
 
   @override
   void render(Canvas canvas) {
-    // 衝突判定の可視化（半透明の赤い円）
     final hitboxPaint = Paint()
-      ..color = Colors
-          .transparent // Colors.red.withValues(alpha: 0.3)
+      ..color = Colors.transparent
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset.zero, _radius, hitboxPaint);
 
-    // 衝突判定の境界線
     final hitboxBorder = Paint()
-      ..color = Colors
-          .transparent // Colors.red.withValues(alpha: 0.8)
+      ..color = Colors.transparent
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.2;
     canvas.drawCircle(Offset.zero, _radius, hitboxBorder);
 
-    // ヒット状態に応じて画像を切り替え
     final currentSprite = _isHit ? _splashSprite : _sprite;
 
     if (currentSprite != null) {
-      // 画像を使用してレンダリング（サイズを2倍に）
       final size = _radius * _spriteScale;
       currentSprite.render(
         canvas,
@@ -83,7 +94,6 @@ class Enemy extends BodyComponent {
         anchor: Anchor.center,
       );
     } else {
-      // 画像がない場合は従来の円描画
       final paint = Paint()..color = _isHit ? Colors.orange : Colors.redAccent;
       canvas.drawCircle(Offset.zero, _radius, paint);
 

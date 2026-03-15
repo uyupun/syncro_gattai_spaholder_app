@@ -60,22 +60,22 @@ void main() {
     testWidgets('Gameタブにパラメータが表示される', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       // デフォルトでGameタブが選択されている
-      expect(find.text('gravity.y'), findsOneWidget);
-      expect(find.text('zoom'), findsOneWidget);
+      expect(find.text('重力Y'), findsOneWidget);
+      expect(find.text('ズーム'), findsOneWidget);
     });
 
     testWidgets('Layoutタブに切替でレイアウトパラメータ表示', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Layout'));
       await tester.pumpAndSettle();
-      expect(find.text('upperArm.posX'), findsOneWidget);
+      expect(find.text('上腕.位置X'), findsOneWidget);
     });
 
     testWidgets('HPタブに切替でHPパラメータ表示', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('HP'));
       await tester.pumpAndSettle();
-      expect(find.text('enemy.maxHp'), findsOneWidget);
+      expect(find.text('敵.最大HP'), findsOneWidget);
     });
 
     testWidgets('±ボタンで値が変更される', (tester) async {
@@ -90,7 +90,7 @@ void main() {
       // zoom行の +0.5 ボタンをタップ
       // まず zoom ラベルを見つけ、その行の+ボタンをタップ
       final zoomRow = find.ancestor(
-        of: find.text('zoom'),
+        of: find.text('ズーム'), // displayName
         matching: find.byType(Row),
       );
       // +0.5 ボタン

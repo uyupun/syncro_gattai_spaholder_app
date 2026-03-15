@@ -12,6 +12,30 @@ import '../game/part_config.dart';
 import '../game/game_config.dart';
 import '../game/hp_bar_config.dart';
 
+enum _HpOwner {
+  enemy('enemy', '敵');
+
+  final String prefix;
+  final String displayName;
+  const _HpOwner(this.prefix, this.displayName);
+}
+
+class _FieldMeta {
+  final String label;
+  final String displayName;
+  final List<double> steps;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const _FieldMeta({
+    required this.label,
+    required this.displayName,
+    required this.steps,
+    required this.value,
+    required this.onChanged,
+  });
+}
+
 class DebugConfigOverlay extends StatefulWidget {
   final GameConfig initialConfig;
   final ArmLayoutConfig initialLayout;
@@ -158,119 +182,144 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
     );
   }
 
+  List<_FieldMeta> _gameConfigFields() => [
+    _FieldMeta(
+      label: 'gravity.y',
+      displayName: '重力Y',
+      steps: const [0.5, 5, 50],
+      value: _config.gravity.y,
+      onChanged: (v) =>
+          _updateConfig((c) => c.copyWith(gravity: Vector2(c.gravity.x, v))),
+    ),
+    _FieldMeta(
+      label: 'zoom',
+      displayName: 'ズーム',
+      steps: const [0.5, 5, 50],
+      value: _config.zoom,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(zoom: v)),
+    ),
+    _FieldMeta(
+      label: 'shoulderTorque',
+      displayName: '肩トルク',
+      steps: const [500, 5000],
+      value: _config.shoulderTorque,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(shoulderTorque: v)),
+    ),
+    _FieldMeta(
+      label: 'elbowTorque',
+      displayName: '肘トルク',
+      steps: const [500, 5000],
+      value: _config.elbowTorque,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(elbowTorque: v)),
+    ),
+    _FieldMeta(
+      label: 'armLength',
+      displayName: '腕の長さ',
+      steps: const [0.5, 5],
+      value: _config.armLength,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(armLength: v)),
+    ),
+    _FieldMeta(
+      label: 'tipRadius',
+      displayName: '先端半径',
+      steps: const [0.1, 0.5],
+      value: _config.tipRadius,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(tipRadius: v)),
+    ),
+    _FieldMeta(
+      label: 'enemyRadius',
+      displayName: '敵半径',
+      steps: const [0.5, 5],
+      value: _config.enemyRadius,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(enemyRadius: v)),
+    ),
+    _FieldMeta(
+      label: 'straighteningDuration',
+      displayName: '伸ばし時間',
+      steps: const [0.05, 0.5],
+      value: _config.straighteningDuration,
+      onChanged: (v) =>
+          _updateConfig((c) => c.copyWith(straighteningDuration: v)),
+    ),
+    _FieldMeta(
+      label: 'randomChangeInterval',
+      displayName: 'ランダム間隔',
+      steps: const [0.05, 0.5],
+      value: _config.randomChangeInterval,
+      onChanged: (v) =>
+          _updateConfig((c) => c.copyWith(randomChangeInterval: v)),
+    ),
+    _FieldMeta(
+      label: 'shoulderSpeedRange',
+      displayName: '肩速度範囲',
+      steps: const [1, 5],
+      value: _config.shoulderSpeedRange,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(shoulderSpeedRange: v)),
+    ),
+    _FieldMeta(
+      label: 'elbowSpeedRange',
+      displayName: '肘速度範囲',
+      steps: const [1, 5],
+      value: _config.elbowSpeedRange,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(elbowSpeedRange: v)),
+    ),
+    _FieldMeta(
+      label: 'spriteScale',
+      displayName: '敵スプライト倍率',
+      steps: const [0.1, 0.5],
+      value: _enemyConfig.spriteScale,
+      onChanged: (v) => _updateEnemyConfig((c) => c.copyWith(spriteScale: v)),
+    ),
+  ];
+
   Widget _buildGameTab() {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      children: [
-        _ConfigStepperTile(
-          label: 'gravity.y',
-          value: _config.gravity.y,
-          steps: const [0.5, 5, 50],
-          onChanged: (v) => _updateConfig(
-            (c) => c.copyWith(gravity: Vector2(c.gravity.x, v)),
-          ),
-        ),
-        _ConfigStepperTile(
-          label: 'zoom',
-          value: _config.zoom,
-          steps: const [0.5, 5, 50],
-          onChanged: (v) => _updateConfig((c) => c.copyWith(zoom: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'shoulderTorque',
-          value: _config.shoulderTorque,
-          steps: const [500, 5000],
-          onChanged: (v) => _updateConfig((c) => c.copyWith(shoulderTorque: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'elbowTorque',
-          value: _config.elbowTorque,
-          steps: const [500, 5000],
-          onChanged: (v) => _updateConfig((c) => c.copyWith(elbowTorque: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'armLength',
-          value: _config.armLength,
-          steps: const [0.5, 5],
-          onChanged: (v) => _updateConfig((c) => c.copyWith(armLength: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'tipRadius',
-          value: _config.tipRadius,
-          steps: const [0.1, 0.5],
-          onChanged: (v) => _updateConfig((c) => c.copyWith(tipRadius: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'enemyRadius',
-          value: _config.enemyRadius,
-          steps: const [0.5, 5],
-          onChanged: (v) => _updateConfig((c) => c.copyWith(enemyRadius: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'straighteningDuration',
-          value: _config.straighteningDuration,
-          steps: const [0.05, 0.5],
-          onChanged: (v) =>
-              _updateConfig((c) => c.copyWith(straighteningDuration: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'randomChangeInterval',
-          value: _config.randomChangeInterval,
-          steps: const [0.05, 0.5],
-          onChanged: (v) =>
-              _updateConfig((c) => c.copyWith(randomChangeInterval: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'shoulderSpeedRange',
-          value: _config.shoulderSpeedRange,
-          steps: const [1, 5],
-          onChanged: (v) =>
-              _updateConfig((c) => c.copyWith(shoulderSpeedRange: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'elbowSpeedRange',
-          value: _config.elbowSpeedRange,
-          steps: const [1, 5],
-          onChanged: (v) =>
-              _updateConfig((c) => c.copyWith(elbowSpeedRange: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'spriteScale',
-          value: _enemyConfig.spriteScale,
-          steps: const [0.1, 0.5],
-          onChanged: (v) =>
-              _updateEnemyConfig((c) => c.copyWith(spriteScale: v)),
-        ),
-      ],
+      children: _gameConfigFields()
+          .map(
+            (f) => _ConfigStepperTile(
+              label: f.label,
+              displayName: f.displayName,
+              value: f.value,
+              steps: f.steps,
+              onChanged: f.onChanged,
+            ),
+          )
+          .toList(),
     );
   }
 
   List<Widget> _partSteppers(
-    String prefix,
+    String label,
+    String displayName,
     PartConfig part,
     void Function(PartConfig) onChanged,
   ) {
     return [
       _ConfigStepperTile(
-        label: '$prefix.posX',
+        label: '$label.posX',
+        displayName: '$displayName.位置X',
         value: part.positionX,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(part.copyWith(positionX: v)),
       ),
       _ConfigStepperTile(
-        label: '$prefix.posY',
+        label: '$label.posY',
+        displayName: '$displayName.位置Y',
         value: part.positionY,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(part.copyWith(positionY: v)),
       ),
       _ConfigStepperTile(
-        label: '$prefix.sizeX',
+        label: '$label.sizeX',
+        displayName: '$displayName.幅',
         value: part.sizeX,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(part.copyWith(sizeX: v)),
       ),
       _ConfigStepperTile(
-        label: '$prefix.sizeY',
+        label: '$label.sizeY',
+        displayName: '$displayName.高さ',
         value: part.sizeY,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(part.copyWith(sizeY: v)),
@@ -279,31 +328,36 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
   }
 
   List<Widget> _jointSteppers(
-    String prefix,
+    String label,
+    String displayName,
     JointConfig joint,
     void Function(JointConfig) onChanged,
   ) {
     return [
       _ConfigStepperTile(
-        label: '$prefix.anchorAX',
+        label: '$label.anchorAX',
+        displayName: '$displayName.接続A-X',
         value: joint.anchorAX,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(joint.copyWith(anchorAX: v)),
       ),
       _ConfigStepperTile(
-        label: '$prefix.anchorAY',
+        label: '$label.anchorAY',
+        displayName: '$displayName.接続A-Y',
         value: joint.anchorAY,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(joint.copyWith(anchorAY: v)),
       ),
       _ConfigStepperTile(
-        label: '$prefix.anchorBX',
+        label: '$label.anchorBX',
+        displayName: '$displayName.接続B-X',
         value: joint.anchorBX,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(joint.copyWith(anchorBX: v)),
       ),
       _ConfigStepperTile(
-        label: '$prefix.anchorBY',
+        label: '$label.anchorBY',
+        displayName: '$displayName.接続B-Y',
         value: joint.anchorBY,
         steps: const [0.5, 5],
         onChanged: (v) => onChanged(joint.copyWith(anchorBY: v)),
@@ -315,51 +369,59 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       children: [
-        _sectionHeader('Upper Arm'),
+        _sectionHeader('上腕'),
         ..._partSteppers(
           'upperArm',
+          '上腕',
           _layout.upperArm,
           (p) => _updateLayout((l) => l.copyWith(upperArm: p)),
         ),
-        _sectionHeader('Fore Arm'),
+        _sectionHeader('前腕'),
         ..._partSteppers(
           'foreArm',
+          '前腕',
           _layout.foreArm,
           (p) => _updateLayout((l) => l.copyWith(foreArm: p)),
         ),
-        _sectionHeader('Shoulder'),
+        _sectionHeader('肩'),
         ..._partSteppers(
           'shoulder',
+          '肩',
           _layout.shoulder,
           (p) => _updateLayout((l) => l.copyWith(shoulder: p)),
         ),
-        _sectionHeader('Shoulder Joint'),
+        _sectionHeader('肩関節'),
         ..._jointSteppers(
-          'sJoint',
+          'shoulderJoint',
+          '肩関節',
           _layout.shoulderJoint,
           (j) => _updateLayout((l) => l.copyWith(shoulderJoint: j)),
         ),
-        _sectionHeader('Elbow Joint'),
+        _sectionHeader('肘関節'),
         ..._jointSteppers(
-          'eJoint',
+          'elbowJoint',
+          '肘関節',
           _layout.elbowJoint,
           (j) => _updateLayout((l) => l.copyWith(elbowJoint: j)),
         ),
-        _sectionHeader('Tip'),
+        _sectionHeader('先端'),
         _ConfigStepperTile(
           label: 'tipOffsetX',
+          displayName: '先端オフセットX',
           value: _layout.tipOffsetX,
           steps: const [0.5, 5],
           onChanged: (v) => _updateLayout((l) => l.copyWith(tipOffsetX: v)),
         ),
         _ConfigStepperTile(
           label: 'tipOffsetY',
+          displayName: '先端オフセットY',
           value: _layout.tipOffsetY,
           steps: const [0.5, 5],
           onChanged: (v) => _updateLayout((l) => l.copyWith(tipOffsetY: v)),
         ),
         _ConfigStepperTile(
           label: 'armTipLocalY',
+          displayName: '先端ローカルY',
           value: _layout.armTipLocalY,
           steps: const [0.5, 5],
           onChanged: (v) => _updateLayout((l) => l.copyWith(armTipLocalY: v)),
@@ -368,44 +430,65 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
     );
   }
 
+  List<_FieldMeta> _hpConfigFields({
+    required _HpOwner owner,
+    required HpBarConfig config,
+    required void Function(HpBarConfig Function(HpBarConfig)) onUpdate,
+  }) => [
+    _FieldMeta(
+      label: '${owner.prefix}.maxHp',
+      displayName: '${owner.displayName}.最大HP',
+      steps: const [5, 50],
+      value: config.maxHp,
+      onChanged: (v) => onUpdate((c) => c.copyWith(maxHp: v)),
+    ),
+    _FieldMeta(
+      label: '${owner.prefix}.barPosX',
+      displayName: '${owner.displayName}.バー位置X',
+      steps: const [0.5, 5],
+      value: config.barPositionX,
+      onChanged: (v) => onUpdate((c) => c.copyWith(barPositionX: v)),
+    ),
+    _FieldMeta(
+      label: '${owner.prefix}.barPosY',
+      displayName: '${owner.displayName}.バー位置Y',
+      steps: const [0.5, 5],
+      value: config.barPositionY,
+      onChanged: (v) => onUpdate((c) => c.copyWith(barPositionY: v)),
+    ),
+    _FieldMeta(
+      label: '${owner.prefix}.barSizeX',
+      displayName: '${owner.displayName}.バー幅',
+      steps: const [5, 50],
+      value: config.barSizeX,
+      onChanged: (v) => onUpdate((c) => c.copyWith(barSizeX: v)),
+    ),
+    _FieldMeta(
+      label: '${owner.prefix}.barSizeY',
+      displayName: '${owner.displayName}.バー高さ',
+      steps: const [1, 5],
+      value: config.barSizeY,
+      onChanged: (v) => onUpdate((c) => c.copyWith(barSizeY: v)),
+    ),
+  ];
+
   Widget _buildHpTab() {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       children: [
-        _sectionHeader('Enemy HP'),
-        _ConfigStepperTile(
-          label: 'enemy.maxHp',
-          value: _enemyHpConfig.maxHp,
-          steps: const [5, 50],
-          onChanged: (v) => _updateEnemyHpConfig((c) => c.copyWith(maxHp: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'enemy.barPosX',
-          value: _enemyHpConfig.barPositionX,
-          steps: const [0.5, 5],
-          onChanged: (v) =>
-              _updateEnemyHpConfig((c) => c.copyWith(barPositionX: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'enemy.barPosY',
-          value: _enemyHpConfig.barPositionY,
-          steps: const [0.5, 5],
-          onChanged: (v) =>
-              _updateEnemyHpConfig((c) => c.copyWith(barPositionY: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'enemy.barSizeX',
-          value: _enemyHpConfig.barSizeX,
-          steps: const [5, 50],
-          onChanged: (v) =>
-              _updateEnemyHpConfig((c) => c.copyWith(barSizeX: v)),
-        ),
-        _ConfigStepperTile(
-          label: 'enemy.barSizeY',
-          value: _enemyHpConfig.barSizeY,
-          steps: const [1, 5],
-          onChanged: (v) =>
-              _updateEnemyHpConfig((c) => c.copyWith(barSizeY: v)),
+        _sectionHeader('敵HP'),
+        ..._hpConfigFields(
+          owner: _HpOwner.enemy,
+          config: _enemyHpConfig,
+          onUpdate: _updateEnemyHpConfig,
+        ).map(
+          (f) => _ConfigStepperTile(
+            label: f.label,
+            displayName: f.displayName,
+            value: f.value,
+            steps: f.steps,
+            onChanged: f.onChanged,
+          ),
         ),
       ],
     );
@@ -474,12 +557,14 @@ class _ConfigHeader extends StatelessWidget {
 
 class _ConfigStepperTile extends StatelessWidget {
   final String label;
+  final String displayName;
   final double value;
   final List<double> steps;
   final ValueChanged<double> onChanged;
 
   const _ConfigStepperTile({
     required this.label,
+    required this.displayName,
     required this.value,
     required this.steps,
     required this.onChanged,
@@ -494,7 +579,7 @@ class _ConfigStepperTile extends StatelessWidget {
           SizedBox(
             width: 90,
             child: Text(
-              label,
+              displayName,
               style: const TextStyle(color: Colors.white70, fontSize: 9),
               overflow: TextOverflow.ellipsis,
             ),

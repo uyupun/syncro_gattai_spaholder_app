@@ -130,6 +130,14 @@ void main() {
       expect(received?.zoom, 20.0);
     });
 
+    testWidgets('適用ボタンでonApplyが呼ばれる', (tester) async {
+      var applied = false;
+      await tester.pumpWidget(buildTestWidget(onApply: () => applied = true));
+
+      await tester.tap(find.byIcon(Icons.check));
+      expect(applied, isTrue);
+    });
+
     testWidgets('エクスポートボタンでSnackBar表示', (tester) async {
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,

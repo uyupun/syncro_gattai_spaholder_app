@@ -45,6 +45,7 @@ class DebugConfigOverlay extends StatefulWidget {
   final ValueChanged<ArmLayoutConfig> onLayoutChanged;
   final ValueChanged<EnemyConfig> onEnemyConfigChanged;
   final ValueChanged<HpBarConfig> onEnemyHpConfigChanged;
+  final VoidCallback onApply;
   final VoidCallback onClose;
 
   const DebugConfigOverlay({
@@ -57,6 +58,7 @@ class DebugConfigOverlay extends StatefulWidget {
     required this.onLayoutChanged,
     required this.onEnemyConfigChanged,
     required this.onEnemyHpConfigChanged,
+    required this.onApply,
     required this.onClose,
   });
 
@@ -156,6 +158,7 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
             _ConfigHeader(
               onReset: _reset,
               onExport: _export,
+              onApply: widget.onApply,
               onClose: widget.onClose,
             ),
             TabBar(
@@ -512,11 +515,13 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
 class _ConfigHeader extends StatelessWidget {
   final VoidCallback onReset;
   final VoidCallback onExport;
+  final VoidCallback onApply;
   final VoidCallback onClose;
 
   const _ConfigHeader({
     required this.onReset,
     required this.onExport,
+    required this.onApply,
     required this.onClose,
   });
 
@@ -544,6 +549,11 @@ class _ConfigHeader extends StatelessWidget {
             icon: const Icon(Icons.copy, color: Colors.cyan, size: 20),
             onPressed: onExport,
             tooltip: 'Export JSON',
+          ),
+          IconButton(
+            icon: const Icon(Icons.check, color: Colors.greenAccent, size: 20),
+            onPressed: onApply,
+            tooltip: '適用',
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white, size: 20),

@@ -196,22 +196,13 @@ class _GameWrapperState extends State<GameWrapper> {
             initialLayout: _layout,
             initialEnemyConfig: _enemyConfig,
             initialEnemyHpConfig: _enemyHpConfig,
-            onConfigChanged: (newConfig) {
-              _config = newConfig;
-              _recreateGame();
-            },
-            onLayoutChanged: (newLayout) {
-              _layout = newLayout;
-              _recreateGame();
-            },
-            onEnemyConfigChanged: (newEnemyConfig) {
-              _enemyConfig = newEnemyConfig;
-              _recreateGame();
-            },
-            onEnemyHpConfigChanged: (newHpConfig) {
-              _enemyHpConfig = newHpConfig;
-              _recreateGame();
-            },
+            onConfigChanged: (newConfig) => _config = newConfig,
+            onLayoutChanged: (newLayout) => _layout = newLayout,
+            onEnemyConfigChanged: (newConfig) => _enemyConfig = newConfig,
+            onEnemyHpConfigChanged: (newConfig) => _enemyHpConfig = newConfig,
+            // Why: 即時反映だとゲーム状態(クリア判定等)がリセットされてしまうため、
+            // [OK]ボタンで確定してからゲーム再生成する。
+            onApply: _recreateGame,
             onClose: () => setState(() => _showDebugOverlay = false),
           ),
       ],

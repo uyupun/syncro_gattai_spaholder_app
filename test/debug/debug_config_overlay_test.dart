@@ -17,6 +17,7 @@ void main() {
     ValueChanged<ArmLayoutConfig>? onLayoutChanged,
     ValueChanged<EnemyConfig>? onEnemyConfigChanged,
     ValueChanged<HpBarConfig>? onEnemyHpConfigChanged,
+    VoidCallback? onApply,
     VoidCallback? onClose,
   }) {
     return MaterialApp(
@@ -35,6 +36,7 @@ void main() {
                 onLayoutChanged: onLayoutChanged ?? (_) {},
                 onEnemyConfigChanged: onEnemyConfigChanged ?? (_) {},
                 onEnemyHpConfigChanged: onEnemyHpConfigChanged ?? (_) {},
+                onApply: onApply ?? () {},
                 onClose: onClose ?? () {},
               ),
             ],

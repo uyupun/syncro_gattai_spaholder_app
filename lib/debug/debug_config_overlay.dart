@@ -230,7 +230,7 @@ class _ConfigHeader extends StatelessWidget {
       child: Row(
         children: [
           const Text(
-            'Config',
+            '設定',
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -241,12 +241,12 @@ class _ConfigHeader extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.restart_alt, color: Colors.orange, size: 20),
             onPressed: onReset,
-            tooltip: 'Reset',
+            tooltip: 'リセット',
           ),
           IconButton(
             icon: const Icon(Icons.copy, color: Colors.cyan, size: 20),
             onPressed: onExport,
-            tooltip: 'Export JSON',
+            tooltip: 'JSONエクスポート',
           ),
           if (onClose != null)
             IconButton(

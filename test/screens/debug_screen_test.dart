@@ -15,21 +15,21 @@ void main() {
       mockBle.dispose();
     });
 
-    testWidgets('BLEタブとConfigタブが表示される', (tester) async {
+    testWidgets('BLEタブと設定タブが表示される', (tester) async {
       await tester.pumpWidget(
         MaterialApp(home: DebugScreen(bleService: mockBle)),
       );
 
       expect(find.text('BLE'), findsOneWidget);
-      expect(find.text('Config'), findsOneWidget);
+      expect(find.text('設定'), findsOneWidget);
     });
 
-    testWidgets('AppBarにDebugタイトルが表示される', (tester) async {
+    testWidgets('AppBarにデバッグタイトルが表示される', (tester) async {
       await tester.pumpWidget(
         MaterialApp(home: DebugScreen(bleService: mockBle)),
       );
 
-      expect(find.text('Debug'), findsOneWidget);
+      expect(find.text('デバッグ'), findsOneWidget);
     });
   });
 }

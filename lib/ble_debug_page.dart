@@ -11,7 +11,7 @@ class BleDebugPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("BLE Simple Debug")),
+      appBar: AppBar(title: const Text("BLEデバッグ")),
       body: BleDebugContent(bleService: bleService),
     );
   }
@@ -120,7 +120,7 @@ class _BleDebugContentState extends State<BleDebugContent> {
                     Text(
                       data != null
                           ? "${data.value.toStringAsFixed(2)} G"
-                          : "Wait...",
+                          : "待機中...",
                       style: const TextStyle(fontSize: 16),
                     ),
                   ],

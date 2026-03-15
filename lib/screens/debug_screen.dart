@@ -14,18 +14,18 @@ class DebugScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!kDebugMode) {
-      return const Scaffold(body: Center(child: Text('Debug mode only')));
+      return const Scaffold(body: Center(child: Text('デバッグモード専用')));
     }
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Debug'),
+          title: const Text('デバッグ'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'BLE'),
-              Tab(text: 'Config'),
+              Tab(text: '設定'),
             ],
           ),
         ),

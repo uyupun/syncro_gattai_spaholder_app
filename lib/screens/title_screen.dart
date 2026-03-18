@@ -102,8 +102,10 @@ class _TitleScreenState extends State<TitleScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  spacing: 20,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.center,
                   children: [
                     if (!_canStart)
                       ElevatedButton(
@@ -163,7 +165,6 @@ class _TitleScreenState extends State<TitleScreen> {
                         ),
                         child: const Text('デバイス解除'),
                       ),
-                    const SizedBox(width: 20),
                     ElevatedButton(
                       onPressed: _canStart ? widget.onStart : null,
                       style: ElevatedButton.styleFrom(

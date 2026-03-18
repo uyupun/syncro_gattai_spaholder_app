@@ -4,6 +4,7 @@ experimental = true
 
 [tools]
 flutter = "3.38.4"
+java = "temurin-17"
 
 [hooks]
 # mise install後に実行される

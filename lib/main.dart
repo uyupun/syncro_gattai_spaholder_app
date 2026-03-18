@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 
 import 'accessors/ble_mock_accessor.dart';
 import 'accessors/long_press_input.dart';
-import 'accessors/up_swipe_input.dart';
 import 'ble_manager.dart';
 import 'interfaces/gesture_input.dart';
 import 'interfaces/ble_service.dart';
@@ -17,7 +16,6 @@ import 'screens/debug_screen.dart';
 import 'screens/game_clear_screen.dart';
 import 'screens/game_wrapper.dart';
 import 'screens/title_screen.dart';
-import 'widgets/gesture_input_area.dart';
 import 'widgets/long_press_input_area.dart';
 
 const bool _kUseMockBleOverride = bool.fromEnvironment('USE_MOCK_BLE');
@@ -79,8 +77,6 @@ class _MyAppState extends State<MyApp> {
       : BleManager();
 
   // デバッグトリガー用
-  final _leftSwipe = UpSwipeInput();
-  final _rightSwipe = UpSwipeInput();
   final _longPress = LongPressInput();
 
   @override
@@ -92,8 +88,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     _bleService.dispose();
-    _leftSwipe.dispose();
-    _rightSwipe.dispose();
     super.dispose();
   }
 
@@ -147,53 +141,17 @@ class _MyAppState extends State<MyApp> {
   Widget? _buildDebugTrigger() {
     if (!kDebugMode) return null;
 
-    // エミュレータの場合は左上長押し、実機は両端スワイプ
-    if (!widget.isPhysicalDevice) {
-      return Positioned(
-        left: 0,
-        top: 0,
-        width: 80,
-        height: 80,
-        child: ColoredBox(
-          color: Colors.blue.withValues(alpha: 0.3),
-          child: LongPressInputArea(
-            input: _longPress,
-            onFed: () => _checkAllDetected([_longPress]),
-          ),
+    return Positioned(
+      left: 0,
+      top: 0,
+      width: 80,
+      height: 80,
+      child: ColoredBox(
+        color: Colors.blue.withValues(alpha: 0.3),
+        child: LongPressInputArea(
+          input: _longPress,
+          onFed: () => _checkAllDetected([_longPress]),
         ),
-      );
-    }
-
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 80,
-            child: ColoredBox(
-              color: Colors.red.withValues(alpha: 0.3),
-              child: GestureInputArea(
-                input: _leftSwipe,
-                onFed: () => _checkAllDetected([_leftSwipe, _rightSwipe]),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 80,
-            child: ColoredBox(
-              color: Colors.green.withValues(alpha: 0.3),
-              child: GestureInputArea(
-                input: _rightSwipe,
-                onFed: () => _checkAllDetected([_leftSwipe, _rightSwipe]),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -28,7 +28,7 @@ void main() {
   group('DebugConfigOverlay', () {
     testWidgets('ヘッダーにConfig表示', (tester) async {
       await tester.pumpWidget(buildTestWidget());
-      expect(find.text('Config'), findsOneWidget);
+      expect(find.text('設定'), findsOneWidget);
     });
 
     testWidgets('全パラメータのSliderが表示される', (tester) async {

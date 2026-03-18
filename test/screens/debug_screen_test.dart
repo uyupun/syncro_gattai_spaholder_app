@@ -31,5 +31,35 @@ void main() {
 
       expect(find.text('デバッグ'), findsOneWidget);
     });
+
+    testWidgets('小さい画面でもオーバーフローしない（BLEタブ）', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(home: DebugScreen(bleService: mockBle)),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('小さい画面でもオーバーフローしない（設定タブ）', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(home: DebugScreen(bleService: mockBle)),
+      );
+
+      // 設定タブに切り替え
+      await tester.tap(find.text('設定'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }

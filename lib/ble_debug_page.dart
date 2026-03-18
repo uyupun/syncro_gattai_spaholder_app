@@ -63,18 +63,25 @@ class _BleDebugContentState extends State<BleDebugContent> {
 
   @override
   Widget build(BuildContext context) {
+    final safePadding = MediaQuery.of(context).padding;
+    final horizontalPadding = EdgeInsets.only(
+      left: safePadding.left + 16,
+      right: safePadding.right + 32,
+    );
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: horizontalPadding.copyWith(top: 6, bottom: 6),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            alignment: WrapAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: () => _bleService.scanAndConnect(),
                 child: const Text("スキャン開始"),
               ),
-              const SizedBox(width: 20),
               ElevatedButton(
                 onPressed: () {
                   _bleService.disconnectAll();
@@ -106,10 +113,7 @@ class _BleDebugContentState extends State<BleDebugContent> {
                   : id;
 
               return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 12.0,
-                ),
+                padding: horizontalPadding.copyWith(top: 6, bottom: 6),
                 child: Row(
                   children: [
                     Text(

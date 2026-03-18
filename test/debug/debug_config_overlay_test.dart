@@ -47,6 +47,7 @@ void main() {
         'shoulderSpeedRange',
         'elbowSpeedRange',
       ]) {
+        await tester.scrollUntilVisible(find.text(label), 100);
         expect(find.text(label), findsOneWidget, reason: '$label が見つからない');
       }
     });

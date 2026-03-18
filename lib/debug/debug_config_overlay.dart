@@ -90,18 +90,27 @@ class _DebugConfigContentState extends State<DebugConfigContent> {
 
   @override
   Widget build(BuildContext context) {
+    final safePadding = MediaQuery.of(context).padding;
+    final horizontalPadding = EdgeInsets.only(
+      left: safePadding.left + 16,
+      right: safePadding.right + 32,
+    );
+
     return Material(
       color: DebugConfigContent.backgroundColor,
       child: Column(
         children: [
-          _ConfigHeader(
-            onReset: _reset,
-            onExport: _export,
-            onClose: widget.onClose,
+          Padding(
+            padding: horizontalPadding,
+            child: _ConfigHeader(
+              onReset: _reset,
+              onExport: _export,
+              onClose: widget.onClose,
+            ),
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: horizontalPadding,
               children: [
                 _ConfigSliderTile(
                   label: 'gravity.y',
@@ -226,7 +235,7 @@ class _ConfigHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
           const Text(
@@ -280,29 +289,30 @@ class _ConfigSliderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final divisions = ((max - min) / step).round();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ),
               Text(
                 value.toStringAsFixed(step < 1 ? 2 : 0),
-                style: const TextStyle(color: Colors.cyanAccent, fontSize: 11),
+                style: const TextStyle(color: Colors.cyanAccent, fontSize: 14),
               ),
             ],
           ),
           SliderTheme(
             data: SliderThemeData(
-              trackHeight: 2,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
               activeTrackColor: Colors.cyanAccent,
               inactiveTrackColor: Colors.white24,
               thumbColor: Colors.cyan,

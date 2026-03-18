@@ -3,15 +3,15 @@ import 'dart:async';
 import '../interfaces/gesture_input.dart';
 
 class UpSwipeInput implements GestureInput {
-  static const _kVelocityThreshold = -200.0;
-  static const _kTimeout = Duration(milliseconds: 500);
+  static const _kVelocityThreshold = 10.0;
+  static const _kTimeout = Duration(seconds: 5);
 
   bool _detected = false;
   Timer? _timer;
 
   @override
   void feed(double dx, double dy) {
-    if (dy >= _kVelocityThreshold) return;
+    if (dy == 0.0 || dy.abs() < _kVelocityThreshold) return;
 
     _detected = true;
     _timer?.cancel();

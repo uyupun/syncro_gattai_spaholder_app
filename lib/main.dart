@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +20,20 @@ import 'screens/title_screen.dart';
 import 'widgets/gesture_input_area.dart';
 import 'widgets/long_press_input_area.dart';
 
-const bool kUseMockBle = bool.fromEnvironment('USE_MOCK_BLE');
+const bool _kUseMockBleOverride = bool.fromEnvironment('USE_MOCK_BLE');
+
+Future<bool> _detectPhysicalDevice() async {
+  final deviceInfo = DeviceInfoPlugin();
+  if (Platform.isAndroid) {
+    final info = await deviceInfo.androidInfo;
+    return info.isPhysicalDevice;
+  }
+  if (Platform.isIOS) {
+    final info = await deviceInfo.iosInfo;
+    return info.isPhysicalDevice;
+  }
+  return false;
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,13 +44,29 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: MyApp()));
+  final isPhysicalDevice = await _detectPhysicalDevice();
+  // BLE: --dart-define=USE_MOCK_BLE=true ならモック強制、未指定なら実機判定
+  final useMockBle = _kUseMockBleOverride || !isPhysicalDevice;
+
+  runApp(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: MyApp(isPhysicalDevice: isPhysicalDevice, useMockBle: useMockBle),
+    ),
+  );
 }
 
 enum AppScreen { title, countdown, game, gameClear }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final bool isPhysicalDevice;
+  final bool useMockBle;
+
+  const MyApp({
+    super.key,
+    required this.isPhysicalDevice,
+    required this.useMockBle,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -42,7 +74,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
-  final BleService _bleService = kUseMockBle ? BleMockAccessor() : BleManager();
+  late final BleService _bleService = widget.useMockBle
+      ? BleMockAccessor()
+      : BleManager();
 
   // デバッグトリガー用
   final _leftSwipe = UpSwipeInput();
@@ -113,43 +147,54 @@ class _MyAppState extends State<MyApp> {
   Widget? _buildDebugTrigger() {
     if (!kDebugMode) return null;
 
-    // エミュレータ(モックBLE)の場合は左上長押し、実機は両端スワイプ
-    if (kUseMockBle) {
+    // エミュレータの場合は左上長押し、実機は両端スワイプ
+    if (!widget.isPhysicalDevice) {
       return Positioned(
         left: 0,
         top: 0,
         width: 80,
         height: 80,
-        child: LongPressInputArea(
-          input: _longPress,
-          onFed: () => _checkAllDetected([_longPress]),
+        child: ColoredBox(
+          color: Colors.blue.withValues(alpha: 0.3),
+          child: LongPressInputArea(
+            input: _longPress,
+            onFed: () => _checkAllDetected([_longPress]),
+          ),
         ),
       );
     }
 
-    return Stack(
-      children: [
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 40,
-          child: GestureInputArea(
-            input: _leftSwipe,
-            onFed: () => _checkAllDetected([_leftSwipe, _rightSwipe]),
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 80,
+            child: ColoredBox(
+              color: Colors.red.withValues(alpha: 0.3),
+              child: GestureInputArea(
+                input: _leftSwipe,
+                onFed: () => _checkAllDetected([_leftSwipe, _rightSwipe]),
+              ),
+            ),
           ),
-        ),
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 40,
-          child: GestureInputArea(
-            input: _rightSwipe,
-            onFed: () => _checkAllDetected([_leftSwipe, _rightSwipe]),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 80,
+            child: ColoredBox(
+              color: Colors.green.withValues(alpha: 0.3),
+              child: GestureInputArea(
+                input: _rightSwipe,
+                onFed: () => _checkAllDetected([_leftSwipe, _rightSwipe]),
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -266,13 +266,6 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
       value: _config.elbowSpeedRange,
       onChanged: (v) => _updateConfig((c) => c.copyWith(elbowSpeedRange: v)),
     ),
-    _FieldMeta(
-      label: 'spriteScale',
-      displayName: '敵スプライト倍率',
-      steps: const [0.1, 0.5],
-      value: _enemyConfig.spriteScale,
-      onChanged: (v) => _updateEnemyConfig((c) => c.copyWith(spriteScale: v)),
-    ),
   ];
 
   Widget _buildGameTab() {
@@ -428,6 +421,15 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
           value: _layout.armTipLocalY,
           steps: const [0.5, 5],
           onChanged: (v) => _updateLayout((l) => l.copyWith(armTipLocalY: v)),
+        ),
+        _sectionHeader('敵'),
+        _ConfigStepperTile(
+          label: 'spriteScale',
+          displayName: '敵スプライト倍率',
+          steps: const [0.1, 0.5],
+          value: _enemyConfig.spriteScale,
+          onChanged: (v) =>
+              _updateEnemyConfig((c) => c.copyWith(spriteScale: v)),
         ),
       ],
     );

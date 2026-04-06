@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/accessors/ble_mock_accessor.dart';
@@ -48,6 +50,44 @@ void main() {
       );
 
       expect(find.text('接続デバイス数: 0/2'), findsOneWidget);
+    });
+
+    testWidgets('小さい画面でもオーバーフローしない（未接続時）', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('小さい画面でもオーバーフローしない（接続済み時）', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
+        ),
+      );
+
+      // scanAndConnectを開始し、Future.delayedを進める
+      unawaited(mockBle.scanAndConnect());
+      await tester.pump(const Duration(seconds: 2));
+
+      // Timer.periodicを停止
+      await mockBle.disconnectAll();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

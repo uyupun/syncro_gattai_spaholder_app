@@ -170,7 +170,7 @@ class RobotArmGame extends Forge2DGame {
         _enemyHpConfig.barPositionY,
       ),
     );
-    await world.add(hpBar);
+    await camera.viewport.add(hpBar);
   }
 
   /// 腕の先端のワールド座標を取得

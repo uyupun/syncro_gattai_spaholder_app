@@ -10,10 +10,10 @@ void main() {
     test('デフォルト値が正しい', () {
       final config = HpBarConfig();
       expect(config.maxHp, 100);
-      expect(config.barPositionX, 0);
-      expect(config.barPositionY, 0);
-      expect(config.barSizeX, 100);
-      expect(config.barSizeY, 10);
+      expect(config.barPositionX, 0.10);
+      expect(config.barPositionY, 0.03);
+      expect(config.barSizeX, 0.30);
+      expect(config.barSizeY, 0.02);
     });
 
     test('コンストラクタで全値を指定できる', () {
@@ -35,7 +35,7 @@ void main() {
       final original = HpBarConfig();
       final modified = original.copyWith(maxHp: 50);
       expect(modified.maxHp, 50);
-      expect(modified.barSizeX, 100);
+      expect(modified.barSizeX, 0.30);
     });
 
     test('toJson/fromJsonラウンドトリップで値が保持される', () {
@@ -59,7 +59,7 @@ void main() {
     test('fromJsonで欠損フィールドはデフォルト値', () {
       final config = HpBarConfig.fromJson({});
       expect(config.maxHp, 100);
-      expect(config.barSizeX, 100);
+      expect(config.barSizeX, 0.30);
     });
 
     test('JsonExportableを実装している', () {
@@ -97,7 +97,7 @@ void main() {
         expect(configs.player.barSizeX, 80.0);
         expect(configs.enemy.maxHp, 250.0);
         expect(configs.enemy.barSizeX, 60.0);
-        expect(configs.enemy.barSizeY, 10);
+        expect(configs.enemy.barSizeY, 0.02);
       });
     });
   });

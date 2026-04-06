@@ -119,14 +119,14 @@ class RobotArmGame extends Forge2DGame {
     );
     await world.add(shoulder);
 
-    // プレイヤーHPバー生成
+    // プレイヤーHPバー生成（位置・サイズは画面サイズに対する割合で指定）
     final playerHpBar = HpBar(
       hpReadable: shoulder,
-      barWidth: _playerHpConfig.barSizeX,
-      barHeight: _playerHpConfig.barSizeY,
+      barWidth: _playerHpConfig.barSizeX * size.x,
+      barHeight: _playerHpConfig.barSizeY * size.y,
       position: Vector2(
-        _playerHpConfig.barPositionX,
-        _playerHpConfig.barPositionY,
+        _playerHpConfig.barPositionX * size.x,
+        _playerHpConfig.barPositionY * size.y,
       ),
     );
     await camera.viewport.add(playerHpBar);
@@ -176,14 +176,14 @@ class RobotArmGame extends Forge2DGame {
     enemies.add(enemy);
     await world.add(enemy);
 
-    // HPバー生成
+    // 敵HPバー生成（位置・サイズは画面サイズに対する割合で指定）
     final hpBar = HpBar(
       hpReadable: enemy,
-      barWidth: _enemyHpConfig.barSizeX,
-      barHeight: _enemyHpConfig.barSizeY,
+      barWidth: _enemyHpConfig.barSizeX * size.x,
+      barHeight: _enemyHpConfig.barSizeY * size.y,
       position: Vector2(
-        _enemyHpConfig.barPositionX,
-        _enemyHpConfig.barPositionY,
+        _enemyHpConfig.barPositionX * size.x,
+        _enemyHpConfig.barPositionY * size.y,
       ),
     );
     await camera.viewport.add(hpBar);

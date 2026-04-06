@@ -15,10 +15,10 @@ class HpBarConfig implements JsonExportable {
     double? barSizeX,
     double? barSizeY,
   }) : maxHp = maxHp ?? 100,
-       barPositionX = barPositionX ?? 0,
-       barPositionY = barPositionY ?? 0,
-       barSizeX = barSizeX ?? 100,
-       barSizeY = barSizeY ?? 10;
+       barPositionX = barPositionX ?? 0.10,
+       barPositionY = barPositionY ?? 0.03,
+       barSizeX = barSizeX ?? 0.30,
+       barSizeY = barSizeY ?? 0.02;
 
   factory HpBarConfig.fromJson(Map<String, dynamic> json) {
     return HpBarConfig(

@@ -38,6 +38,7 @@ class _GameWrapperState extends State<GameWrapper> {
   GameConfig _config = GameConfig();
   ArmLayoutConfig _layout = ArmLayoutConfig();
   EnemyConfig _enemyConfig = EnemyConfig();
+  HpBarConfig _playerHpConfig = HpBarConfig();
   HpBarConfig _enemyHpConfig = HpBarConfig();
 
   // ゲーム再生成用キー
@@ -48,11 +49,21 @@ class _GameWrapperState extends State<GameWrapper> {
   void initState() {
     super.initState();
     _game = _createGame();
+    _loadHpConfigs();
 
     _accelSub = _bleService.accelDataStream.listen((accelData) {
       _latestValues[accelData.deviceId] = accelData.value;
       _checkStraighteningCondition();
     });
+  }
+
+  Future<void> _loadHpConfigs() async {
+    final hpConfigs = await HpBarConfig.loadFromAsset();
+    setState(() {
+      _playerHpConfig = hpConfigs.player;
+      _enemyHpConfig = hpConfigs.enemy;
+    });
+    _recreateGame();
   }
 
   RobotArmGame _createGame() {
@@ -62,6 +73,7 @@ class _GameWrapperState extends State<GameWrapper> {
       config: _config,
       layout: _layout,
       enemyConfig: _enemyConfig,
+      playerHpConfig: _playerHpConfig,
       enemyHpConfig: _enemyHpConfig,
     );
   }
@@ -195,10 +207,12 @@ class _GameWrapperState extends State<GameWrapper> {
             initialConfig: _config,
             initialLayout: _layout,
             initialEnemyConfig: _enemyConfig,
+            initialPlayerHpConfig: _playerHpConfig,
             initialEnemyHpConfig: _enemyHpConfig,
             onConfigChanged: (newConfig) => _config = newConfig,
             onLayoutChanged: (newLayout) => _layout = newLayout,
             onEnemyConfigChanged: (newConfig) => _enemyConfig = newConfig,
+            onPlayerHpConfigChanged: (newConfig) => _playerHpConfig = newConfig,
             onEnemyHpConfigChanged: (newConfig) => _enemyHpConfig = newConfig,
             // Why: 即時反映だとゲーム状態(クリア判定等)がリセットされてしまうため、
             // [OK]ボタンで確定してからゲーム再生成する。

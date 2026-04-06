@@ -13,6 +13,7 @@ import '../game/game_config.dart';
 import '../game/hp_bar_config.dart';
 
 enum _HpOwner {
+  player('player', 'プレイヤー'),
   enemy('enemy', '敵');
 
   final String prefix;
@@ -40,10 +41,12 @@ class DebugConfigOverlay extends StatefulWidget {
   final GameConfig initialConfig;
   final ArmLayoutConfig initialLayout;
   final EnemyConfig initialEnemyConfig;
+  final HpBarConfig initialPlayerHpConfig;
   final HpBarConfig initialEnemyHpConfig;
   final ValueChanged<GameConfig> onConfigChanged;
   final ValueChanged<ArmLayoutConfig> onLayoutChanged;
   final ValueChanged<EnemyConfig> onEnemyConfigChanged;
+  final ValueChanged<HpBarConfig> onPlayerHpConfigChanged;
   final ValueChanged<HpBarConfig> onEnemyHpConfigChanged;
   final VoidCallback onApply;
   final VoidCallback onClose;
@@ -53,10 +56,12 @@ class DebugConfigOverlay extends StatefulWidget {
     required this.initialConfig,
     required this.initialLayout,
     required this.initialEnemyConfig,
+    required this.initialPlayerHpConfig,
     required this.initialEnemyHpConfig,
     required this.onConfigChanged,
     required this.onLayoutChanged,
     required this.onEnemyConfigChanged,
+    required this.onPlayerHpConfigChanged,
     required this.onEnemyHpConfigChanged,
     required this.onApply,
     required this.onClose,
@@ -71,6 +76,7 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
   late GameConfig _config = widget.initialConfig;
   late ArmLayoutConfig _layout = widget.initialLayout;
   late EnemyConfig _enemyConfig = widget.initialEnemyConfig;
+  late HpBarConfig _playerHpConfig = widget.initialPlayerHpConfig;
   late HpBarConfig _enemyHpConfig = widget.initialEnemyHpConfig;
   late TabController _tabController;
 
@@ -101,6 +107,11 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
     widget.onEnemyConfigChanged(_enemyConfig);
   }
 
+  void _updatePlayerHpConfig(HpBarConfig Function(HpBarConfig) updater) {
+    setState(() => _playerHpConfig = updater(_playerHpConfig));
+    widget.onPlayerHpConfigChanged(_playerHpConfig);
+  }
+
   void _updateEnemyHpConfig(HpBarConfig Function(HpBarConfig) updater) {
     setState(() => _enemyHpConfig = updater(_enemyHpConfig));
     widget.onEnemyHpConfigChanged(_enemyHpConfig);
@@ -111,6 +122,7 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
       'gameConfig': _config.toJson(),
       'armLayout': _layout.toJson(),
       'enemyConfig': _enemyConfig.toJson(),
+      'playerHpConfig': _playerHpConfig.toJson(),
       'enemyHpConfig': _enemyHpConfig.toJson(),
     };
     final json = const JsonEncoder.withIndent('  ').convert(allJson);
@@ -134,11 +146,13 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
       _config = defaultConfig;
       _layout = defaultLayout;
       _enemyConfig = defaultEnemyConfig;
+      _playerHpConfig = defaultHpConfig;
       _enemyHpConfig = defaultHpConfig;
     });
     widget.onConfigChanged(defaultConfig);
     widget.onLayoutChanged(defaultLayout);
     widget.onEnemyConfigChanged(defaultEnemyConfig);
+    widget.onPlayerHpConfigChanged(defaultHpConfig);
     widget.onEnemyHpConfigChanged(defaultHpConfig);
   }
 
@@ -481,6 +495,20 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       children: [
+        _sectionHeader('プレイヤーHP'),
+        ..._hpConfigFields(
+          owner: _HpOwner.player,
+          config: _playerHpConfig,
+          onUpdate: _updatePlayerHpConfig,
+        ).map(
+          (f) => _ConfigStepperTile(
+            label: f.label,
+            displayName: f.displayName,
+            value: f.value,
+            steps: f.steps,
+            onChanged: f.onChanged,
+          ),
+        ),
         _sectionHeader('敵HP'),
         ..._hpConfigFields(
           owner: _HpOwner.enemy,

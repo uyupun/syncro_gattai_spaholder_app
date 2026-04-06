@@ -2,7 +2,10 @@ import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
-class ArmPart extends BodyComponent {
+import '../../interfaces/damageable.dart';
+import '../../interfaces/hp_readable.dart';
+
+class ArmPart extends BodyComponent implements HpReadable, Damageable {
   final Vector2 _pos;
   final Vector2 _size;
   final bool _isStatic;
@@ -13,6 +16,9 @@ class ArmPart extends BodyComponent {
   final Offset _tipOffset;
   Sprite? _sprite;
 
+  final double _maxHp;
+  double _currentHp;
+
   ArmPart({
     required Vector2 position,
     required Vector2 size,
@@ -22,14 +28,29 @@ class ArmPart extends BodyComponent {
     this.isDrill = false,
     double? tipRadius,
     Offset? tipOffset,
+    double maxHp = 100,
   }) : _pos = position,
        _size = size,
        _isStatic = isStatic,
        _color = color,
        _imagePath = imagePath,
        _tipRadius = tipRadius ?? 0.0,
-       _tipOffset = tipOffset ?? Offset.zero {
+       _tipOffset = tipOffset ?? Offset.zero,
+       _maxHp = maxHp,
+       _currentHp = maxHp {
     assert(!isDrill || _tipRadius > 0, 'isDrill=true requires tipRadius > 0');
+  }
+
+  @override
+  double get hp => _currentHp;
+
+  @override
+  double get maxHp => _maxHp;
+
+  @override
+  void takeDamage(double amount) {
+    // Enemy実装と同パターン: 下限0でclamp
+    _currentHp = (_currentHp - amount).clamp(0, _maxHp);
   }
 
   @override

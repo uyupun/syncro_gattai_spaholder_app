@@ -23,6 +23,7 @@ class RobotArmGame extends Forge2DGame {
   final GameConfig _config;
   final ArmLayoutConfig _layout;
   final EnemyConfig _enemyConfig;
+  final HpBarConfig _playerHpConfig;
   final HpBarConfig _enemyHpConfig;
 
   RobotArmGame({
@@ -31,10 +32,12 @@ class RobotArmGame extends Forge2DGame {
     required GameConfig config,
     required ArmLayoutConfig layout,
     required EnemyConfig enemyConfig,
+    HpBarConfig? playerHpConfig,
     HpBarConfig? enemyHpConfig,
   }) : _config = config,
        _layout = layout,
        _enemyConfig = enemyConfig,
+       _playerHpConfig = playerHpConfig ?? HpBarConfig(),
        _enemyHpConfig = enemyHpConfig ?? HpBarConfig(),
        super(gravity: config.gravity, zoom: config.zoom);
 
@@ -112,8 +115,21 @@ class RobotArmGame extends Forge2DGame {
       isStatic: true,
       color: Colors.grey,
       imagePath: GameImage.upperBody.path,
+      maxHp: _playerHpConfig.maxHp,
     );
     await world.add(shoulder);
+
+    // プレイヤーHPバー生成
+    final playerHpBar = HpBar(
+      hpReadable: shoulder,
+      barWidth: _playerHpConfig.barSizeX,
+      barHeight: _playerHpConfig.barSizeY,
+      position: Vector2(
+        _playerHpConfig.barPositionX,
+        _playerHpConfig.barPositionY,
+      ),
+    );
+    await camera.viewport.add(playerHpBar);
 
     // --- ジョイント生成 ---
     final sj = _layout.shoulderJoint;

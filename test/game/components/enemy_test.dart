@@ -47,7 +47,7 @@ void main() {
         maxHp: 50,
       );
       enemy.takeDamage(60);
-      expect(enemy.hp, lessThanOrEqualTo(0));
+      expect(enemy.hp, equals(0));
     });
   });
 }

@@ -1,4 +1,6 @@
-class JointConfig {
+import '../interfaces/json_exportable.dart';
+
+class JointConfig implements JsonExportable {
   final double anchorAX;
   final double anchorAY;
   final double anchorBX;
@@ -22,6 +24,7 @@ class JointConfig {
     );
   }
 
+  @override
   Map<String, dynamic> toJson() => {
     'anchorA': {'x': anchorAX, 'y': anchorAY},
     'anchorB': {'x': anchorBX, 'y': anchorBY},

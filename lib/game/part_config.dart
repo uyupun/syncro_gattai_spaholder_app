@@ -1,4 +1,6 @@
-class PartConfig {
+import '../interfaces/json_exportable.dart';
+
+class PartConfig implements JsonExportable {
   final double positionX;
   final double positionY;
   final double sizeX;
@@ -22,6 +24,7 @@ class PartConfig {
     );
   }
 
+  @override
   Map<String, dynamic> toJson() => {
     'position': {'x': positionX, 'y': positionY},
     'size': {'x': sizeX, 'y': sizeY},

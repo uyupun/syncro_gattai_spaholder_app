@@ -187,8 +187,8 @@ class RobotArmGame extends Forge2DGame {
       final distance = tipPos.distanceTo(enemy.body.position);
       final hitDistance = _config.tipRadius + enemy.radius;
       if (distance < hitDistance) {
-        // Why: ダメージ量はConfig(上位から注入)経由で取得。enemy.maxHpを直接読むと
-        // 下位が下位の内部情報に依存してしまうため、上位注入のConfigから取得する。
+        // todo: 現状は即撃破固定。将来的にダメージ量を調整する場合は
+        // 味方・敵双方の攻撃設定を持つ AttackConfig を新設してConfigから渡す。
         enemy.takeDamage(_enemyHpConfig.maxHp);
         enemy.onHit();
 

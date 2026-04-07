@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spajam2025_app/game/game_config.dart';
+import 'package:spajam2025_app/interfaces/json_exportable.dart';
 
 void main() {
   group('GameConfig', () {
@@ -110,6 +111,11 @@ void main() {
       original.copyWith(zoom: 99.0);
 
       expect(original.zoom, 20.0);
+    });
+
+    test('JsonExportableを実装している', () {
+      final config = GameConfig();
+      expect(config, isA<JsonExportable>());
     });
 
     group('loadFromAsset', () {

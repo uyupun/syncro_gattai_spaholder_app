@@ -12,8 +12,10 @@ import '../resources/game_image.dart';
 import 'arm_layout_config.dart';
 import 'components/arm_part.dart';
 import 'components/enemy.dart';
+import 'components/hp_bar.dart';
 import 'enemy_config.dart';
 import 'game_config.dart';
+import 'hp_bar_config.dart';
 
 class RobotArmGame extends Forge2DGame {
   final VoidCallback? onGameClear;
@@ -21,6 +23,8 @@ class RobotArmGame extends Forge2DGame {
   final GameConfig _config;
   final ArmLayoutConfig _layout;
   final EnemyConfig _enemyConfig;
+  final HpBarConfig _playerHpConfig;
+  final HpBarConfig _enemyHpConfig;
 
   RobotArmGame({
     this.onGameClear,
@@ -28,9 +32,13 @@ class RobotArmGame extends Forge2DGame {
     required GameConfig config,
     required ArmLayoutConfig layout,
     required EnemyConfig enemyConfig,
+    HpBarConfig? playerHpConfig,
+    HpBarConfig? enemyHpConfig,
   }) : _config = config,
        _layout = layout,
        _enemyConfig = enemyConfig,
+       _playerHpConfig = playerHpConfig ?? HpBarConfig(),
+       _enemyHpConfig = enemyHpConfig ?? HpBarConfig(),
        super(gravity: config.gravity, zoom: config.zoom);
 
   late ArmPart shoulder;
@@ -77,55 +85,73 @@ class RobotArmGame extends Forge2DGame {
     await _spawnEnemies();
 
     // --- パーツ生成 ---
+    final ua = _layout.upperArm;
     upperArm = ArmPart(
-      position: _layout.upperArmPosition,
-      size: _layout.upperArmSize,
+      position: Vector2(ua.positionX, ua.positionY),
+      size: Vector2(ua.sizeX, ua.sizeY),
       isStatic: false,
       color: Colors.blueAccent,
       imagePath: GameImage.upperArm.path,
     );
     await world.add(upperArm);
 
+    final fa = _layout.foreArm;
     foreArm = ArmPart(
-      position: _layout.foreArmPosition,
-      size: _layout.foreArmSize,
+      position: Vector2(fa.positionX, fa.positionY),
+      size: Vector2(fa.sizeX, fa.sizeY),
       isStatic: false,
       color: Colors.lightBlueAccent,
       imagePath: GameImage.drill.path,
       isDrill: true,
       tipRadius: _config.tipRadius,
-      tipOffset: Offset(_layout.tipOffset.x, _layout.tipOffset.y),
+      tipOffset: Offset(_layout.tipOffsetX, _layout.tipOffsetY),
     );
     await world.add(foreArm);
 
+    final sh = _layout.shoulder;
     shoulder = ArmPart(
-      position: _layout.shoulderPosition,
-      size: _layout.shoulderSize,
+      position: Vector2(sh.positionX, sh.positionY),
+      size: Vector2(sh.sizeX, sh.sizeY),
       isStatic: true,
       color: Colors.grey,
       imagePath: GameImage.upperBody.path,
+      maxHp: _playerHpConfig.maxHp,
     );
     await world.add(shoulder);
 
+    // プレイヤーHPバー生成（位置・サイズは画面サイズに対する割合で指定）
+    final playerHpBar = HpBar(
+      hpReadable: shoulder,
+      barWidth: _playerHpConfig.barSizeX * size.x,
+      barHeight: _playerHpConfig.barSizeY * size.y,
+      position: Vector2(
+        _playerHpConfig.barPositionX * size.x,
+        _playerHpConfig.barPositionY * size.y,
+      ),
+    );
+    await camera.viewport.add(playerHpBar);
+
     // --- ジョイント生成 ---
+    final sj = _layout.shoulderJoint;
     final shoulderJointDef = RevoluteJointDef()
       ..bodyA = shoulder.body
       ..bodyB = upperArm.body
       ..collideConnected = false
-      ..localAnchorA.setFrom(_layout.shoulderAnchorA)
-      ..localAnchorB.setFrom(_layout.shoulderAnchorB)
+      ..localAnchorA.setFrom(Vector2(sj.anchorAX, sj.anchorAY))
+      ..localAnchorB.setFrom(Vector2(sj.anchorBX, sj.anchorBY))
       ..enableLimit = false
       ..enableMotor = false
       ..maxMotorTorque = _config.shoulderTorque;
     shoulderJoint = RevoluteJoint(shoulderJointDef);
     world.createJoint(shoulderJoint!);
 
+    final ej = _layout.elbowJoint;
     final elbowJointDef = RevoluteJointDef()
       ..bodyA = upperArm.body
       ..bodyB = foreArm.body
       ..collideConnected = false
-      ..localAnchorA.setFrom(_layout.elbowAnchorA)
-      ..localAnchorB.setFrom(_layout.elbowAnchorB)
+      ..localAnchorA.setFrom(Vector2(ej.anchorAX, ej.anchorAY))
+      ..localAnchorB.setFrom(Vector2(ej.anchorBX, ej.anchorBY))
       ..enableLimit = false
       ..enableMotor = false
       ..maxMotorTorque = _config.elbowTorque;
@@ -145,9 +171,22 @@ class RobotArmGame extends Forge2DGame {
       position: enemyPos,
       radius: _config.enemyRadius,
       spriteScale: _enemyConfig.spriteScale,
+      maxHp: _enemyHpConfig.maxHp,
     );
     enemies.add(enemy);
     await world.add(enemy);
+
+    // 敵HPバー生成（位置・サイズは画面サイズに対する割合で指定）
+    final hpBar = HpBar(
+      hpReadable: enemy,
+      barWidth: _enemyHpConfig.barSizeX * size.x,
+      barHeight: _enemyHpConfig.barSizeY * size.y,
+      position: Vector2(
+        _enemyHpConfig.barPositionX * size.x,
+        _enemyHpConfig.barPositionY * size.y,
+      ),
+    );
+    await camera.viewport.add(hpBar);
   }
 
   /// 腕の先端のワールド座標を取得
@@ -164,6 +203,9 @@ class RobotArmGame extends Forge2DGame {
       final distance = tipPos.distanceTo(enemy.body.position);
       final hitDistance = _config.tipRadius + enemy.radius;
       if (distance < hitDistance) {
+        // todo: 現状は即撃破固定。将来的にダメージ量を調整する場合は
+        // 味方・敵双方の攻撃設定を持つ AttackConfig を新設してConfigから渡す。
+        enemy.takeDamage(_enemyHpConfig.maxHp);
         enemy.onHit();
 
         _isCleared = true;

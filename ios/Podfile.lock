@@ -2,6 +2,8 @@ PODS:
   - audioplayers_darwin (0.0.1):
     - Flutter
     - FlutterMacOS
+  - device_info_plus (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_blue_plus_darwin (0.0.2):
     - Flutter
@@ -12,6 +14,7 @@ PODS:
 
 DEPENDENCIES:
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/darwin`)
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_blue_plus_darwin (from `.symlinks/plugins/flutter_blue_plus_darwin/darwin`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -19,6 +22,8 @@ DEPENDENCIES:
 EXTERNAL SOURCES:
   audioplayers_darwin:
     :path: ".symlinks/plugins/audioplayers_darwin/darwin"
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
     :path: Flutter
   flutter_blue_plus_darwin:
@@ -28,6 +33,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   audioplayers_darwin: 4f9ca89d92d3d21cec7ec580e78ca888e5fb68bd
+  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_blue_plus_darwin: 20a08bfeaa0f7804d524858d3d8744bcc1b6dbc3
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880

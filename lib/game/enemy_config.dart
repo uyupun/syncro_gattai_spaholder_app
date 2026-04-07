@@ -1,9 +1,7 @@
-import 'dart:convert';
+import '../interfaces/json_exportable.dart';
+import '../mixins/asset_loadable.dart';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-
-class EnemyConfig {
+class EnemyConfig implements JsonExportable {
   final double spriteScale;
 
   EnemyConfig({double? spriteScale}) : spriteScale = spriteScale ?? 2.5;
@@ -12,13 +10,18 @@ class EnemyConfig {
     return EnemyConfig(spriteScale: (json['spriteScale'] as num?)?.toDouble());
   }
 
+  @override
+  Map<String, dynamic> toJson() => {'spriteScale': spriteScale};
+
+  EnemyConfig copyWith({double? spriteScale}) {
+    return EnemyConfig(spriteScale: spriteScale ?? this.spriteScale);
+  }
+
   static Future<EnemyConfig> loadFromAsset() async {
-    try {
-      final jsonStr = await rootBundle.loadString('assets/enemy_config.json');
-      return EnemyConfig.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
-    } catch (e) {
-      debugPrint('Failed to load enemy_config.json, using defaults: $e');
-      return EnemyConfig();
-    }
+    return AssetLoadable.loadFromAsset<EnemyConfig>(
+      'assets/enemy_config.json',
+      EnemyConfig.fromJson,
+      EnemyConfig.new,
+    );
   }
 }

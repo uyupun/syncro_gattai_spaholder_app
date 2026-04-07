@@ -2,21 +2,16 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flame_audio/flame_audio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'accessors/ble_mock_accessor.dart';
-import 'accessors/long_press_input.dart';
 import 'ble_manager.dart';
-import 'interfaces/gesture_input.dart';
 import 'interfaces/ble_service.dart';
 import 'screens/countdown_screen.dart';
-import 'screens/debug_screen.dart';
 import 'screens/game_clear_screen.dart';
 import 'screens/game_wrapper.dart';
 import 'screens/title_screen.dart';
-import 'widgets/long_press_input_area.dart';
 
 const bool _kUseMockBleOverride = bool.fromEnvironment('USE_MOCK_BLE');
 
@@ -76,9 +71,6 @@ class _MyAppState extends State<MyApp> {
       ? BleMockAccessor()
       : BleManager();
 
-  // デバッグトリガー用
-  final _longPress = LongPressInput();
-
   @override
   void initState() {
     super.initState();
@@ -120,49 +112,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _openDebugScreen() {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => DebugScreen(bleService: _bleService),
-      ),
-    );
-  }
-
-  void _checkAllDetected(List<GestureInput> inputs) {
-    if (inputs.every((i) => i.isDetected)) {
-      for (final i in inputs) {
-        i.reset();
-      }
-      _openDebugScreen();
-    }
-  }
-
-  Widget? _buildDebugTrigger() {
-    if (!kDebugMode) return null;
-
-    return Positioned(
-      left: 0,
-      top: 0,
-      width: 80,
-      height: 80,
-      child: ColoredBox(
-        color: Colors.blue.withValues(alpha: 0.3),
-        child: LongPressInputArea(
-          input: _longPress,
-          onFed: () => _checkAllDetected([_longPress]),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: switch (_currentScreen) {
         AppScreen.title => TitleScreen(
           onStart: _startCountdown,
-          debugTrigger: _buildDebugTrigger(),
           bleService: _bleService,
         ),
         AppScreen.countdown => CountdownScreen(onComplete: _startGame),

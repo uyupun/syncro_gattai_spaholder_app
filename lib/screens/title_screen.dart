@@ -6,13 +6,11 @@ import '../interfaces/ble_service.dart';
 
 class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
-  final Widget? debugTrigger;
   final BleService bleService;
 
   const TitleScreen({
     super.key,
     required this.onStart,
-    this.debugTrigger,
     required this.bleService,
   });
 
@@ -187,7 +185,6 @@ class _TitleScreenState extends State<TitleScreen> {
             ),
           ),
         ),
-        if (widget.debugTrigger != null) widget.debugTrigger!,
       ],
     );
   }

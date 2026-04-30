@@ -15,12 +15,14 @@ import '../models/accel_data.dart';
 import '../widgets/hold_button.dart';
 
 class GameWrapper extends StatefulWidget {
-  final VoidCallback onGameClear;
+  final VoidCallback onWin;
+  final VoidCallback onLose;
   final BleService bleService;
 
   const GameWrapper({
     super.key,
-    required this.onGameClear,
+    required this.onWin,
+    required this.onLose,
     required this.bleService,
   });
 
@@ -68,7 +70,7 @@ class _GameWrapperState extends State<GameWrapper> {
 
   RobotArmGame _createGame() {
     return RobotArmGame(
-      onGameClear: widget.onGameClear,
+      onWin: widget.onWin,
       bleService: _bleService,
       config: _config,
       layout: _layout,
@@ -123,7 +125,7 @@ class _GameWrapperState extends State<GameWrapper> {
               right: 0,
               bottom: 0,
               child: GestureDetector(
-                onTap: () => _game.proceedToGameClear(),
+                onTap: () => _game.proceedToWin(),
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.7),
                   child: Center(

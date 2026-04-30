@@ -51,6 +51,8 @@ void main() async {
 
 enum AppScreen { title, countdown, game, gameClear }
 
+enum BattleStage { yugarock, asyncron }
+
 class MyApp extends StatefulWidget {
   final bool isPhysicalDevice;
   final bool useMockBle;
@@ -67,6 +69,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
+  BattleStage _currentStage = BattleStage.yugarock;
+
   late final BleService _bleService = widget.useMockBle
       ? BleMockAccessor()
       : BleManager();
@@ -93,21 +97,40 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _currentScreen = AppScreen.countdown;
     });
-    // カウントダウン中はタイトルBGMを継続
   }
 
-  void _startGame() {
-    // ゲーム画面のBGMに切り替え
+  void _startBattle() {
     _playBgm('game.mp3');
     setState(() {
       _currentScreen = AppScreen.game;
     });
   }
 
+  void _onWin() {
+    switch (_currentStage) {
+      case BattleStage.yugarock:
+        setState(() {
+          _currentStage = BattleStage.asyncron;
+        });
+      case BattleStage.asyncron:
+        setState(() {
+          _currentStage = BattleStage.yugarock;
+          _currentScreen = AppScreen.gameClear;
+        });
+    }
+  }
+
+  void _onLose() {
+    setState(() {
+      _currentStage = BattleStage.yugarock;
+      _currentScreen = AppScreen.gameClear;
+    });
+  }
+
   void _returnToTitle() {
-    // タイトル画面のBGMに切り替え
     _playBgm('title.mp3');
     setState(() {
+      _currentStage = BattleStage.yugarock;
       _currentScreen = AppScreen.title;
     });
   }
@@ -120,9 +143,10 @@ class _MyAppState extends State<MyApp> {
           onStart: _startCountdown,
           bleService: _bleService,
         ),
-        AppScreen.countdown => CountdownScreen(onComplete: _startGame),
+        AppScreen.countdown => CountdownScreen(onComplete: _startBattle),
         AppScreen.game => GameWrapper(
-          onGameClear: _returnToTitle,
+          onWin: _onWin,
+          onLose: _onLose,
           bleService: _bleService,
         ),
         AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),

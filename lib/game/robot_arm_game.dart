@@ -18,7 +18,7 @@ import 'game_config.dart';
 import 'hp_bar_config.dart';
 
 class RobotArmGame extends Forge2DGame {
-  final VoidCallback? onGameClear;
+  final VoidCallback? onWin;
   final BleService bleService;
   final GameConfig _config;
   final ArmLayoutConfig _layout;
@@ -27,7 +27,7 @@ class RobotArmGame extends Forge2DGame {
   final HpBarConfig _enemyHpConfig;
 
   RobotArmGame({
-    this.onGameClear,
+    this.onWin,
     required this.bleService,
     required GameConfig config,
     required ArmLayoutConfig layout,
@@ -231,10 +231,9 @@ class RobotArmGame extends Forge2DGame {
     }
   }
 
-  /// タップでゲームクリア画面に遷移
-  void proceedToGameClear() {
+  void proceedToWin() {
     if (_isCleared) {
-      onGameClear?.call();
+      onWin?.call();
     }
   }
 

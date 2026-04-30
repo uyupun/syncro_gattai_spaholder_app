@@ -193,6 +193,21 @@ class _GameWrapperState extends State<GameWrapper> {
           ),
         ),
         if (kDebugMode)
+          Positioned.fill(
+            child: Center(
+              child: GestureDetector(
+                onTapDown: (_) => _game.startStraightening(),
+                onTapUp: (_) => _game.stopStraightening(),
+                onTapCancel: () => _game.stopStraightening(),
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  color: Colors.transparent,
+                ),
+              ),
+            ),
+          ),
+        if (kDebugMode)
           Positioned(
             top: 10,
             right: 10,

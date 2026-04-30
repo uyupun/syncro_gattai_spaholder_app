@@ -9,8 +9,8 @@ import 'accessors/ble_mock_accessor.dart';
 import 'ble_manager.dart';
 import 'interfaces/ble_service.dart';
 import 'screens/countdown_screen.dart';
-import 'screens/game_clear_screen.dart';
 import 'screens/game_wrapper.dart';
+import 'screens/result_screen.dart';
 import 'screens/title_screen.dart';
 
 const bool _kUseMockBleOverride = bool.fromEnvironment('USE_MOCK_BLE');
@@ -49,9 +49,11 @@ void main() async {
   );
 }
 
-enum AppScreen { title, countdown, game, gameClear }
+enum AppScreen { title, countdown, game, result }
 
 enum BattleStage { yugarock, asyncron }
+
+enum GameResult { yugarockLose, asyncronLose, allClear }
 
 class MyApp extends StatefulWidget {
   final bool isPhysicalDevice;
@@ -70,6 +72,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   AppScreen _currentScreen = AppScreen.title;
   BattleStage _currentStage = BattleStage.yugarock;
+  GameResult _currentResult = GameResult.allClear;
 
   late final BleService _bleService = widget.useMockBle
       ? BleMockAccessor()
@@ -115,15 +118,27 @@ class _MyAppState extends State<MyApp> {
       case BattleStage.asyncron:
         setState(() {
           _currentStage = BattleStage.yugarock;
-          _currentScreen = AppScreen.gameClear;
+          _currentResult = GameResult.allClear;
+          _currentScreen = AppScreen.result;
         });
     }
   }
 
   void _onLose() {
     setState(() {
+      _currentResult = switch (_currentStage) {
+        BattleStage.yugarock => GameResult.yugarockLose,
+        BattleStage.asyncron => GameResult.asyncronLose,
+      };
       _currentStage = BattleStage.yugarock;
-      _currentScreen = AppScreen.gameClear;
+      _currentScreen = AppScreen.result;
+    });
+  }
+
+  void _onRetry() {
+    setState(() {
+      _currentStage = BattleStage.yugarock;
+      _currentScreen = AppScreen.countdown;
     });
   }
 
@@ -149,7 +164,11 @@ class _MyAppState extends State<MyApp> {
           onLose: _onLose,
           bleService: _bleService,
         ),
-        AppScreen.gameClear => GameClearScreen(onTap: _returnToTitle),
+        AppScreen.result => ResultScreen(
+          result: _currentResult,
+          onTitle: _returnToTitle,
+          onRetry: _onRetry,
+        ),
       },
     );
   }

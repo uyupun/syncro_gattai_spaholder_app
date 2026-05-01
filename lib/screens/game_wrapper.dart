@@ -114,69 +114,6 @@ class _GameWrapperState extends State<GameWrapper> {
     return Stack(
       children: [
         GameWidget(key: ValueKey(_gameKey), game: _game),
-        ValueListenableBuilder<bool>(
-          valueListenable: _game.showSuccessMessage,
-          builder: (context, showMessage, child) {
-            if (!showMessage) return const SizedBox.shrink();
-
-            return Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                onTap: () => _game.proceedToWin(),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          '温泉が帰ってきた！',
-                          style: TextStyle(
-                            color: Colors.yellowAccent,
-                            fontSize: 64,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 4,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 15,
-                                color: Colors.orange,
-                                offset: Offset(0, 0),
-                              ),
-                              Shadow(
-                                blurRadius: 30,
-                                color: Colors.red,
-                                offset: Offset(0, 0),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        const Text(
-                          'タップして戻る',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w300,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 5,
-                                color: Colors.black,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
         Positioned(
           bottom: 30,
           left: 0,

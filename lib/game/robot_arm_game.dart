@@ -60,7 +60,6 @@ class RobotArmGame extends Forge2DGame {
   final List<Enemy> enemies = [];
   bool _isCleared = false;
   bool _physicsStoppedOnHit = false;
-  final ValueNotifier<bool> showSuccessMessage = ValueNotifier<bool>(false);
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -215,12 +214,12 @@ class RobotArmGame extends Forge2DGame {
 
         unawaited(
           Future.delayed(const Duration(seconds: 3), () async {
-            showSuccessMessage.value = true;
             try {
               await bleService.sendBool(true);
             } catch (e) {
               debugPrint('sendBool error: $e');
             }
+            onWin?.call();
           }),
         );
         FlameAudio.bgm.stop();
@@ -228,12 +227,6 @@ class RobotArmGame extends Forge2DGame {
 
         return;
       }
-    }
-  }
-
-  void proceedToWin() {
-    if (_isCleared) {
-      onWin?.call();
     }
   }
 

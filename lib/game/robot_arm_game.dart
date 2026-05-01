@@ -19,6 +19,7 @@ import 'hp_bar_config.dart';
 
 class RobotArmGame extends Forge2DGame {
   final VoidCallback? onWin;
+  final VoidCallback? onLose;
   final BleService bleService;
   final GameConfig _config;
   final ArmLayoutConfig _layout;
@@ -28,6 +29,7 @@ class RobotArmGame extends Forge2DGame {
 
   RobotArmGame({
     this.onWin,
+    this.onLose,
     required this.bleService,
     required GameConfig config,
     required ArmLayoutConfig layout,
@@ -51,7 +53,7 @@ class RobotArmGame extends Forge2DGame {
   bool _isStraightening = false;
   double _straighteningTimer = 0;
 
-  // ランダム動作用
+  // 振り子動作用
   bool isRandomMode = false;
   final Random _random = Random();
   double _randomChangeTimer = 0;
@@ -60,6 +62,11 @@ class RobotArmGame extends Forge2DGame {
   final List<Enemy> enemies = [];
   bool _isCleared = false;
   bool _physicsStoppedOnHit = false;
+
+  // 敗北判定用
+  static const _kEnemyDamagePerSecond = 5.0;
+  bool _isDefeated = false;
+  final ValueNotifier<bool> showDefeatMessage = ValueNotifier(false);
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -157,7 +164,6 @@ class RobotArmGame extends Forge2DGame {
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
 
-    // --- 常にランダムモードを有効化 ---
     startRandomMode();
   }
 
@@ -275,13 +281,31 @@ class RobotArmGame extends Forge2DGame {
     super.render(canvas);
   }
 
+  void _handleDefeat() {
+    if (_isDefeated) return;
+    _isDefeated = true;
+    _stopAllPhysics();
+    showDefeatMessage.value = true;
+    unawaited(
+      Future.delayed(const Duration(seconds: 3), () {
+        onLose?.call();
+      }),
+    );
+  }
+
   @override
   void update(double dt) {
-    if (_physicsStoppedOnHit) {
+    if (_physicsStoppedOnHit || _isDefeated) {
       return;
     }
 
     super.update(dt);
+
+    shoulder.takeDamage(_kEnemyDamagePerSecond * dt);
+    if (shoulder.hp <= 0) {
+      _handleDefeat();
+      return;
+    }
 
     if (isRandomMode) {
       _randomChangeTimer += dt;
@@ -345,8 +369,6 @@ class RobotArmGame extends Forge2DGame {
     if (elbowJoint == null) return;
     elbowJoint!.enableMotor(false);
   }
-
-  // --- ランダム動作モード ---
 
   void startRandomMode() {
     isRandomMode = true;

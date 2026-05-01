@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,19 +9,20 @@ import '../game/game_config.dart';
 import '../game/hp_bar_config.dart';
 import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
-import '../models/accel_data.dart';
 import '../widgets/hold_button.dart';
 
 class GameWrapper extends StatefulWidget {
   final VoidCallback onWin;
   final VoidCallback onLose;
   final BleService bleService;
+  final String defeatMessage;
 
   const GameWrapper({
     super.key,
     required this.onWin,
     required this.onLose,
     required this.bleService,
+    required this.defeatMessage,
   });
 
   @override
@@ -32,8 +31,6 @@ class GameWrapper extends StatefulWidget {
 
 class _GameWrapperState extends State<GameWrapper> {
   BleService get _bleService => widget.bleService;
-  final Map<String, double> _latestValues = {};
-  StreamSubscription<AccelData>? _accelSub;
   bool _showDebugOverlay = false;
 
   // 全Config state
@@ -52,11 +49,6 @@ class _GameWrapperState extends State<GameWrapper> {
     super.initState();
     _game = _createGame();
     _loadHpConfigs();
-
-    _accelSub = _bleService.accelDataStream.listen((accelData) {
-      _latestValues[accelData.deviceId] = accelData.value;
-      _checkStraighteningCondition();
-    });
   }
 
   Future<void> _loadHpConfigs() async {
@@ -71,6 +63,7 @@ class _GameWrapperState extends State<GameWrapper> {
   RobotArmGame _createGame() {
     return RobotArmGame(
       onWin: widget.onWin,
+      onLose: widget.onLose,
       bleService: _bleService,
       config: _config,
       layout: _layout,
@@ -89,23 +82,8 @@ class _GameWrapperState extends State<GameWrapper> {
     });
   }
 
-  void _checkStraighteningCondition() {
-    final values = _latestValues.values.toList();
-
-    if (values.length >= 2) {
-      final allPositiveAndAboveOne = values.every(
-        (value) => value > 0 && value >= 0.3,
-      );
-
-      if (allPositiveAndAboveOne) {
-        _game.startStraightening();
-      }
-    }
-  }
-
   @override
   void dispose() {
-    _accelSub?.cancel();
     super.dispose();
   }
 
@@ -114,6 +92,28 @@ class _GameWrapperState extends State<GameWrapper> {
     return Stack(
       children: [
         GameWidget(key: ValueKey(_gameKey), game: _game),
+        ValueListenableBuilder<bool>(
+          valueListenable: _game.showDefeatMessage,
+          builder: (context, show, _) {
+            if (!show) return const SizedBox.shrink();
+            return Positioned.fill(
+              child: ColoredBox(
+                color: Color(0xE6434343),
+                child: Center(
+                  child: Text(
+                    widget.defeatMessage,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         Positioned(
           bottom: 30,
           left: 0,

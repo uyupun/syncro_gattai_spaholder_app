@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'accessors/ble_mock_accessor.dart';
 import 'ble_manager.dart';
 import 'interfaces/ble_service.dart';
-import 'screens/countdown_screen.dart';
+import 'screens/enemy_intro_screen.dart';
 import 'screens/game_wrapper.dart';
 import 'screens/result_screen.dart';
 import 'screens/title_screen.dart';
@@ -49,7 +49,7 @@ void main() async {
   );
 }
 
-enum AppScreen { title, countdown, game, result }
+enum AppScreen { title, enemyIntro, game, result }
 
 enum BattleStage { yugarock, asyncron }
 
@@ -96,9 +96,9 @@ class _MyAppState extends State<MyApp> {
     FlameAudio.bgm.play(filename);
   }
 
-  void _startCountdown() {
+  void _startEnemyIntro() {
     setState(() {
-      _currentScreen = AppScreen.countdown;
+      _currentScreen = AppScreen.enemyIntro;
     });
   }
 
@@ -114,6 +114,7 @@ class _MyAppState extends State<MyApp> {
       case BattleStage.yugarock:
         setState(() {
           _currentStage = BattleStage.asyncron;
+          _currentScreen = AppScreen.enemyIntro;
         });
       case BattleStage.asyncron:
         setState(() {
@@ -138,7 +139,7 @@ class _MyAppState extends State<MyApp> {
   void _onRetry() {
     setState(() {
       _currentStage = BattleStage.yugarock;
-      _currentScreen = AppScreen.countdown;
+      _currentScreen = AppScreen.enemyIntro;
     });
   }
 
@@ -155,10 +156,13 @@ class _MyAppState extends State<MyApp> {
     return Scaffold(
       body: switch (_currentScreen) {
         AppScreen.title => TitleScreen(
-          onStart: _startCountdown,
+          onStart: _startEnemyIntro,
           bleService: _bleService,
         ),
-        AppScreen.countdown => CountdownScreen(onComplete: _startBattle),
+        AppScreen.enemyIntro => EnemyIntroScreen(
+          stage: _currentStage,
+          onComplete: _startBattle,
+        ),
         AppScreen.game => GameWrapper(
           onWin: _onWin,
           onLose: _onLose,

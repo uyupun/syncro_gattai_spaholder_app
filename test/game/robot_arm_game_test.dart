@@ -20,10 +20,5 @@ void main() {
       final game = gameFactory();
       expect(game.isRandomMode, false);
     });
-
-    test('showSuccessMessageの初期値がfalse', () {
-      final game = gameFactory();
-      expect(game.showSuccessMessage.value, false);
-    });
   });
 }

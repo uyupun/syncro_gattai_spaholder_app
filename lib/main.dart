@@ -167,6 +167,10 @@ class _MyAppState extends State<MyApp> {
           onWin: _onWin,
           onLose: _onLose,
           bleService: _bleService,
+          defeatMessage: switch (_currentStage) {
+            BattleStage.yugarock => 'ヒーロー、ここで倒れる！',
+            BattleStage.asyncron => '戦いは怪獣の勝利に終わった！',
+          },
         ),
         AppScreen.result => ResultScreen(
           result: _currentResult,

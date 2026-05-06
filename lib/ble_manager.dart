@@ -23,7 +23,7 @@ class BleManager implements BleService {
   // --- 定数: 振動モーター制御 (送信) ---
   static const String _svcVibratorUuid = "22222222-3333-4444-5555-666666666666";
   static const String _chrVibratorUuid = "22222222-3333-4444-5555-777777777777";
-  static const int _vibratorStrength = 255; // 振動強度: 0~255
+  static const int _vibratorMaxStrength = 255; // 振動強度の最大値
   final List<BluetoothCharacteristic> _vibratorCharacteristics = [];
 
   // --- StreamControllers ---
@@ -173,16 +173,17 @@ class BleManager implements BleService {
   }
 
   @override
-  Future<void> sendBool(bool value) async {
+  Future<void> sendVibration(int strength) async {
     if (_vibratorCharacteristics.isEmpty) {
       _printLog("送信不可: 振動モーター制御用の接続が見つかりません");
       return;
     }
 
+    final clamped = strength.clamp(0, _vibratorMaxStrength);
     for (final c in _vibratorCharacteristics) {
       try {
-        await c.write([value ? _vibratorStrength : 0], withoutResponse: true);
-        _printLog("振動モーター送信: 強度 ${value ? _vibratorStrength : 0}");
+        await c.write([clamped], withoutResponse: true);
+        _printLog("振動モーター送信: 強度 $clamped");
       } catch (e) {
         _printLog("送信エラー: $e");
       }

@@ -63,8 +63,8 @@ class BleMockAccessor implements BleService {
   }
 
   @override
-  Future<void> sendBool(bool value) async {
-    debugPrint('[BLE Mock] sendBool: ${value ? "ON" : "OFF"}');
+  Future<void> sendVibration(int strength) async {
+    debugPrint('[BLE Mock] sendVibration: 強度 $strength');
   }
 
   @override

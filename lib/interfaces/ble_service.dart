@@ -6,6 +6,6 @@ abstract interface class BleService {
   Stream<AccelData> get accelDataStream;
   Stream<List<String>> get connectedDevicesStream;
   List<String> get connectedDevices;
-  Future<void> sendBool(bool value);
+  Future<void> sendVibration(int strength);
   void dispose();
 }

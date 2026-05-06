@@ -93,7 +93,7 @@ class _BleDebugContentState extends State<BleDebugContent> {
                 child: const Text("全切断"),
               ),
               ElevatedButton(
-                onPressed: () => _bleService.sendBool(true),
+                onPressed: () => _bleService.sendVibration(100),
                 child: const Text("振動ON"),
               ),
             ],

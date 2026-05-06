@@ -221,9 +221,9 @@ class RobotArmGame extends Forge2DGame {
         unawaited(
           Future.delayed(const Duration(seconds: 3), () async {
             try {
-              await bleService.sendBool(true);
+              await bleService.sendVibration(100);
             } catch (e) {
-              debugPrint('sendBool error: $e');
+              debugPrint('sendVibration error: $e');
             }
             onWin?.call();
           }),

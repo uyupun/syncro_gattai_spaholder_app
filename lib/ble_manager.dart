@@ -9,7 +9,7 @@ class BleManager implements BleService {
   BleManager();
 
   // --- 定数 ---
-  static const String _targetDeviceName = "uyupun-drill";
+  static const String _targetDeviceName = "spaholder-drill-smasher";
   static const String _serviceUuid = "11111111-2222-3333-4444-555555555555";
   static const String _charUuid = "11111111-2222-3333-4444-666666666666";
 
@@ -20,10 +20,11 @@ class BleManager implements BleService {
   final Map<String, BluetoothCharacteristic> _characteristics = {};
   StreamSubscription? _scanSub;
 
-  // --- 定数: ポンプ制御 (送信)  ---
-  static const String _svcPumpUuid = "22222222-3333-4444-5555-666666666666";
-  static const String _chrPumpUuid = "22222222-3333-4444-5555-777777777777";
-  final List<BluetoothCharacteristic> _pumpCharacteristics = [];
+  // --- 定数: 振動モーター制御 (送信) ---
+  static const String _svcVibratorUuid = "22222222-3333-4444-5555-666666666666";
+  static const String _chrVibratorUuid = "22222222-3333-4444-5555-777777777777";
+  static const int _vibratorStrength = 255; // 振動強度: 0~255
+  final List<BluetoothCharacteristic> _vibratorCharacteristics = [];
 
   // --- StreamControllers ---
   final _accelDataController = StreamController<AccelData>.broadcast();
@@ -69,7 +70,7 @@ class BleManager implements BleService {
         bool hasTargetUuid = r.advertisementData.serviceUuids.any((guid) {
           String g = guid.toString().toLowerCase();
           return g == _serviceUuid.toLowerCase() ||
-              g == _svcPumpUuid.toLowerCase();
+              g == _svcVibratorUuid.toLowerCase();
         });
 
         // 名前チェック
@@ -139,10 +140,9 @@ class BleManager implements BleService {
             _printLog("通信経路確保: $name");
           }
 
-          if (charUuid == _chrPumpUuid.toLowerCase()) {
-            // ポンプ用のCharacteristicをリストに追加
-            _pumpCharacteristics.add(c);
-            _printLog("ポンプ(送信)経路確保: $name");
+          if (charUuid == _chrVibratorUuid.toLowerCase()) {
+            _vibratorCharacteristics.add(c);
+            _printLog("振動モーター(送信)経路確保: $name");
           }
         }
       }
@@ -158,28 +158,31 @@ class BleManager implements BleService {
     }
   }
 
-  // --- 内部メソッド: データ解析 (4byte float) ---
+  // --- 内部メソッド: データ解析 (12byte: 3 floats x, y, z) ---
   void _parseAndNotify(String deviceId, List<int> rawData) {
-    if (rawData.length < 4) return;
+    if (rawData.length < 12) return;
 
     final byteData = ByteData.sublistView(Uint8List.fromList(rawData));
-    final double val = byteData.getFloat32(0, Endian.little);
+    final double ax = byteData.getFloat32(0, Endian.little);
+    final double ay = byteData.getFloat32(4, Endian.little);
+    final double az = byteData.getFloat32(8, Endian.little);
 
-    _accelDataController.add(AccelData(deviceId: deviceId, value: val));
+    _accelDataController.add(
+      AccelData(deviceId: deviceId, x: ax, y: ay, z: az),
+    );
   }
 
   @override
   Future<void> sendBool(bool value) async {
-    if (_pumpCharacteristics.isEmpty) {
-      _printLog("送信不可: ポンプ制御用の接続が見つかりません");
+    if (_vibratorCharacteristics.isEmpty) {
+      _printLog("送信不可: 振動モーター制御用の接続が見つかりません");
       return;
     }
 
-    // 全てのポンプCharacteristicに送信
-    for (final c in _pumpCharacteristics) {
+    for (final c in _vibratorCharacteristics) {
       try {
-        await c.write([value ? 1 : 0], withoutResponse: true);
-        _printLog("ポンプ送信: ${value ? 'ON' : 'OFF'}");
+        await c.write([value ? _vibratorStrength : 0], withoutResponse: true);
+        _printLog("振動モーター送信: 強度 ${value ? _vibratorStrength : 0}");
       } catch (e) {
         _printLog("送信エラー: $e");
       }
@@ -202,7 +205,7 @@ class BleManager implements BleService {
 
     _devices.clear();
     _characteristics.clear();
-    _pumpCharacteristics.clear();
+    _vibratorCharacteristics.clear();
     _updateConnectedList();
     _printLog("全切断しました");
   }

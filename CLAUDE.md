@@ -60,15 +60,15 @@ Title → Countdown(3,2,1) → Game → GameClear → Title(ループ)
 - 3パーツ: shoulder(静的) → upperArm → foreArm(drill)、RevoluteJoint接続
 - ランダムモード: モーター速度を0.3秒間隔でランダム適用
 - 腕伸ばし: 前腕角度を上腕に強制同期(200ms)、ヒットチェック実行
-- 敵ヒット → 物理停止 → 成功メッセージ → ポンプON(BLE送信)
+- 敵ヒット → 物理停止 → 成功メッセージ → 振動モーターON(BLE送信)
 
 ### BLE通信
 
 - `BleService`インターフェース → `BleManager`(実機) / `BleMockAccessor`(テスト)
-- デバイス名 `uyupun-drill` のM5Stackを最大2台自動接続
-- 受信: 加速度(4byte float LE) → `accelDataStream`
-- 送信: ポンプ制御 → `sendBool()`
-- 2台の加速度値が両方 >= 0.3 で腕伸ばし発動
+- デバイス名 `spaholder-drill-smasher-red` / `spaholder-drill-smasher-blue` のM5Stack CoreS3を最大2台自動接続(前方一致)
+- 受信: 加速度(12byte, float LE × 3軸) → `AccelData(x, y, z)` → `accelDataStream`
+- 送信: 振動モーター制御 → `sendVibration(int strength)`、強度0〜255、2台同時送信
+- 腕伸ばしは現在UIボタン(`HoldButton`)のタップ操作でトリガー(BLE加速度トリガーは未実装)
 
 ### 設定ファイル(assets/)
 

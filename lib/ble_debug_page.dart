@@ -93,8 +93,8 @@ class _BleDebugContentState extends State<BleDebugContent> {
                 child: const Text("全切断"),
               ),
               ElevatedButton(
-                onPressed: () => _bleService.sendBool(true),
-                child: const Text("ポンプON"),
+                onPressed: () => _bleService.sendVibration(100),
+                child: const Text("振動ON"),
               ),
             ],
           ),
@@ -123,7 +123,7 @@ class _BleDebugContentState extends State<BleDebugContent> {
                     const Spacer(),
                     Text(
                       data != null
-                          ? "${data.value.toStringAsFixed(2)} G"
+                          ? "X:${data.x.toStringAsFixed(2)} Y:${data.y.toStringAsFixed(2)} Z:${data.z.toStringAsFixed(2)} G"
                           : "待機中...",
                       style: const TextStyle(fontSize: 16),
                     ),

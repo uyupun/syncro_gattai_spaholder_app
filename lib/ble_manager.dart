@@ -42,6 +42,22 @@ class BleManager implements BleService {
     // 既存のスキャンリスナーがあればキャンセル（重複防止）
     await _scanSub?.cancel();
 
+    // Bluetoothアダプターがオンになるまで待機 (iOS: CBManagerStateUnknown 対策)
+    final adapterState = await FlutterBluePlus.adapterState
+        .firstWhere(
+          (s) =>
+              s == BluetoothAdapterState.on || s == BluetoothAdapterState.off,
+        )
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => FlutterBluePlus.adapterStateNow,
+        );
+
+    if (adapterState != BluetoothAdapterState.on) {
+      _printLog("スキャン不可: Bluetoothがオフです");
+      throw Exception("Bluetoothがオフです。設定からBluetoothをオンにしてください。");
+    }
+
     _printLog("スキャン開始...");
 
     try {

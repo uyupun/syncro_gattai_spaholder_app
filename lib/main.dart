@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'accessors/ble_mock_accessor.dart';
+import 'ble_debug_page.dart';
 import 'ble_manager.dart';
 import 'interfaces/ble_service.dart';
 import 'screens/enemy_intro_screen.dart';
@@ -14,6 +15,7 @@ import 'screens/result_screen.dart';
 import 'screens/title_screen.dart';
 
 const bool _kUseMockBleOverride = bool.fromEnvironment('USE_MOCK_BLE');
+const bool _kShowBleDebugPage = bool.fromEnvironment('SHOW_BLE_DEBUG');
 
 Future<bool> _detectPhysicalDevice() async {
   final deviceInfo = DeviceInfoPlugin();
@@ -41,12 +43,12 @@ void main() async {
   // BLE: --dart-define=USE_MOCK_BLE=true ならモック強制、未指定なら実機判定
   final useMockBle = _kUseMockBleOverride || !isPhysicalDevice;
 
-  runApp(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: MyApp(isPhysicalDevice: isPhysicalDevice, useMockBle: useMockBle),
-    ),
-  );
+  // --dart-define=SHOW_BLE_DEBUG=true のときBLEデバッグ画面を直接表示
+  final Widget home = _kShowBleDebugPage
+      ? BleDebugPage(bleService: useMockBle ? BleMockAccessor() : BleManager())
+      : MyApp(isPhysicalDevice: isPhysicalDevice, useMockBle: useMockBle);
+
+  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: home));
 }
 
 enum AppScreen { title, enemyIntro, game, result }

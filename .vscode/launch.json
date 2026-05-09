@@ -13,6 +13,14 @@
       "args": [
         "--dart-define=USE_MOCK_BLE=true"
       ]
+    },
+    {
+      "name": "BLE Debug",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=SHOW_BLE_DEBUG=true"
+      ]
     }
   ]
 }

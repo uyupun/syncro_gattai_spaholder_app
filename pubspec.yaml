@@ -30,3 +30,4 @@ flutter:
     - assets/enemy_config.json
     - assets/game_config.json
     - assets/hp_bar_config.json
+    - assets/actions_config.json

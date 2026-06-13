@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/mixins/asset_loadable.dart';
+import 'package:syncro_gattai_spaholder_app/mixins/asset_loadable.dart';
 
 void main() {
   group('AssetLoadable', () {

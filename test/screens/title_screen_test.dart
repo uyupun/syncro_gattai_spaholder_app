@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/accessors/ble_mock_accessor.dart';
-import 'package:spajam2025_app/screens/title_screen.dart';
+import 'package:syncro_gattai_spaholder_app/accessors/ble_mock_accessor.dart';
+import 'package:syncro_gattai_spaholder_app/screens/title_screen.dart';
 
 void main() {
   group('TitleScreen', () {

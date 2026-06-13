@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/game/hp_bar_config.dart';
-import 'package:spajam2025_app/interfaces/json_exportable.dart';
+import 'package:syncro_gattai_spaholder_app/game/hp_bar_config.dart';
+import 'package:syncro_gattai_spaholder_app/interfaces/json_exportable.dart';
 
 void main() {
   group('HpBarConfig', () {

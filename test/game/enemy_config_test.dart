@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/game/enemy_config.dart';
-import 'package:spajam2025_app/interfaces/json_exportable.dart';
+import 'package:syncro_gattai_spaholder_app/game/enemy_config.dart';
+import 'package:syncro_gattai_spaholder_app/interfaces/json_exportable.dart';
 
 void main() {
   group('EnemyConfig', () {

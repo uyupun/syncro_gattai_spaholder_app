@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/models/accel_data.dart';
+import 'package:syncro_gattai_spaholder_app/models/accel_data.dart';
 
 void main() {
   group('AccelData', () {

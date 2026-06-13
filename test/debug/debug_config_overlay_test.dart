@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/debug/debug_config_overlay.dart';
-import 'package:spajam2025_app/game/arm_layout_config.dart';
-import 'package:spajam2025_app/game/enemy_config.dart';
-import 'package:spajam2025_app/game/game_config.dart';
-import 'package:spajam2025_app/game/hp_bar_config.dart';
+import 'package:syncro_gattai_spaholder_app/debug/debug_config_overlay.dart';
+import 'package:syncro_gattai_spaholder_app/game/arm_layout_config.dart';
+import 'package:syncro_gattai_spaholder_app/game/enemy_config.dart';
+import 'package:syncro_gattai_spaholder_app/game/game_config.dart';
+import 'package:syncro_gattai_spaholder_app/game/hp_bar_config.dart';
 
 void main() {
   Widget buildTestWidget({

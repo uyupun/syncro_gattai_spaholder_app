@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/game/components/hp_bar.dart';
-import 'package:spajam2025_app/interfaces/hp_readable.dart';
+import 'package:syncro_gattai_spaholder_app/game/components/hp_bar.dart';
+import 'package:syncro_gattai_spaholder_app/interfaces/hp_readable.dart';
 
 class _MockHpReadable implements HpReadable {
   @override

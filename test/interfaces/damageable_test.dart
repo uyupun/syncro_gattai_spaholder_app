@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/interfaces/damageable.dart';
+import 'package:syncro_gattai_spaholder_app/interfaces/damageable.dart';
 
 class _TestDamageable implements Damageable {
   double hp = 100;

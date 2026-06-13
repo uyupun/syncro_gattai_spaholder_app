@@ -61,128 +61,131 @@ class _TitleScreenState extends State<TitleScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          color: const Color(0xFFFFFFFF),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/title.png',
-                  width: 500,
-                  height: 230,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Text(
-                      'ROBOT ARM',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 64,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 8,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10,
-                            color: Colors.blueAccent,
-                            offset: Offset(0, 0),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                Text(
-                  '接続デバイス数: ${_connectedDevices.length}/2',
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 20,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    if (!_canStart)
-                      ElevatedButton(
-                        onPressed: _isConnecting ? null : _connectDevices,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 10,
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/title_screen_background.png',
+            fit: BoxFit.cover,
+          ),
+        ),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/title.png',
+                width: 500,
+                height: 230,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Text(
+                    'ROBOT ARM',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 64,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 8,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 10,
+                          color: Colors.blueAccent,
+                          offset: Offset(0, 0),
                         ),
-                        child: _isConnecting
-                            ? const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text('接続中...'),
-                                ],
-                              )
-                            : const Text('デバイス接続'),
-                      ),
-                    if (_canStart)
-                      ElevatedButton(
-                        onPressed: () {
-                          _bleService.disconnectAll();
-                          setState(() {
-                            _isConnecting = false;
-                            _connectedDevices.clear();
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 10,
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        child: const Text('デバイス解除'),
-                      ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Text(
+                '接続デバイス数: ${_connectedDevices.length}/2',
+                style: const TextStyle(
+                  color: Colors.black54,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 20,
+                runSpacing: 10,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (!_canStart)
                     ElevatedButton(
-                      onPressed: _canStart ? widget.onStart : null,
+                      onPressed: _isConnecting ? null : _connectDevices,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _canStart ? Colors.green : Colors.grey,
+                        backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 12,
+                          horizontal: 30,
+                          vertical: 10,
                         ),
                         textStyle: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      child: const Text('ゲームスタート'),
+                      child: _isConnecting
+                          ? const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Text('接続中...'),
+                              ],
+                            )
+                          : const Text('デバイス接続'),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  if (_canStart)
+                    ElevatedButton(
+                      onPressed: () {
+                        _bleService.disconnectAll();
+                        setState(() {
+                          _isConnecting = false;
+                          _connectedDevices.clear();
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 30,
+                          vertical: 10,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      child: const Text('デバイス解除'),
+                    ),
+                  ElevatedButton(
+                    onPressed: _canStart ? widget.onStart : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _canStart ? Colors.green : Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 12,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    child: const Text('ゲームスタート'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],

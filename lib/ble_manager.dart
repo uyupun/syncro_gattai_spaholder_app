@@ -4,6 +4,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'interfaces/ble_service.dart';
 import 'models/accel_data.dart';
+import 'models/ble_device_role.dart';
 
 class BleManager implements BleService {
   BleManager();
@@ -18,6 +19,7 @@ class BleManager implements BleService {
   @override
   List<String> get connectedDevices => List.unmodifiable(_devices.keys);
   final Map<String, BluetoothCharacteristic> _characteristics = {};
+  final Map<String, BleDeviceRole> _deviceRoles = {};
   StreamSubscription? _scanSub;
 
   // --- 定数: 振動モーター制御 (送信) ---
@@ -37,12 +39,16 @@ class BleManager implements BleService {
   Stream<List<String>> get connectedDevicesStream =>
       _connectedDevicesController.stream;
 
+  final _connectedRolesController =
+      StreamController<Set<BleDeviceRole>>.broadcast();
   @override
-  Future<void> scanAndConnect() async {
-    // 既存のスキャンリスナーがあればキャンセル（重複防止）
-    await _scanSub?.cancel();
+  Stream<Set<BleDeviceRole>> get connectedRolesStream =>
+      _connectedRolesController.stream;
+  @override
+  Set<BleDeviceRole> get connectedRoles => _deviceRoles.values.toSet();
 
-    // Bluetoothアダプターがオンになるまで待機 (iOS: CBManagerStateUnknown 対策)
+  // --- 内部メソッド: Bluetoothアダプターがオンになるまで待機 (iOS: CBManagerStateUnknown 対策) ---
+  Future<void> _ensureAdapterOn() async {
     final adapterState = await FlutterBluePlus.adapterState
         .firstWhere(
           (s) =>
@@ -57,6 +63,14 @@ class BleManager implements BleService {
       _printLog("スキャン不可: Bluetoothがオフです");
       throw Exception("Bluetoothがオフです。設定からBluetoothをオンにしてください。");
     }
+  }
+
+  @override
+  Future<void> scanAndConnect() async {
+    // 既存のスキャンリスナーがあればキャンセル（重複防止）
+    await _scanSub?.cancel();
+
+    await _ensureAdapterOn();
 
     _printLog("スキャン開始...");
 
@@ -128,8 +142,108 @@ class BleManager implements BleService {
     });
   }
 
+  @override
+  Future<void> connectDevice(BleDeviceRole role) async {
+    if (_deviceRoles.containsValue(role)) return;
+
+    // 既存のスキャンリスナーがあればキャンセル（重複防止）
+    await _scanSub?.cancel();
+
+    await _ensureAdapterOn();
+
+    _printLog("${role.deviceName} のスキャン開始...");
+
+    try {
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+        continuousUpdates: true,
+      );
+    } catch (e) {
+      _printLog("スキャン開始エラー: $e");
+      rethrow;
+    }
+
+    final completer = Completer<void>();
+
+    _scanSub = FlutterBluePlus.scanResults.listen((results) async {
+      for (ScanResult r in results) {
+        final id = r.device.remoteId.str;
+        if (_devices.containsKey(id)) continue;
+
+        final name = r.device.platformName;
+        final advertisementData = r.advertisementData.advName;
+
+        final isTargetName =
+            name == role.deviceName ||
+            name.startsWith(role.deviceName) ||
+            advertisementData == role.deviceName ||
+            advertisementData.startsWith(role.deviceName);
+
+        if (isTargetName) {
+          _printLog("発見: $name ($id) -> 接続のためスキャンを一時停止");
+
+          await _scanSub?.cancel();
+          await FlutterBluePlus.stopScan();
+
+          await _connectToDevice(r.device, role: role);
+
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
+      }
+    });
+
+    try {
+      await completer.future.timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      await _scanSub?.cancel();
+      try {
+        await FlutterBluePlus.stopScan();
+      } catch (_) {}
+      _printLog("${role.deviceName} が見つかりませんでした");
+      throw Exception("${role.deviceName} が見つかりませんでした");
+    }
+
+    if (!_deviceRoles.containsValue(role)) {
+      throw Exception("${role.deviceName} への接続に失敗しました");
+    }
+  }
+
+  @override
+  Future<void> disconnectDevice(BleDeviceRole role) async {
+    String? targetId;
+    for (final entry in _deviceRoles.entries) {
+      if (entry.value == role) {
+        targetId = entry.key;
+        break;
+      }
+    }
+
+    if (targetId == null) return;
+
+    final device = _devices[targetId];
+    if (device != null) {
+      _vibratorCharacteristics.removeWhere(
+        (c) => c.remoteId == device.remoteId,
+      );
+      try {
+        await device.disconnect();
+      } catch (_) {}
+    }
+
+    _devices.remove(targetId);
+    _characteristics.remove(targetId);
+    _deviceRoles.remove(targetId);
+    _updateConnectedList();
+    _updateConnectedRoles();
+    _printLog("${role.deviceName} を切断しました");
+  }
+
   // --- 内部メソッド: デバイスへの接続処理 ---
-  Future<void> _connectToDevice(BluetoothDevice device) async {
+  Future<void> _connectToDevice(
+    BluetoothDevice device, {
+    BleDeviceRole? role,
+  }) async {
     String id = device.remoteId.str;
     String name = device.platformName;
 
@@ -138,6 +252,10 @@ class BleManager implements BleService {
       await device.connect(license: License.free, autoConnect: false);
 
       _devices[id] = device;
+      if (role != null) {
+        _deviceRoles[id] = role;
+        _updateConnectedRoles();
+      }
       _updateConnectedList();
       _printLog("接続成功: $name");
 
@@ -166,6 +284,9 @@ class BleManager implements BleService {
       _printLog("接続エラー($name): $e");
       _devices.remove(id);
       _characteristics.remove(id);
+      if (_deviceRoles.remove(id) != null) {
+        _updateConnectedRoles();
+      }
       _updateConnectedList();
 
       try {
@@ -223,12 +344,18 @@ class BleManager implements BleService {
     _devices.clear();
     _characteristics.clear();
     _vibratorCharacteristics.clear();
+    _deviceRoles.clear();
     _updateConnectedList();
+    _updateConnectedRoles();
     _printLog("全切断しました");
   }
 
   void _updateConnectedList() {
     _connectedDevicesController.add(_devices.keys.toList());
+  }
+
+  void _updateConnectedRoles() {
+    _connectedRolesController.add(_deviceRoles.values.toSet());
   }
 
   void _printLog(String text) {
@@ -240,5 +367,6 @@ class BleManager implements BleService {
     _scanSub?.cancel();
     _accelDataController.close();
     _connectedDevicesController.close();
+    _connectedRolesController.close();
   }
 }

@@ -54,41 +54,57 @@ class _TitleScreenState extends State<TitleScreen> {
       if (!mounted) return;
       setState(() {
         if (roles.contains(BleDeviceRole.blue)) {
-          _blueState = _ConnectionUiState.connected;
-        } else if (_blueState == _ConnectionUiState.connected) {
+          if (_blueState != _ConnectionUiState.connected) {
+            _blueState = _ConnectionUiState.connected;
+            _showMessage(BleDeviceRole.blue, '接続しました');
+          }
+        } else if (_blueState == _ConnectionUiState.connected ||
+            _blueState == _ConnectionUiState.disconnecting) {
           _blueState = _ConnectionUiState.idle;
+          _showMessage(BleDeviceRole.blue, '切断完了');
         }
+
         if (roles.contains(BleDeviceRole.red)) {
-          _redState = _ConnectionUiState.connected;
-        } else if (_redState == _ConnectionUiState.connected) {
+          if (_redState != _ConnectionUiState.connected) {
+            _redState = _ConnectionUiState.connected;
+            _showMessage(BleDeviceRole.red, '接続しました');
+          }
+        } else if (_redState == _ConnectionUiState.connected ||
+            _redState == _ConnectionUiState.disconnecting) {
           _redState = _ConnectionUiState.idle;
+          _showMessage(BleDeviceRole.red, '切断完了');
         }
       });
     });
   }
 
-  void _setStateFor(
-    BleDeviceRole role,
-    _ConnectionUiState state, {
-    String? message,
-  }) {
-    if (role == BleDeviceRole.blue) {
-      _blueMessageTimer?.cancel();
-    } else {
-      _redMessageTimer?.cancel();
-    }
-
+  // 新たな接続/切断操作を開始する際は、表示中のメッセージを打ち切って消去する
+  void _setState(BleDeviceRole role, _ConnectionUiState state) {
     setState(() {
       if (role == BleDeviceRole.blue) {
         _blueState = state;
-        _blueMessage = message;
+        _blueMessageTimer?.cancel();
+        _blueMessageTimer = null;
+        _blueMessage = null;
       } else {
         _redState = state;
-        _redMessage = message;
+        _redMessageTimer?.cancel();
+        _redMessageTimer = null;
+        _redMessage = null;
       }
     });
+  }
 
-    if (message == null) return;
+  // 接続/切断状態が`connectedRolesStream`経由で切り替わるタイミングに合わせて
+  // メッセージを表示するため、setState内から呼び出すこと
+  void _showMessage(BleDeviceRole role, String message) {
+    if (role == BleDeviceRole.blue) {
+      _blueMessageTimer?.cancel();
+      _blueMessage = message;
+    } else {
+      _redMessageTimer?.cancel();
+      _redMessage = message;
+    }
 
     final timer = Timer(_messageDuration, () {
       if (!mounted) return;
@@ -109,27 +125,25 @@ class _TitleScreenState extends State<TitleScreen> {
   }
 
   Future<void> _connect(BleDeviceRole role) async {
-    _setStateFor(role, _ConnectionUiState.connecting);
+    _setState(role, _ConnectionUiState.connecting);
 
     try {
       await _bleService.connectDevice(role);
-      _setStateFor(role, _ConnectionUiState.connected, message: '接続しました');
     } catch (e) {
       debugPrint('接続エラー: $e');
-      _setStateFor(role, _ConnectionUiState.idle);
+      _setState(role, _ConnectionUiState.idle);
     }
   }
 
   Future<void> _disconnect(BleDeviceRole role) async {
-    _setStateFor(role, _ConnectionUiState.disconnecting);
+    _setState(role, _ConnectionUiState.disconnecting);
 
     try {
       await _bleService.disconnectDevice(role);
     } catch (e) {
       debugPrint('切断エラー: $e');
+      _setState(role, _ConnectionUiState.idle);
     }
-
-    _setStateFor(role, _ConnectionUiState.idle, message: '切断完了');
   }
 
   String _labelFor(_ConnectionUiState state) {

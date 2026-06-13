@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../interfaces/json_exportable.dart';
@@ -20,6 +22,7 @@ class GameConfig implements JsonExportable {
 
   final double shoulderSpeedRange;
   final double elbowSpeedRange;
+  final double elbowBentAngle;
 
   GameConfig({
     Vector2? gravity,
@@ -34,6 +37,7 @@ class GameConfig implements JsonExportable {
     double? randomChangeInterval,
     double? shoulderSpeedRange,
     double? elbowSpeedRange,
+    double? elbowBentAngle,
   }) : gravity = gravity ?? Vector2(0, 15),
        zoom = zoom ?? 20.0,
        shoulderTorque = shoulderTorque ?? 8000.0,
@@ -45,7 +49,8 @@ class GameConfig implements JsonExportable {
        straighteningDuration = straighteningDuration ?? 0.2,
        randomChangeInterval = randomChangeInterval ?? 0.3,
        shoulderSpeedRange = shoulderSpeedRange ?? 24.0,
-       elbowSpeedRange = elbowSpeedRange ?? 36.0;
+       elbowSpeedRange = elbowSpeedRange ?? 36.0,
+       elbowBentAngle = elbowBentAngle ?? pi / 2;
 
   factory GameConfig.defaultConfig() => GameConfig();
 
@@ -74,6 +79,7 @@ class GameConfig implements JsonExportable {
       randomChangeInterval: (json['randomChangeInterval'] as num?)?.toDouble(),
       shoulderSpeedRange: (json['shoulderSpeedRange'] as num?)?.toDouble(),
       elbowSpeedRange: (json['elbowSpeedRange'] as num?)?.toDouble(),
+      elbowBentAngle: (json['elbowBentAngle'] as num?)?.toDouble(),
     );
   }
 
@@ -92,6 +98,7 @@ class GameConfig implements JsonExportable {
       'randomChangeInterval': randomChangeInterval,
       'shoulderSpeedRange': shoulderSpeedRange,
       'elbowSpeedRange': elbowSpeedRange,
+      'elbowBentAngle': elbowBentAngle,
     };
   }
 
@@ -116,6 +123,7 @@ class GameConfig implements JsonExportable {
     double? randomChangeInterval,
     double? shoulderSpeedRange,
     double? elbowSpeedRange,
+    double? elbowBentAngle,
   }) {
     return GameConfig(
       gravity: gravity ?? this.gravity,
@@ -131,6 +139,7 @@ class GameConfig implements JsonExportable {
       randomChangeInterval: randomChangeInterval ?? this.randomChangeInterval,
       shoulderSpeedRange: shoulderSpeedRange ?? this.shoulderSpeedRange,
       elbowSpeedRange: elbowSpeedRange ?? this.elbowSpeedRange,
+      elbowBentAngle: elbowBentAngle ?? this.elbowBentAngle,
     );
   }
 }

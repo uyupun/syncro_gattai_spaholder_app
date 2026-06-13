@@ -10,5 +10,6 @@
   "straighteningDuration": 0.2,
   "randomChangeInterval": 0.3,
   "shoulderSpeedRange": 24.0,
-  "elbowSpeedRange": 36.0
+  "elbowSpeedRange": 36.0,
+  "elbowBentAngle": 1.5707963267948966
 }

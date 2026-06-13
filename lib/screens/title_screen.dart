@@ -3,6 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../interfaces/ble_service.dart';
+import '../models/ble_device_role.dart';
+import '../widgets/connect_button.dart';
+import '../widgets/start_button.dart';
+
+enum _ConnectionUiState { idle, connecting, connected, disconnecting }
 
 class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
@@ -20,42 +25,108 @@ class TitleScreen extends StatefulWidget {
 
 class _TitleScreenState extends State<TitleScreen> {
   BleService get _bleService => widget.bleService;
-  bool _isConnecting = false;
-  List<String> _connectedDevices = [];
-  StreamSubscription<List<String>>? _devicesSub;
+
+  _ConnectionUiState _blueState = _ConnectionUiState.idle;
+  _ConnectionUiState _redState = _ConnectionUiState.idle;
+
+  StreamSubscription<Set<BleDeviceRole>>? _rolesSub;
 
   @override
   void initState() {
     super.initState();
-    _connectedDevices = _bleService.connectedDevices.toList();
-    _devicesSub = _bleService.connectedDevicesStream.listen((devices) {
-      if (mounted) {
-        setState(() {
-          _connectedDevices = devices;
-          _isConnecting = devices.length < 2 ? _isConnecting : false;
-        });
+
+    final connectedRoles = _bleService.connectedRoles;
+    _blueState = connectedRoles.contains(BleDeviceRole.blue)
+        ? _ConnectionUiState.connected
+        : _ConnectionUiState.idle;
+    _redState = connectedRoles.contains(BleDeviceRole.red)
+        ? _ConnectionUiState.connected
+        : _ConnectionUiState.idle;
+
+    _rolesSub = _bleService.connectedRolesStream.listen((roles) {
+      if (!mounted) return;
+      setState(() {
+        if (roles.contains(BleDeviceRole.blue)) {
+          _blueState = _ConnectionUiState.connected;
+        } else if (_blueState == _ConnectionUiState.connected) {
+          _blueState = _ConnectionUiState.idle;
+        }
+        if (roles.contains(BleDeviceRole.red)) {
+          _redState = _ConnectionUiState.connected;
+        } else if (_redState == _ConnectionUiState.connected) {
+          _redState = _ConnectionUiState.idle;
+        }
+      });
+    });
+  }
+
+  void _setStateFor(BleDeviceRole role, _ConnectionUiState state) {
+    setState(() {
+      if (role == BleDeviceRole.blue) {
+        _blueState = state;
+      } else {
+        _redState = state;
       }
     });
   }
 
-  Future<void> _connectDevices() async {
-    if (_connectedDevices.length >= 2) return;
-
-    setState(() {
-      _isConnecting = true;
-    });
+  Future<void> _connect(BleDeviceRole role) async {
+    _setStateFor(role, _ConnectionUiState.connecting);
 
     try {
-      await _bleService.scanAndConnect();
+      await _bleService.connectDevice(role);
+      _setStateFor(role, _ConnectionUiState.connected);
     } catch (e) {
       debugPrint('接続エラー: $e');
-      setState(() {
-        _isConnecting = false;
-      });
+      _setStateFor(role, _ConnectionUiState.idle);
     }
   }
 
-  bool get _canStart => _connectedDevices.length >= 2;
+  Future<void> _disconnect(BleDeviceRole role) async {
+    _setStateFor(role, _ConnectionUiState.disconnecting);
+
+    try {
+      await _bleService.disconnectDevice(role);
+    } catch (e) {
+      debugPrint('切断エラー: $e');
+    }
+
+    _setStateFor(role, _ConnectionUiState.idle);
+  }
+
+  String _labelFor(_ConnectionUiState state) {
+    switch (state) {
+      case _ConnectionUiState.idle:
+        return '接続';
+      case _ConnectionUiState.connecting:
+        return '接続中...';
+      case _ConnectionUiState.connected:
+        return '切断';
+      case _ConnectionUiState.disconnecting:
+        return '切断中...';
+    }
+  }
+
+  bool _isDisabled(_ConnectionUiState state) {
+    return state == _ConnectionUiState.connecting ||
+        state == _ConnectionUiState.disconnecting;
+  }
+
+  VoidCallback? _onTapFor(BleDeviceRole role, _ConnectionUiState state) {
+    switch (state) {
+      case _ConnectionUiState.idle:
+        return () => _connect(role);
+      case _ConnectionUiState.connected:
+        return () => _disconnect(role);
+      case _ConnectionUiState.connecting:
+      case _ConnectionUiState.disconnecting:
+        return null;
+    }
+  }
+
+  bool get _canStart =>
+      _blueState == _ConnectionUiState.connected &&
+      _redState == _ConnectionUiState.connected;
 
   @override
   Widget build(BuildContext context) {
@@ -95,95 +166,31 @@ class _TitleScreenState extends State<TitleScreen> {
                   );
                 },
               ),
-              Text(
-                '接続デバイス数: ${_connectedDevices.length}/2',
-                style: const TextStyle(
-                  color: Colors.black54,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w400,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ConnectButton(
+                      label: _labelFor(_blueState),
+                      color: ConnectButtonColor.blue,
+                      disabled: _isDisabled(_blueState),
+                      onTap: _onTapFor(BleDeviceRole.blue, _blueState),
+                    ),
+                    StartButton(
+                      label: '出動',
+                      disabled: !_canStart,
+                      onTap: widget.onStart,
+                    ),
+                    ConnectButton(
+                      label: _labelFor(_redState),
+                      color: ConnectButtonColor.red,
+                      disabled: _isDisabled(_redState),
+                      onTap: _onTapFor(BleDeviceRole.red, _redState),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 20,
-                runSpacing: 10,
-                alignment: WrapAlignment.center,
-                children: [
-                  if (!_canStart)
-                    ElevatedButton(
-                      onPressed: _isConnecting ? null : _connectDevices,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 30,
-                          vertical: 10,
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      child: _isConnecting
-                          ? const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Text('接続中...'),
-                              ],
-                            )
-                          : const Text('デバイス接続'),
-                    ),
-                  if (_canStart)
-                    ElevatedButton(
-                      onPressed: () {
-                        _bleService.disconnectAll();
-                        setState(() {
-                          _isConnecting = false;
-                          _connectedDevices.clear();
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 30,
-                          vertical: 10,
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      child: const Text('デバイス解除'),
-                    ),
-                  ElevatedButton(
-                    onPressed: _canStart ? widget.onStart : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _canStart ? Colors.green : Colors.grey,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 12,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    child: const Text('ゲームスタート'),
-                  ),
-                ],
               ),
             ],
           ),
@@ -194,7 +201,7 @@ class _TitleScreenState extends State<TitleScreen> {
 
   @override
   void dispose() {
-    _devicesSub?.cancel();
+    _rolesSub?.cancel();
     super.dispose();
   }
 }

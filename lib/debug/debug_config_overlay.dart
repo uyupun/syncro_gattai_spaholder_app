@@ -280,6 +280,13 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
       value: _config.elbowSpeedRange,
       onChanged: (v) => _updateConfig((c) => c.copyWith(elbowSpeedRange: v)),
     ),
+    _FieldMeta(
+      label: 'elbowBentAngle',
+      displayName: '肘の曲げ角度',
+      steps: const [0.05, 0.5],
+      value: _config.elbowBentAngle,
+      onChanged: (v) => _updateConfig((c) => c.copyWith(elbowBentAngle: v)),
+    ),
   ];
 
   Widget _buildGameTab() {

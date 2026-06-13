@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +24,7 @@ void main() {
       expect(config.randomChangeInterval, 0.3);
       expect(config.shoulderSpeedRange, 24.0);
       expect(config.elbowSpeedRange, 36.0);
+      expect(config.elbowBentAngle, pi / 2);
     });
 
     test('defaultConfig でデフォルト値が返る', () {
@@ -45,6 +47,7 @@ void main() {
         'randomChangeInterval': 0.6,
         'shoulderSpeedRange': 30.0,
         'elbowSpeedRange': 50.0,
+        'elbowBentAngle': -0.8,
       };
 
       final config = GameConfig.fromJson(json);
@@ -62,6 +65,7 @@ void main() {
       expect(config.randomChangeInterval, 0.6);
       expect(config.shoulderSpeedRange, 30.0);
       expect(config.elbowSpeedRange, 50.0);
+      expect(config.elbowBentAngle, -0.8);
     });
 
     test('toJson 往復で値が保持される', () {
@@ -86,6 +90,7 @@ void main() {
       expect(restored.randomChangeInterval, original.randomChangeInterval);
       expect(restored.shoulderSpeedRange, original.shoulderSpeedRange);
       expect(restored.elbowSpeedRange, original.elbowSpeedRange);
+      expect(restored.elbowBentAngle, original.elbowBentAngle);
     });
 
     test('fromJson で欠損フィールドはデフォルト値', () {

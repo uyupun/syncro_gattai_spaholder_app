@@ -16,6 +16,7 @@ class GameWrapper extends StatefulWidget {
   final VoidCallback onLose;
   final BleService bleService;
   final String defeatMessage;
+  final bool enablePendulum;
 
   const GameWrapper({
     super.key,
@@ -23,6 +24,7 @@ class GameWrapper extends StatefulWidget {
     required this.onLose,
     required this.bleService,
     required this.defeatMessage,
+    required this.enablePendulum,
   });
 
   @override
@@ -70,6 +72,7 @@ class _GameWrapperState extends State<GameWrapper> {
       enemyConfig: _enemyConfig,
       playerHpConfig: _playerHpConfig,
       enemyHpConfig: _enemyHpConfig,
+      enablePendulum: widget.enablePendulum,
     );
   }
 

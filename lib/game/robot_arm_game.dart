@@ -27,6 +27,9 @@ class RobotArmGame extends Forge2DGame {
   final HpBarConfig _playerHpConfig;
   final HpBarConfig _enemyHpConfig;
 
+  /// true: アシンクロン戦の二重振り子モード / false: ユガロック戦の固定モード
+  final bool enablePendulum;
+
   RobotArmGame({
     this.onWin,
     this.onLose,
@@ -36,6 +39,7 @@ class RobotArmGame extends Forge2DGame {
     required EnemyConfig enemyConfig,
     HpBarConfig? playerHpConfig,
     HpBarConfig? enemyHpConfig,
+    this.enablePendulum = true,
   }) : _config = config,
        _layout = layout,
        _enemyConfig = enemyConfig,
@@ -57,6 +61,9 @@ class RobotArmGame extends Forge2DGame {
   bool isRandomMode = false;
   final Random _random = Random();
   double _randomChangeTimer = 0;
+
+  // 固定モード(ユガロック戦)用
+  double _fixedShoulderAngle = 0;
 
   // ヒットチェック用
   final List<Enemy> enemies = [];
@@ -164,7 +171,44 @@ class RobotArmGame extends Forge2DGame {
     elbowJoint = RevoluteJoint(elbowJointDef);
     world.createJoint(elbowJoint!);
 
-    startRandomMode();
+    if (enablePendulum) {
+      startRandomMode();
+    } else {
+      // ユガロック戦: 肩を敵の方向へ向けて固定し、肘は少し曲げた姿勢で待機させる
+      _fixedShoulderAngle = _calcShoulderAngleTowardEnemy();
+      upperArm.body.setTransform(upperArm.body.position, _fixedShoulderAngle);
+      foreArm.body.setTransform(
+        foreArm.body.position,
+        _fixedShoulderAngle + _config.elbowBentAngle,
+      );
+    }
+  }
+
+  /// 腕を伸ばした状態(肘が伸びきった状態)の先端が敵の方向を向くような肩関節の角度を求める
+  double _calcShoulderAngleTowardEnemy() {
+    final sj = _layout.shoulderJoint;
+    final ej = _layout.elbowJoint;
+    final shoulderPivot = shoulder.body.worldPoint(
+      Vector2(sj.anchorAX, sj.anchorAY),
+    );
+
+    // 上腕・前腕がともに角度0(伸びきった状態)のとき、肩関節ピボットから見た先端方向。
+    // 初期配置の各パーツ位置はジョイント制約と整合していないため、
+    // ローカルアンカー/オフセットのみから幾何的に算出する。
+    final straightTipDir =
+        Vector2(ej.anchorAX, ej.anchorAY) -
+        Vector2(ej.anchorBX, ej.anchorBY) +
+        Vector2(0, _layout.armTipLocalY) -
+        Vector2(sj.anchorBX, sj.anchorBY);
+
+    final enemyPos = Vector2(
+      _config.shoulderPos.x + _config.armLength + _config.enemyRadius,
+      0,
+    );
+    final enemyDir = enemyPos - shoulderPivot;
+
+    return atan2(enemyDir.y, enemyDir.x) -
+        atan2(straightTipDir.y, straightTipDir.x);
   }
 
   Future<void> _spawnEnemies() async {
@@ -312,6 +356,20 @@ class RobotArmGame extends Forge2DGame {
       if (_randomChangeTimer >= _config.randomChangeInterval) {
         _randomChangeTimer = 0;
         _applyRandomMovement();
+      }
+    }
+
+    if (!enablePendulum) {
+      // ユガロック戦: 肩を固定し、攻撃中以外は肘を曲げた姿勢に固定する
+      upperArm.body.setTransform(upperArm.body.position, _fixedShoulderAngle);
+      upperArm.body.angularVelocity = 0;
+
+      if (!_isStraightening) {
+        foreArm.body.setTransform(
+          foreArm.body.position,
+          _fixedShoulderAngle + _config.elbowBentAngle,
+        );
+        foreArm.body.angularVelocity = 0;
       }
     }
 

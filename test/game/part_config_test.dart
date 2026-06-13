@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/game/part_config.dart';
+import 'package:syncro_gattai_spaholder_app/game/part_config.dart';
 
 void main() {
   group('PartConfig', () {

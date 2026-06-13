@@ -1,8 +1,8 @@
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spajam2025_app/game/components/enemy.dart';
-import 'package:spajam2025_app/interfaces/damageable.dart';
-import 'package:spajam2025_app/interfaces/hp_readable.dart';
+import 'package:syncro_gattai_spaholder_app/game/components/enemy.dart';
+import 'package:syncro_gattai_spaholder_app/interfaces/damageable.dart';
+import 'package:syncro_gattai_spaholder_app/interfaces/hp_readable.dart';
 
 void main() {
   group('Enemy HP', () {

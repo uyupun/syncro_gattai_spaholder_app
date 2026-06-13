@@ -12,7 +12,7 @@ BLE対応M5Stack 2台の加速度センサーで操作するFlutter製物理演�
 | Dart SDK | ^3.10.3 |
 | Flame | ^1.34.0 + flame_forge2d ^0.19.2+2 |
 | BLE | flutter_blue_plus ^2.0.2 |
-| パッケージ名 | spajam2025_app |
+| パッケージ名 | syncro_gattai_spaholder_app |
 
 ## コマンド
 

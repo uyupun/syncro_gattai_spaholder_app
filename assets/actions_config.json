@@ -1,0 +1,43 @@
+{
+  "player": {
+    "name": "Spaholder",
+    "actions": {
+      "synchroCharge": {
+        "power": 0
+      },
+      "synchroAttack": {
+        "power": 10
+      },
+      "synchroGuard": {
+        "power": 25
+      }
+    }
+  },
+  "enemies": {
+    "yugarock": {
+      "name": "Yugarock",
+      "actions": {
+        "roll": {
+          "power": 10
+        },
+        "landfill": {
+          "power": 20
+        }
+      }
+    },
+    "asyncron": {
+      "name": "Asyncron",
+      "actions": {
+        "asyncStream": {
+          "power": 20
+        },
+        "asyncVacuum": {
+          "power": 30
+        },
+        "asyncPendulum": {
+          "power": 0
+        }
+      }
+    }
+  }
+}

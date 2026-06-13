@@ -60,10 +60,12 @@ void main() {
       await tester.tap(findConnectButton(ConnectButtonColor.blue));
       await tester.pump();
       expect(find.text('接続中...'), findsOneWidget);
+      expect(find.text('接続しました'), findsNothing);
 
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('切断'), findsOneWidget);
       expect(find.text('接続'), findsOneWidget); // red側はまだ未接続
+      expect(find.text('接続しました'), findsNWidgets(2)); // 縁取り+塗りの2重表示
 
       // この時点では出動ボタンは無効
       var startButton = tester.widget<StartButton>(find.byType(StartButton));
@@ -86,13 +88,34 @@ void main() {
       await tester.tap(findConnectButton(ConnectButtonColor.blue));
       await tester.pump();
       expect(find.text('切断中...'), findsOneWidget);
+      expect(find.text('接続しました'), findsNWidgets(2)); // blue側のメッセージは消え、red側のみ残る
 
       await tester.pump(const Duration(milliseconds: 800));
       expect(find.text('接続'), findsOneWidget);
+      expect(find.text('切断完了'), findsNWidgets(2));
 
       // 切断されたので出動ボタンは再び無効になる
       startButton = tester.widget<StartButton>(find.byType(StartButton));
       expect(startButton.disabled, isTrue);
+
+      // メッセージの自動消去タイマー・Timer.periodicを停止
+      await mockBle.disconnectAll();
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('接続完了メッセージは2秒後に自動的に消える', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
+        ),
+      );
+
+      await tester.tap(findConnectButton(ConnectButtonColor.blue));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('接続しました'), findsNWidgets(2));
+
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('接続しました'), findsNothing);
 
       // Timer.periodicを停止
       await mockBle.disconnectAll();
@@ -115,9 +138,9 @@ void main() {
       await tester.tap(find.byType(StartButton));
       expect(started, isTrue);
 
-      // Timer.periodicを停止
+      // メッセージの自動消去タイマー・Timer.periodicを停止
       await mockBle.disconnectAll();
-      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets('小さい画面でもオーバーフローしない（未接続時）', (tester) async {

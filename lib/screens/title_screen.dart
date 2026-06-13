@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../interfaces/ble_service.dart';
 import '../models/ble_device_role.dart';
 import '../widgets/connect_button.dart';
+import '../widgets/connection_status_label.dart';
 import '../widgets/start_button.dart';
 
 enum _ConnectionUiState { idle, connecting, connected, disconnecting }
@@ -26,8 +27,14 @@ class TitleScreen extends StatefulWidget {
 class _TitleScreenState extends State<TitleScreen> {
   BleService get _bleService => widget.bleService;
 
+  static const _messageDuration = Duration(seconds: 2);
+
   _ConnectionUiState _blueState = _ConnectionUiState.idle;
   _ConnectionUiState _redState = _ConnectionUiState.idle;
+  String? _blueMessage;
+  String? _redMessage;
+  Timer? _blueMessageTimer;
+  Timer? _redMessageTimer;
 
   StreamSubscription<Set<BleDeviceRole>>? _rolesSub;
 
@@ -60,14 +67,45 @@ class _TitleScreenState extends State<TitleScreen> {
     });
   }
 
-  void _setStateFor(BleDeviceRole role, _ConnectionUiState state) {
+  void _setStateFor(
+    BleDeviceRole role,
+    _ConnectionUiState state, {
+    String? message,
+  }) {
+    if (role == BleDeviceRole.blue) {
+      _blueMessageTimer?.cancel();
+    } else {
+      _redMessageTimer?.cancel();
+    }
+
     setState(() {
       if (role == BleDeviceRole.blue) {
         _blueState = state;
+        _blueMessage = message;
       } else {
         _redState = state;
+        _redMessage = message;
       }
     });
+
+    if (message == null) return;
+
+    final timer = Timer(_messageDuration, () {
+      if (!mounted) return;
+      setState(() {
+        if (role == BleDeviceRole.blue) {
+          _blueMessage = null;
+        } else {
+          _redMessage = null;
+        }
+      });
+    });
+
+    if (role == BleDeviceRole.blue) {
+      _blueMessageTimer = timer;
+    } else {
+      _redMessageTimer = timer;
+    }
   }
 
   Future<void> _connect(BleDeviceRole role) async {
@@ -75,7 +113,7 @@ class _TitleScreenState extends State<TitleScreen> {
 
     try {
       await _bleService.connectDevice(role);
-      _setStateFor(role, _ConnectionUiState.connected);
+      _setStateFor(role, _ConnectionUiState.connected, message: '接続しました');
     } catch (e) {
       debugPrint('接続エラー: $e');
       _setStateFor(role, _ConnectionUiState.idle);
@@ -91,7 +129,7 @@ class _TitleScreenState extends State<TitleScreen> {
       debugPrint('切断エラー: $e');
     }
 
-    _setStateFor(role, _ConnectionUiState.idle);
+    _setStateFor(role, _ConnectionUiState.idle, message: '切断完了');
   }
 
   String _labelFor(_ConnectionUiState state) {
@@ -127,6 +165,28 @@ class _TitleScreenState extends State<TitleScreen> {
   bool get _canStart =>
       _blueState == _ConnectionUiState.connected &&
       _redState == _ConnectionUiState.connected;
+
+  Widget _buildConnectButton({
+    required ConnectButtonColor color,
+    required BleDeviceRole role,
+    required _ConnectionUiState state,
+    required String? message,
+  }) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        ConnectButton(
+          label: _labelFor(state),
+          color: color,
+          disabled: _isDisabled(state),
+          onTap: _onTapFor(role, state),
+        ),
+        if (message != null)
+          Positioned(top: -36, child: ConnectionStatusLabel(text: message)),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,22 +232,22 @@ class _TitleScreenState extends State<TitleScreen> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ConnectButton(
-                      label: _labelFor(_blueState),
+                    _buildConnectButton(
                       color: ConnectButtonColor.blue,
-                      disabled: _isDisabled(_blueState),
-                      onTap: _onTapFor(BleDeviceRole.blue, _blueState),
+                      role: BleDeviceRole.blue,
+                      state: _blueState,
+                      message: _blueMessage,
                     ),
                     StartButton(
                       label: '出動',
                       disabled: !_canStart,
                       onTap: widget.onStart,
                     ),
-                    ConnectButton(
-                      label: _labelFor(_redState),
+                    _buildConnectButton(
                       color: ConnectButtonColor.red,
-                      disabled: _isDisabled(_redState),
-                      onTap: _onTapFor(BleDeviceRole.red, _redState),
+                      role: BleDeviceRole.red,
+                      state: _redState,
+                      message: _redMessage,
                     ),
                   ],
                 ),
@@ -202,6 +262,8 @@ class _TitleScreenState extends State<TitleScreen> {
   @override
   void dispose() {
     _rolesSub?.cancel();
+    _blueMessageTimer?.cancel();
+    _redMessageTimer?.cancel();
     super.dispose();
   }
 }

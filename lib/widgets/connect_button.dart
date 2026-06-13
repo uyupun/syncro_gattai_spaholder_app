@@ -73,7 +73,7 @@ class ConnectButton extends StatelessWidget {
               color: disabled
                   ? const Color(0xFFC5C5C5)
                   : const Color(0xFFF5F5F5),
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),

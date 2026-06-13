@@ -36,7 +36,7 @@ class StartButton extends StatelessWidget {
           label,
           style: TextStyle(
             color: disabled ? _disabledTextColor : _enabledTextColor,
-            fontSize: 20,
+            fontSize: 32,
             fontWeight: FontWeight.bold,
           ),
         ),

@@ -7,7 +7,11 @@ class ConnectionStatusLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(fontSize: 16, color: Color(0xFF1A1A1A));
+    const style = TextStyle(
+      fontSize: 16,
+      color: Color(0xFF1A1A1A),
+      fontWeight: FontWeight.bold,
+    );
 
     return Stack(
       children: [

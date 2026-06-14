@@ -12,6 +12,7 @@ import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
 import '../widgets/exit_dialog.dart';
 import '../widgets/hold_button.dart';
+import '../widgets/hp_bar_widget.dart';
 
 class GameWrapper extends StatefulWidget {
   final VoidCallback onWin;
@@ -107,118 +108,151 @@ class _GameWrapperState extends State<GameWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        GameWidget(key: ValueKey(_gameKey), game: _game),
-        ValueListenableBuilder<bool>(
-          valueListenable: _game.showDefeatMessage,
-          builder: (context, show, _) {
-            if (!show) return const SizedBox.shrink();
-            return Positioned.fill(
-              child: ColoredBox(
-                color: Color(0xE6434343),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenSize = constraints.biggest;
+        return Stack(
+          children: [
+            GameWidget(key: ValueKey(_gameKey), game: _game),
+            Positioned(
+              left: screenSize.width * _playerHpConfig.barPositionX,
+              top: screenSize.height * _playerHpConfig.barPositionY,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _game.playerHp,
+                builder: (context, hp, _) => HpBarWidget(
+                  hp: hp,
+                  maxHp: _playerHpConfig.maxHp,
+                  width: screenSize.width * _playerHpConfig.barSizeX,
+                  barHeight: screenSize.height * _playerHpConfig.barSizeY,
+                ),
+              ),
+            ),
+            Positioned(
+              left: screenSize.width * _enemyHpConfig.barPositionX,
+              top: screenSize.height * _enemyHpConfig.barPositionY,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _game.enemyHp,
+                builder: (context, hp, _) => HpBarWidget(
+                  hp: hp,
+                  maxHp: _enemyHpConfig.maxHp,
+                  width: screenSize.width * _enemyHpConfig.barSizeX,
+                  barHeight: screenSize.height * _enemyHpConfig.barSizeY,
+                ),
+              ),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _game.showDefeatMessage,
+              builder: (context, show, _) {
+                if (!show) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: ColoredBox(
+                    color: Color(0xE6434343),
+                    child: Center(
+                      child: Text(
+                        widget.defeatMessage,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            Positioned(
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HoldButton(
+                      icon: Icons.vertical_align_center,
+                      onPressed: () => _game.startStraightening(),
+                      onReleased: () => _game.stopStraightening(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: _openExitDialog,
+                  child: SvgPicture.asset(
+                    'assets/images/exit.svg',
+                    width: 32,
+                    height: 32,
+                  ),
+                ),
+              ),
+            ),
+            if (kDebugMode)
+              Positioned.fill(
                 child: Center(
-                  child: Text(
-                    widget.defeatMessage,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 4,
+                  child: GestureDetector(
+                    onTapDown: (_) => _game.startStraightening(),
+                    onTapUp: (_) => _game.stopStraightening(),
+                    onTapCancel: () => _game.stopStraightening(),
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      color: Colors.transparent,
                     ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
-        Positioned(
-          bottom: 30,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HoldButton(
-                  icon: Icons.vertical_align_center,
-                  onPressed: () => _game.startStraightening(),
-                  onReleased: () => _game.stopStraightening(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          top: 16,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: GestureDetector(
-              onTap: _openExitDialog,
-              child: SvgPicture.asset(
-                'assets/images/exit.svg',
-                width: 32,
-                height: 32,
-              ),
-            ),
-          ),
-        ),
-        if (kDebugMode)
-          Positioned.fill(
-            child: Center(
-              child: GestureDetector(
-                onTapDown: (_) => _game.startStraightening(),
-                onTapUp: (_) => _game.stopStraightening(),
-                onTapCancel: () => _game.stopStraightening(),
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  color: Colors.transparent,
+            if (kDebugMode)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white70),
+                  onPressed: () =>
+                      setState(() => _showDebugOverlay = !_showDebugOverlay),
                 ),
               ),
-            ),
-          ),
-        if (kDebugMode)
-          Positioned(
-            top: 10,
-            right: 10,
-            child: IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white70),
-              onPressed: () =>
-                  setState(() => _showDebugOverlay = !_showDebugOverlay),
-            ),
-          ),
-        if (kDebugMode && _showDebugOverlay)
-          DebugConfigOverlay(
-            initialConfig: _config,
-            initialLayout: _layout,
-            initialEnemyConfig: _enemyConfig,
-            initialPlayerHpConfig: _playerHpConfig,
-            initialEnemyHpConfig: _enemyHpConfig,
-            onConfigChanged: (newConfig) => _config = newConfig,
-            onLayoutChanged: (newLayout) => _layout = newLayout,
-            onEnemyConfigChanged: (newConfig) => _enemyConfig = newConfig,
-            onPlayerHpConfigChanged: (newConfig) => _playerHpConfig = newConfig,
-            onEnemyHpConfigChanged: (newConfig) => _enemyHpConfig = newConfig,
-            // Why: 即時反映だとゲーム状態(クリア判定等)がリセットされてしまうため、
-            // [OK]ボタンで確定してからゲーム再生成する。
-            onApply: _recreateGame,
-            onClose: () => setState(() => _showDebugOverlay = false),
-          ),
-        if (_showExitDialog)
-          Positioned.fill(
-            child: ColoredBox(
-              color: const Color(0x99000000),
-              child: ExitDialog(
-                continueLabel: 'まだ戦う',
-                exitLabel: '帰還する',
-                onContinue: _continueGame,
-                onExit: widget.onExitToTitle,
+            if (kDebugMode && _showDebugOverlay)
+              DebugConfigOverlay(
+                initialConfig: _config,
+                initialLayout: _layout,
+                initialEnemyConfig: _enemyConfig,
+                initialPlayerHpConfig: _playerHpConfig,
+                initialEnemyHpConfig: _enemyHpConfig,
+                onConfigChanged: (newConfig) => _config = newConfig,
+                onLayoutChanged: (newLayout) => _layout = newLayout,
+                onEnemyConfigChanged: (newConfig) => _enemyConfig = newConfig,
+                onPlayerHpConfigChanged: (newConfig) =>
+                    _playerHpConfig = newConfig,
+                onEnemyHpConfigChanged: (newConfig) =>
+                    _enemyHpConfig = newConfig,
+                // Why: 即時反映だとゲーム状態(クリア判定等)がリセットされてしまうため、
+                // [OK]ボタンで確定してからゲーム再生成する。
+                onApply: _recreateGame,
+                onClose: () => setState(() => _showDebugOverlay = false),
               ),
-            ),
-          ),
-      ],
+            if (_showExitDialog)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: const Color(0x99000000),
+                  child: ExitDialog(
+                    continueLabel: 'まだ戦う',
+                    exitLabel: '帰還する',
+                    onContinue: _continueGame,
+                    onExit: widget.onExitToTitle,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

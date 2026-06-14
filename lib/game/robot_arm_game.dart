@@ -12,7 +12,6 @@ import '../resources/game_image.dart';
 import 'arm_layout_config.dart';
 import 'components/arm_part.dart';
 import 'components/enemy.dart';
-import 'components/hp_bar.dart';
 import 'enemy_config.dart';
 import 'game_config.dart';
 import 'hp_bar_config.dart';
@@ -45,7 +44,15 @@ class RobotArmGame extends Forge2DGame {
        _enemyConfig = enemyConfig,
        _playerHpConfig = playerHpConfig ?? HpBarConfig(),
        _enemyHpConfig = enemyHpConfig ?? HpBarConfig(),
+       playerHp = ValueNotifier((playerHpConfig ?? HpBarConfig()).maxHp),
+       enemyHp = ValueNotifier((enemyHpConfig ?? HpBarConfig()).maxHp),
        super(gravity: config.gravity, zoom: config.zoom);
+
+  /// プレイヤー(shoulder)の現在HP。HPバーUIの表示に使用する。
+  final ValueNotifier<double> playerHp;
+
+  /// 敵の現在HP。HPバーUIの表示に使用する。
+  final ValueNotifier<double> enemyHp;
 
   late ArmPart shoulder;
   late ArmPart upperArm;
@@ -132,18 +139,6 @@ class RobotArmGame extends Forge2DGame {
     );
     await world.add(shoulder);
 
-    // プレイヤーHPバー生成（位置・サイズは画面サイズに対する割合で指定）
-    final playerHpBar = HpBar(
-      hpReadable: shoulder,
-      barWidth: _playerHpConfig.barSizeX * size.x,
-      barHeight: _playerHpConfig.barSizeY * size.y,
-      position: Vector2(
-        _playerHpConfig.barPositionX * size.x,
-        _playerHpConfig.barPositionY * size.y,
-      ),
-    );
-    await camera.viewport.add(playerHpBar);
-
     // --- ジョイント生成 ---
     final sj = _layout.shoulderJoint;
     final shoulderJointDef = RevoluteJointDef()
@@ -224,18 +219,6 @@ class RobotArmGame extends Forge2DGame {
     );
     enemies.add(enemy);
     await world.add(enemy);
-
-    // 敵HPバー生成（位置・サイズは画面サイズに対する割合で指定）
-    final hpBar = HpBar(
-      hpReadable: enemy,
-      barWidth: _enemyHpConfig.barSizeX * size.x,
-      barHeight: _enemyHpConfig.barSizeY * size.y,
-      position: Vector2(
-        _enemyHpConfig.barPositionX * size.x,
-        _enemyHpConfig.barPositionY * size.y,
-      ),
-    );
-    await camera.viewport.add(hpBar);
   }
 
   /// 腕の先端のワールド座標を取得
@@ -255,6 +238,7 @@ class RobotArmGame extends Forge2DGame {
         // todo: 現状は即撃破固定。将来的にダメージ量を調整する場合は
         // 味方・敵双方の攻撃設定を持つ AttackConfig を新設してConfigから渡す。
         enemy.takeDamage(_enemyHpConfig.maxHp);
+        enemyHp.value = enemy.hp;
         enemy.onHit();
 
         _isCleared = true;
@@ -346,6 +330,7 @@ class RobotArmGame extends Forge2DGame {
     super.update(dt);
 
     shoulder.takeDamage(_kEnemyDamagePerSecond * dt);
+    playerHp.value = shoulder.hp;
     if (shoulder.hp <= 0) {
       _handleDefeat();
       return;

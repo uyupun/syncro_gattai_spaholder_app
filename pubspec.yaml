@@ -15,6 +15,7 @@ dependencies:
   flutter_blue_plus: ^2.0.2
   flame_audio: ^2.11.12
   device_info_plus: ^11.4.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:

@@ -11,6 +11,8 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
   final double _radius;
   final double _spriteScale;
   final double _maxHp;
+  final String _spritePath;
+  final String _splashSpritePath;
   double _currentHp;
   Sprite? _sprite;
   Sprite? _splashSprite;
@@ -21,11 +23,15 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
     required double radius,
     required double spriteScale,
     double maxHp = 100,
+    String? spritePath,
+    String? splashSpritePath,
   }) : _initialPosition = position.clone(),
        _radius = radius,
        _spriteScale = spriteScale,
        _maxHp = maxHp,
-       _currentHp = maxHp;
+       _currentHp = maxHp,
+       _spritePath = spritePath ?? GameImage.yugarock.path,
+       _splashSpritePath = splashSpritePath ?? GameImage.yugarockSplash.path;
 
   double get radius => _radius;
 
@@ -45,8 +51,8 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
   Future<void> onLoad() async {
     await super.onLoad();
     try {
-      _sprite = await Sprite.load(GameImage.rockmonster.path);
-      _splashSprite = await Sprite.load(GameImage.rockmonsterSplash.path);
+      _sprite = await Sprite.load(_spritePath);
+      _splashSprite = await Sprite.load(_splashSpritePath);
     } catch (e) {
       debugPrint('Failed to load image: $e');
     }

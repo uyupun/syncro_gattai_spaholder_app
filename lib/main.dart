@@ -138,13 +138,6 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _onRetry() {
-    setState(() {
-      _currentStage = BattleStage.yugarock;
-      _currentScreen = AppScreen.enemyIntro;
-    });
-  }
-
   void _returnToTitle() {
     _playBgm('title.mp3');
     setState(() {
@@ -168,10 +161,11 @@ class _MyAppState extends State<MyApp> {
         AppScreen.game => GameWrapper(
           onWin: _onWin,
           onLose: _onLose,
+          onExitToTitle: _returnToTitle,
           bleService: _bleService,
           defeatMessage: switch (_currentStage) {
-            BattleStage.yugarock => 'ヒーロー、ここで倒れる！',
-            BattleStage.asyncron => '戦いは怪獣の勝利に終わった！',
+            BattleStage.yugarock => 'ヒーロー、ここで倒れる...！',
+            BattleStage.asyncron => '戦いは怪獣の勝利に終わった...！',
           },
           // 振り子動作はアシンクロン戦のみの難易度調整。ユガロック戦は肩・肘を固定する。
           enablePendulum: _currentStage == BattleStage.asyncron,
@@ -179,7 +173,6 @@ class _MyAppState extends State<MyApp> {
         AppScreen.result => ResultScreen(
           result: _currentResult,
           onTitle: _returnToTitle,
-          onRetry: _onRetry,
         ),
       },
     );

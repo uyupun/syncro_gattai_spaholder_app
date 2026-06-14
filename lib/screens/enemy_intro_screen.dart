@@ -34,16 +34,27 @@ class _EnemyIntroScreenState extends State<EnemyIntroScreen> {
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFF434343),
-      child: Center(
-        child: Text(
-          _message,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 4,
+      child: Stack(
+        children: [
+          if (widget.stage == BattleStage.asyncron)
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/asyncron_intro_background.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          Center(
+            child: Text(
+              _message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 4,
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -1,78 +1,73 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../widgets/primary_button.dart';
 
 class ResultScreen extends StatelessWidget {
   final GameResult result;
   final VoidCallback onTitle;
-  final VoidCallback onRetry;
 
-  const ResultScreen({
-    super.key,
-    required this.result,
-    required this.onTitle,
-    required this.onRetry,
-  });
+  const ResultScreen({super.key, required this.result, required this.onTitle});
+
+  String get _backgroundImage => switch (result) {
+    GameResult.yugarockLose => 'assets/images/result_screen_background_2.png',
+    GameResult.asyncronLose ||
+    GameResult.allClear => 'assets/images/result_screen_background_1.png',
+  };
+
+  /// キャラクター画像のリスト
+  List<String> get _characterImages => switch (result) {
+    GameResult.yugarockLose => [
+      'assets/images/spaholder_lose.png',
+      'assets/images/yugarock.png',
+    ],
+    GameResult.asyncronLose => [
+      'assets/images/yugarock_splashA.png',
+      'assets/images/spaholder.png',
+      'assets/images/yugarock_splashA.png',
+    ],
+    GameResult.allClear => [
+      'assets/images/yugarock_splashA.png',
+      'assets/images/spaholder.png',
+      'assets/images/asyncron_lose.png',
+    ],
+  };
+
+  List<Widget> _buildCharacterWidgets() {
+    if (_characterImages.length == 3) {
+      return [
+        Image.asset(_characterImages[0], width: 180, fit: BoxFit.contain),
+        Image.asset(_characterImages[1], width: 350, fit: BoxFit.contain),
+        Image.asset(_characterImages[2], width: 180, fit: BoxFit.contain),
+      ];
+    } else {
+      return _characterImages
+          .map((path) => Image.asset(path, width: 250, fit: BoxFit.contain))
+          .toList();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 40),
-          child: switch (result) {
-            GameResult.allClear => _TitleButton(onTap: onTitle),
-            _ => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _RetryButton(onTap: onRetry),
-                const SizedBox(width: 40),
-                _TitleButton(onTap: onTitle),
-              ],
-            ),
-          },
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(_backgroundImage, fit: BoxFit.cover),
         ),
-      ),
-    );
-  }
-}
-
-class _RetryButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _RetryButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
-        textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-      child: const Text('再挑戦'),
-    );
-  }
-}
-
-class _TitleButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _TitleButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
-        textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-      child: const Text('タイトル'),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: _buildCharacterWidgets(),
+          ),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 40),
+            child: PrimaryButton(label: '帰還する', onTap: onTitle),
+          ),
+        ),
+      ],
     );
   }
 }

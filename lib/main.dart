@@ -138,13 +138,6 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _onRetry() {
-    setState(() {
-      _currentStage = BattleStage.yugarock;
-      _currentScreen = AppScreen.enemyIntro;
-    });
-  }
-
   void _returnToTitle() {
     _playBgm('title.mp3');
     setState(() {
@@ -180,7 +173,6 @@ class _MyAppState extends State<MyApp> {
         AppScreen.result => ResultScreen(
           result: _currentResult,
           onTitle: _returnToTitle,
-          onRetry: _onRetry,
         ),
       },
     );

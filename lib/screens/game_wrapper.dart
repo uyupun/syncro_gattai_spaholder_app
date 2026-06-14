@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../debug/debug_config_overlay.dart';
+import '../game/actions_config.dart';
 import '../game/arm_layout_config.dart';
 import '../game/enemy_config.dart';
 import '../game/game_config.dart';
 import '../game/hp_bar_config.dart';
 import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
+import '../widgets/action_label_text.dart';
+import '../widgets/charge_level_indicator.dart';
 import '../widgets/exit_dialog.dart';
 import '../widgets/hold_button.dart';
 import '../widgets/hp_bar_widget.dart';
@@ -47,6 +50,7 @@ class _GameWrapperState extends State<GameWrapper> {
   EnemyConfig _enemyConfig = EnemyConfig();
   HpBarConfig _playerHpConfig = HpBarConfig();
   HpBarConfig _enemyHpConfig = HpBarConfig();
+  ActionsConfig _actionsConfig = ActionsConfig();
 
   // ゲーム再生成用キー
   int _gameKey = 0;
@@ -57,6 +61,7 @@ class _GameWrapperState extends State<GameWrapper> {
     super.initState();
     _game = _createGame();
     _loadHpConfigs();
+    _loadActionsConfig();
   }
 
   Future<void> _loadHpConfigs() async {
@@ -64,6 +69,14 @@ class _GameWrapperState extends State<GameWrapper> {
     setState(() {
       _playerHpConfig = hpConfigs.player;
       _enemyHpConfig = hpConfigs.enemy;
+    });
+    _recreateGame();
+  }
+
+  Future<void> _loadActionsConfig() async {
+    final actionsConfig = await ActionsConfig.loadFromAsset();
+    setState(() {
+      _actionsConfig = actionsConfig;
     });
     _recreateGame();
   }
@@ -78,6 +91,7 @@ class _GameWrapperState extends State<GameWrapper> {
       enemyConfig: _enemyConfig,
       playerHpConfig: _playerHpConfig,
       enemyHpConfig: _enemyHpConfig,
+      actionsConfig: _actionsConfig,
       enablePendulum: widget.enablePendulum,
     );
   }
@@ -117,14 +131,55 @@ class _GameWrapperState extends State<GameWrapper> {
             Positioned(
               left: screenSize.width * _playerHpConfig.barPositionX,
               top: screenSize.height * _playerHpConfig.barPositionY,
-              child: ValueListenableBuilder<double>(
-                valueListenable: _game.playerHp,
-                builder: (context, hp, _) => HpBarWidget(
-                  hp: hp,
-                  maxHp: _playerHpConfig.maxHp,
-                  width: screenSize.width * _playerHpConfig.barSizeX,
-                  barHeight: screenSize.height * _playerHpConfig.barSizeY,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ValueListenableBuilder<double>(
+                    valueListenable: _game.playerHp,
+                    builder: (context, hp, _) => HpBarWidget(
+                      hp: hp,
+                      maxHp: _playerHpConfig.maxHp,
+                      width: screenSize.width * _playerHpConfig.barSizeX,
+                      barHeight: screenSize.height * _playerHpConfig.barSizeY,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      ValueListenableBuilder<int>(
+                        valueListenable: _game.playerChargeLevel,
+                        builder: (context, chargeLevel, _) =>
+                            ChargeLevelIndicator(chargeLevel: chargeLevel),
+                      ),
+                      const SizedBox(width: 10),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _game.playerGuardActive,
+                        builder: (context, guardActive, _) {
+                          if (!guardActive) return const SizedBox.shrink();
+                          return SvgPicture.asset(
+                            'assets/images/shield.svg',
+                            width: 14,
+                            height: 16,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: screenSize.width * 0.28,
+              top: screenSize.height * 0.18,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: _game.playerActionLabel,
+                builder: (context, label, _) {
+                  if (label == null) return const SizedBox.shrink();
+                  return ActionLabelText(
+                    label: label,
+                    colors: const [Color(0xFFFFFB05), Color(0xFFFCC727)],
+                  );
+                },
               ),
             ),
             Positioned(
@@ -141,6 +196,20 @@ class _GameWrapperState extends State<GameWrapper> {
               ),
             ),
             Positioned(
+              left: screenSize.width * 0.56,
+              top: screenSize.height * 0.12,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: _game.enemyActionLabel,
+                builder: (context, label, _) {
+                  if (label == null) return const SizedBox.shrink();
+                  return ActionLabelText(
+                    label: label,
+                    colors: const [Color(0xFF86D5FF), Color(0xFF2732FC)],
+                  );
+                },
+              ),
+            ),
+            Positioned(
               top: 16,
               left: 0,
               right: 0,
@@ -154,6 +223,29 @@ class _GameWrapperState extends State<GameWrapper> {
                   ),
                 ),
               ),
+            ),
+            ValueListenableBuilder<String?>(
+              valueListenable: _game.centerMessage,
+              builder: (context, message, _) {
+                if (message == null) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
             ValueListenableBuilder<bool>(
               valueListenable: _game.showDefeatMessage,

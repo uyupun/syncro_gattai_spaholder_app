@@ -3,12 +3,15 @@
     "name": "Spaholder",
     "actions": {
       "synchroCharge": {
+        "nameJa": "シンクロ\nチャージ",
         "power": 0
       },
       "synchroAttack": {
+        "nameJa": "シンクロ\nアタック",
         "power": 10
       },
       "synchroGuard": {
+        "nameJa": "シンクロ\nガード",
         "power": 25
       }
     }
@@ -18,9 +21,11 @@
       "name": "Yugarock",
       "actions": {
         "roll": {
+          "nameJa": "ローリング\nアタック",
           "power": 10
         },
         "landfill": {
+          "nameJa": "土砂崩し",
           "power": 20
         }
       }
@@ -29,12 +34,15 @@
       "name": "Asyncron",
       "actions": {
         "asyncStream": {
+          "nameJa": "アシンク\nストリーム",
           "power": 20
         },
         "asyncVacuum": {
+          "nameJa": "アシンク\nバキューム",
           "power": 30
         },
         "asyncPendulum": {
+          "nameJa": "領域展開：\nアシンクペンデュラム",
           "power": 0
         }
       }

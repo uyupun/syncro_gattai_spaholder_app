@@ -7,9 +7,13 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
 import '../interfaces/ble_service.dart';
+import '../models/accel_data.dart';
 import '../resources/game_audio.dart';
 import '../resources/game_image.dart';
+import 'actions_config.dart';
 import 'arm_layout_config.dart';
+import 'combat/enemy_action_scheduler.dart';
+import 'combat/player_action_detector.dart';
 import 'components/arm_part.dart';
 import 'components/enemy.dart';
 import 'enemy_config.dart';
@@ -25,6 +29,7 @@ class RobotArmGame extends Forge2DGame {
   final EnemyConfig _enemyConfig;
   final HpBarConfig _playerHpConfig;
   final HpBarConfig _enemyHpConfig;
+  final ActionsConfig _actionsConfig;
 
   /// true: アシンクロン戦の二重振り子モード / false: ユガロック戦の固定モード
   final bool enablePendulum;
@@ -38,14 +43,21 @@ class RobotArmGame extends Forge2DGame {
     required EnemyConfig enemyConfig,
     HpBarConfig? playerHpConfig,
     HpBarConfig? enemyHpConfig,
+    ActionsConfig? actionsConfig,
     this.enablePendulum = true,
   }) : _config = config,
        _layout = layout,
        _enemyConfig = enemyConfig,
        _playerHpConfig = playerHpConfig ?? HpBarConfig(),
        _enemyHpConfig = enemyHpConfig ?? HpBarConfig(),
+       _actionsConfig = actionsConfig ?? ActionsConfig(),
        playerHp = ValueNotifier((playerHpConfig ?? HpBarConfig()).maxHp),
        enemyHp = ValueNotifier((enemyHpConfig ?? HpBarConfig()).maxHp),
+       _enemyActionScheduler = EnemyActionScheduler(
+         intervalSecondsOptions: enablePendulum
+             ? EnemyActionScheduler.fastIntervalSecondsOptions
+             : EnemyActionScheduler.intervalSecondsOptions,
+       ),
        super(gravity: config.gravity, zoom: config.zoom);
 
   /// プレイヤー(shoulder)の現在HP。HPバーUIの表示に使用する。
@@ -64,6 +76,12 @@ class RobotArmGame extends Forge2DGame {
   bool _isStraightening = false;
   double _straighteningTimer = 0;
 
+  /// シンクロガードの効果時間(秒)
+  static const double _guardDuration = 2.0;
+
+  /// シンクロガードの残り効果時間(秒)。0より大きい間はガード状態として扱う。
+  double _guardTimer = 0;
+
   // 振り子動作用
   bool isRandomMode = false;
   final Random _random = Random();
@@ -78,12 +96,40 @@ class RobotArmGame extends Forge2DGame {
   bool _physicsStoppedOnHit = false;
 
   // 敗北判定用
-  static const _kEnemyDamagePerSecond = 5.0;
   bool _isDefeated = false;
   final ValueNotifier<bool> showDefeatMessage = ValueNotifier(false);
 
   // 背景画像
   Sprite? _backgroundSprite;
+
+  // --- ユガロック戦: 実戦闘ロジック用 ---
+  final PlayerActionDetector _playerActionDetector = PlayerActionDetector();
+  final EnemyActionScheduler _enemyActionScheduler;
+  final Map<String, AccelData> _accelData = {};
+  List<String> _connectedIds = [];
+  StreamSubscription<AccelData>? _accelDataSub;
+  StreamSubscription<List<String>>? _connectedDevicesSub;
+
+  /// 直近に発動した技名(スパホルダー/ユガロック)。1秒間表示後nullに戻る。
+  final ValueNotifier<String?> playerActionLabel = ValueNotifier(null);
+  final ValueNotifier<String?> enemyActionLabel = ValueNotifier(null);
+  int _playerLabelGeneration = 0;
+  int _enemyLabelGeneration = 0;
+
+  /// スパホルダーの現在のシンクロチャージレベル(0〜maxChargeLevel)
+  final ValueNotifier<int> playerChargeLevel = ValueNotifier(0);
+
+  /// シンクロガード中(残り効果時間 > 0)かどうか
+  final ValueNotifier<bool> playerGuardActive = ValueNotifier(false);
+
+  /// シンクロアタック発動中、ドリルが敵に当たった時点で与えるダメージ量
+  double? _pendingAttackDamage;
+
+  /// アシンクロン戦開始時のアシンクペンデュラム発動済みフラグ(初回のみ発動)
+  bool _asyncPendulumTriggered = false;
+
+  /// 画面中央に表示するメッセージ。2秒間表示後nullに戻る。
+  final ValueNotifier<String?> centerMessage = ValueNotifier(null);
 
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
@@ -91,6 +137,15 @@ class RobotArmGame extends Forge2DGame {
   @override
   Future<void> onLoad() async {
     camera.viewfinder.anchor = Anchor.center;
+
+    // --- BLE加速度データの購読(ユガロック戦の実戦闘ロジックで使用) ---
+    _connectedIds = bleService.connectedDevices;
+    _connectedDevicesSub = bleService.connectedDevicesStream.listen((ids) {
+      _connectedIds = ids;
+    });
+    _accelDataSub = bleService.accelDataStream.listen((data) {
+      _accelData[data.deviceId] = data;
+    });
 
     // --- 背景画像を読み込み ---
     try {
@@ -179,6 +234,13 @@ class RobotArmGame extends Forge2DGame {
     }
   }
 
+  @override
+  void onRemove() {
+    _accelDataSub?.cancel();
+    _connectedDevicesSub?.cancel();
+    super.onRemove();
+  }
+
   /// 腕を伸ばした状態(肘が伸びきった状態)の先端が敵の方向を向くような肩関節の角度を求める
   double _calcShoulderAngleTowardEnemy() {
     final sj = _layout.shoulderJoint;
@@ -232,42 +294,163 @@ class RobotArmGame extends Forge2DGame {
     return foreArm.body.worldPoint(Vector2(0, _layout.armTipLocalY));
   }
 
-  /// Snap Straight押下時に1回だけヒットチェック
-  void _checkHitOnce() {
-    if (_isCleared) return;
+  /// シンクロアタックで伸ばしたドリルが敵に当たった時点でダメージを与える
+  void _checkSynchroAttackHit() {
+    if (_isCleared || _pendingAttackDamage == null || enemies.isEmpty) return;
 
+    final enemy = enemies.first;
     final tipPos = armTipPosition;
-    for (final enemy in enemies) {
-      final distance = tipPos.distanceTo(enemy.body.position);
-      final hitDistance = _config.tipRadius + enemy.radius;
-      if (distance < hitDistance) {
-        // todo: 現状は即撃破固定。将来的にダメージ量を調整する場合は
-        // 味方・敵双方の攻撃設定を持つ AttackConfig を新設してConfigから渡す。
-        enemy.takeDamage(_enemyHpConfig.maxHp);
-        enemyHp.value = enemy.hp;
-        enemy.onHit();
-
-        _isCleared = true;
-        _physicsStoppedOnHit = true;
-
-        _stopAllPhysics();
-
-        unawaited(
-          Future.delayed(const Duration(seconds: 3), () async {
-            try {
-              await bleService.sendVibration(100);
-            } catch (e) {
-              debugPrint('sendVibration error: $e');
-            }
-            onWin?.call();
-          }),
-        );
-        FlameAudio.bgm.stop();
-        FlameAudio.bgm.play(GameAudio.clear.path);
-
-        return;
+    final distance = tipPos.distanceTo(enemy.body.position);
+    final hitDistance = _config.tipRadius + enemy.radius;
+    if (distance < hitDistance) {
+      final damage = _pendingAttackDamage!;
+      _pendingAttackDamage = null;
+      enemy.takeDamage(damage);
+      enemyHp.value = enemy.hp;
+      debugPrint(
+        '[Battle] ${_actionsConfig.synchroAttack.nameJa}がヒット! '
+        'damage=$damage, enemyHp=${enemy.hp}',
+      );
+      if (enemy.hp <= 0) {
+        _triggerWin(enemy);
       }
     }
+  }
+
+  /// 敵を撃破した際の処理(物理停止・成功演出・振動・onWin呼び出し)
+  void _triggerWin(Enemy enemy) {
+    if (_isCleared) return;
+    enemy.onHit();
+
+    _isCleared = true;
+    _physicsStoppedOnHit = true;
+
+    _stopAllPhysics();
+
+    unawaited(
+      Future.delayed(const Duration(seconds: 3), () async {
+        try {
+          await bleService.sendVibration(100);
+        } catch (e) {
+          debugPrint('sendVibration error: $e');
+        }
+        onWin?.call();
+      }),
+    );
+    FlameAudio.bgm.stop();
+    FlameAudio.bgm.play(GameAudio.clear.path);
+  }
+
+  /// ユガロック戦/アシンクロン戦共通の実戦闘ロジック。
+  /// BLE加速度センサーの入力からスパホルダーのシンクロ技を発動し、
+  /// ランダムな間隔(5〜10秒)で敵の技を発動する。
+  /// アシンクロン戦では、開始直後に一度だけアシンクペンデュラムを発動する。
+  void _updateBattle(double dt) {
+    if (enemies.isEmpty) return;
+
+    if (enablePendulum && !_asyncPendulumTriggered) {
+      _asyncPendulumTriggered = true;
+      debugPrint(
+        '[Battle] アシンクロン: ${_actionsConfig.asyncPendulum.nameJa} - 発動',
+      );
+      _showCenterMessage('アシンクロンの技の影響を受けている...！');
+    }
+
+    if (_guardTimer > 0) {
+      _guardTimer = (_guardTimer - dt).clamp(0, _guardDuration);
+    }
+
+    final playerResult = _playerActionDetector.detect(
+      _accelData,
+      _connectedIds,
+    );
+    playerChargeLevel.value = _playerActionDetector.chargeLevel;
+    switch (playerResult.type) {
+      case PlayerActionType.attack:
+        final multiplier =
+            PlayerActionDetector.chargeMultipliers[playerResult.chargeLevel];
+        final damage = _actionsConfig.synchroAttack.power * multiplier;
+        _pendingAttackDamage = damage;
+        debugPrint(
+          '[Battle] スパホルダー: ${_actionsConfig.synchroAttack.nameJa} '
+          '(chargeLevel=${playerResult.chargeLevel}, '
+          'multiplier=$multiplier, damage=$damage) - ドリル始動',
+        );
+        _showPlayerActionLabel(_actionsConfig.synchroAttack.nameJa);
+        startStraightening();
+      case PlayerActionType.guard:
+        _guardTimer = _guardDuration;
+        debugPrint('[Battle] スパホルダー: ${_actionsConfig.synchroGuard.nameJa}');
+        _showPlayerActionLabel(_actionsConfig.synchroGuard.nameJa);
+      case PlayerActionType.charge:
+        debugPrint(
+          '[Battle] スパホルダー: ${_actionsConfig.synchroCharge.nameJa} '
+          '(chargeLevel=${playerResult.chargeLevel})',
+        );
+        _showPlayerActionLabel(_actionsConfig.synchroCharge.nameJa);
+      case PlayerActionType.none:
+        break;
+    }
+    playerGuardActive.value = _guardTimer > 0;
+
+    if (_enemyActionScheduler.update(dt)) {
+      final enemyActions = enablePendulum
+          ? _actionsConfig.asyncronActions
+          : _actionsConfig.yugarockActions;
+      final action = enemyActions[_random.nextInt(enemyActions.length)];
+      final isGuarding = _guardTimer > 0;
+      var damage = action.power.toDouble();
+      if (isGuarding) {
+        damage = (damage - _actionsConfig.synchroGuard.power).clamp(
+          0,
+          double.infinity,
+        );
+      }
+      shoulder.takeDamage(damage);
+      playerHp.value = shoulder.hp;
+      debugPrint(
+        '[Battle] ${enablePendulum ? "アシンクロン" : "ユガロック"}: ${action.nameJa} '
+        '(damage=$damage, guarded=$isGuarding, '
+        'playerHp=${shoulder.hp})',
+      );
+      _showEnemyActionLabel(action.nameJa);
+    }
+  }
+
+  /// スパホルダーの技名を1秒間表示する
+  void _showPlayerActionLabel(String text) {
+    playerActionLabel.value = text;
+    final generation = ++_playerLabelGeneration;
+    unawaited(
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_playerLabelGeneration == generation) {
+          playerActionLabel.value = null;
+        }
+      }),
+    );
+  }
+
+  /// ユガロックの技名を1秒間表示する
+  void _showEnemyActionLabel(String text) {
+    enemyActionLabel.value = text;
+    final generation = ++_enemyLabelGeneration;
+    unawaited(
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_enemyLabelGeneration == generation) {
+          enemyActionLabel.value = null;
+        }
+      }),
+    );
+  }
+
+  /// 画面中央にメッセージを2秒間表示する
+  void _showCenterMessage(String text) {
+    centerMessage.value = text;
+    unawaited(
+      Future.delayed(const Duration(seconds: 2), () {
+        centerMessage.value = null;
+      }),
+    );
   }
 
   /// 物理演算を完全に停止
@@ -351,8 +534,8 @@ class RobotArmGame extends Forge2DGame {
 
     super.update(dt);
 
-    shoulder.takeDamage(_kEnemyDamagePerSecond * dt);
-    playerHp.value = shoulder.hp;
+    _updateBattle(dt);
+
     if (shoulder.hp <= 0) {
       _handleDefeat();
       return;
@@ -389,7 +572,7 @@ class RobotArmGame extends Forge2DGame {
       foreArm.body.setTransform(foreArm.body.position, targetAngle);
       foreArm.body.angularVelocity = targetAngularVelocity;
 
-      _checkHitOnce();
+      _checkSynchroAttackHit();
 
       if (_straighteningTimer >= _config.straighteningDuration) {
         stopStraightening();
@@ -411,6 +594,7 @@ class RobotArmGame extends Forge2DGame {
   void stopStraightening() {
     _isStraightening = false;
     _straighteningTimer = 0;
+    _pendingAttackDamage = null;
   }
 
   void controlShoulder(double speed) {

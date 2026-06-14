@@ -35,6 +35,12 @@ void main() {
       expect(config.yugarockRoll.power, 10);
       expect(config.yugarockLandfill.nameJa, '土砂崩し');
       expect(config.yugarockLandfill.power, 20);
+      expect(config.asyncStream.nameJa, 'アシンクストリーム');
+      expect(config.asyncStream.power, 20);
+      expect(config.asyncVacuum.nameJa, 'アシンクバキューム');
+      expect(config.asyncVacuum.power, 30);
+      expect(config.asyncPendulum.nameJa, 'アシンクペンデュラム');
+      expect(config.asyncPendulum.power, 0);
     });
 
     test('yugarockActionsにrollとlandfillが含まれる', () {
@@ -43,6 +49,11 @@ void main() {
         config.yugarockRoll,
         config.yugarockLandfill,
       ]);
+    });
+
+    test('asyncronActionsにasyncStreamとasyncVacuumが含まれる', () {
+      final config = ActionsConfig();
+      expect(config.asyncronActions, [config.asyncStream, config.asyncVacuum]);
     });
 
     test('fromJsonで正しく読込', () {
@@ -61,6 +72,13 @@ void main() {
               'landfill': {'nameJa': '土砂', 'power': 5},
             },
           },
+          'asyncron': {
+            'actions': {
+              'asyncStream': {'nameJa': 'ストリーム', 'power': 6},
+              'asyncVacuum': {'nameJa': 'バキューム', 'power': 7},
+              'asyncPendulum': {'nameJa': 'ペンデュラム', 'power': 8},
+            },
+          },
         },
       });
 
@@ -74,6 +92,12 @@ void main() {
       expect(config.yugarockRoll.power, 4);
       expect(config.yugarockLandfill.nameJa, '土砂');
       expect(config.yugarockLandfill.power, 5);
+      expect(config.asyncStream.nameJa, 'ストリーム');
+      expect(config.asyncStream.power, 6);
+      expect(config.asyncVacuum.nameJa, 'バキューム');
+      expect(config.asyncVacuum.power, 7);
+      expect(config.asyncPendulum.nameJa, 'ペンデュラム');
+      expect(config.asyncPendulum.power, 8);
     });
 
     test('fromJsonでactions自体が欠損している場合は各ActionConfigも空のデフォルト値になる', () {
@@ -82,6 +106,9 @@ void main() {
       expect(config.synchroAttack.power, 0);
       expect(config.yugarockRoll.nameJa, '');
       expect(config.yugarockLandfill.nameJa, '');
+      expect(config.asyncStream.nameJa, '');
+      expect(config.asyncVacuum.nameJa, '');
+      expect(config.asyncPendulum.nameJa, '');
     });
   });
 }

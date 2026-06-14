@@ -22,6 +22,9 @@ class ActionsConfig {
   final ActionConfig synchroGuard;
   final ActionConfig yugarockRoll;
   final ActionConfig yugarockLandfill;
+  final ActionConfig asyncStream;
+  final ActionConfig asyncVacuum;
+  final ActionConfig asyncPendulum;
 
   ActionsConfig({
     ActionConfig? synchroCharge,
@@ -29,6 +32,9 @@ class ActionsConfig {
     ActionConfig? synchroGuard,
     ActionConfig? yugarockRoll,
     ActionConfig? yugarockLandfill,
+    ActionConfig? asyncStream,
+    ActionConfig? asyncVacuum,
+    ActionConfig? asyncPendulum,
   }) : synchroCharge =
            synchroCharge ?? ActionConfig(nameJa: 'シンクロ\nチャージ', power: 0),
        synchroAttack =
@@ -38,10 +44,19 @@ class ActionsConfig {
        yugarockRoll =
            yugarockRoll ?? ActionConfig(nameJa: 'ローリングアタック', power: 10),
        yugarockLandfill =
-           yugarockLandfill ?? ActionConfig(nameJa: '土砂崩し', power: 20);
+           yugarockLandfill ?? ActionConfig(nameJa: '土砂崩し', power: 20),
+       asyncStream =
+           asyncStream ?? ActionConfig(nameJa: 'アシンクストリーム', power: 20),
+       asyncVacuum =
+           asyncVacuum ?? ActionConfig(nameJa: 'アシンクバキューム', power: 30),
+       asyncPendulum =
+           asyncPendulum ?? ActionConfig(nameJa: 'アシンクペンデュラム', power: 0);
 
   /// ユガロックが繰り出す技の一覧
   List<ActionConfig> get yugarockActions => [yugarockRoll, yugarockLandfill];
+
+  /// アシンクロンがランダム間隔で繰り出す技の一覧(asyncPendulumは戦闘開始時のみ発動するため含まない)
+  List<ActionConfig> get asyncronActions => [asyncStream, asyncVacuum];
 
   factory ActionsConfig.fromJson(Map<String, dynamic> json) {
     final playerActions =
@@ -50,6 +65,11 @@ class ActionsConfig {
         {};
     final yugarockActions =
         ((json['enemies'] as Map<String, dynamic>?)?['yugarock']
+                as Map<String, dynamic>?)?['actions']
+            as Map<String, dynamic>? ??
+        {};
+    final asyncronActions =
+        ((json['enemies'] as Map<String, dynamic>?)?['asyncron']
                 as Map<String, dynamic>?)?['actions']
             as Map<String, dynamic>? ??
         {};
@@ -69,6 +89,15 @@ class ActionsConfig {
       ),
       yugarockLandfill: ActionConfig.fromJson(
         yugarockActions['landfill'] as Map<String, dynamic>? ?? {},
+      ),
+      asyncStream: ActionConfig.fromJson(
+        asyncronActions['asyncStream'] as Map<String, dynamic>? ?? {},
+      ),
+      asyncVacuum: ActionConfig.fromJson(
+        asyncronActions['asyncVacuum'] as Map<String, dynamic>? ?? {},
+      ),
+      asyncPendulum: ActionConfig.fromJson(
+        asyncronActions['asyncPendulum'] as Map<String, dynamic>? ?? {},
       ),
     );
   }

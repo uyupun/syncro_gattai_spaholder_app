@@ -53,6 +53,11 @@ class RobotArmGame extends Forge2DGame {
        _actionsConfig = actionsConfig ?? ActionsConfig(),
        playerHp = ValueNotifier((playerHpConfig ?? HpBarConfig()).maxHp),
        enemyHp = ValueNotifier((enemyHpConfig ?? HpBarConfig()).maxHp),
+       _enemyActionScheduler = EnemyActionScheduler(
+         intervalSecondsOptions: enablePendulum
+             ? EnemyActionScheduler.fastIntervalSecondsOptions
+             : EnemyActionScheduler.intervalSecondsOptions,
+       ),
        super(gravity: config.gravity, zoom: config.zoom);
 
   /// プレイヤー(shoulder)の現在HP。HPバーUIの表示に使用する。
@@ -99,7 +104,7 @@ class RobotArmGame extends Forge2DGame {
 
   // --- ユガロック戦: 実戦闘ロジック用 ---
   final PlayerActionDetector _playerActionDetector = PlayerActionDetector();
-  final EnemyActionScheduler _enemyActionScheduler = EnemyActionScheduler();
+  final EnemyActionScheduler _enemyActionScheduler;
   final Map<String, AccelData> _accelData = {};
   List<String> _connectedIds = [];
   StreamSubscription<AccelData>? _accelDataSub;

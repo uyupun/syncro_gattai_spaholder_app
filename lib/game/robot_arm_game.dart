@@ -216,6 +216,12 @@ class RobotArmGame extends Forge2DGame {
       radius: _config.enemyRadius,
       spriteScale: _enemyConfig.spriteScale,
       maxHp: _enemyHpConfig.maxHp,
+      spritePath: enablePendulum
+          ? GameImage.asyncron.path
+          : GameImage.yugarock.path,
+      splashSpritePath: enablePendulum
+          ? GameImage.asyncronLose.path
+          : GameImage.yugarockSplash.path,
     );
     enemies.add(enemy);
     await world.add(enemy);

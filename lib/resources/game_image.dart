@@ -4,6 +4,8 @@ enum GameImage {
   upperBody('upper_body.png'),
   yugarock('yugarock.png'),
   yugarockSplash('yugarock_splashA.png'),
+  asyncron('asyncron.png'),
+  asyncronLose('asyncron_lose.png'),
   gameBackground('game_background.png');
 
   final String path;

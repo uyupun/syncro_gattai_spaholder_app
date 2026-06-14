@@ -103,6 +103,27 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
     });
 
+    testWidgets('接続に失敗した場合は接続に失敗しましたと表示し接続ボタンに戻る', (tester) async {
+      mockBle.failNextConnect = true;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TitleScreen(onStart: () {}, bleService: mockBle),
+        ),
+      );
+
+      await tester.tap(findConnectButton(ConnectButtonColor.blue));
+      await tester.pump();
+      expect(find.text('接続中...'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('接続'), findsNWidgets(2));
+      expect(find.text('接続に失敗しました'), findsNWidgets(2));
+
+      // メッセージの自動消去タイマーを停止
+      await tester.pump(const Duration(seconds: 2));
+    });
+
     testWidgets('接続完了メッセージは2秒後に自動的に消える', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

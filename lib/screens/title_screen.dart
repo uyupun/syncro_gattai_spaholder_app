@@ -79,7 +79,11 @@ class _TitleScreenState extends State<TitleScreen> {
   }
 
   // 新たな接続/切断操作を開始する際は、表示中のメッセージを打ち切って消去する
-  void _setState(BleDeviceRole role, _ConnectionUiState state) {
+  void _setState(
+    BleDeviceRole role,
+    _ConnectionUiState state, {
+    String? message,
+  }) {
     setState(() {
       if (role == BleDeviceRole.blue) {
         _blueState = state;
@@ -91,6 +95,10 @@ class _TitleScreenState extends State<TitleScreen> {
         _redMessageTimer?.cancel();
         _redMessageTimer = null;
         _redMessage = null;
+      }
+
+      if (message != null) {
+        _showMessage(role, message);
       }
     });
   }
@@ -131,7 +139,7 @@ class _TitleScreenState extends State<TitleScreen> {
       await _bleService.connectDevice(role);
     } catch (e) {
       debugPrint('接続エラー: $e');
-      _setState(role, _ConnectionUiState.idle);
+      _setState(role, _ConnectionUiState.idle, message: '接続に失敗しました');
     }
   }
 

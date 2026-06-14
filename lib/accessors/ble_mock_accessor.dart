@@ -21,6 +21,9 @@ class BleMockAccessor implements BleService {
   final _random = Random();
   double _phase = 0;
 
+  /// テスト用: 次回の[connectDevice]を失敗させる
+  bool failNextConnect = false;
+
   @override
   Stream<AccelData> get accelDataStream => _accelDataController.stream;
 
@@ -77,6 +80,12 @@ class BleMockAccessor implements BleService {
 
     debugPrint('[BLE Mock] ${role.deviceName} 接続開始');
     await Future<void>.delayed(const Duration(seconds: 1));
+
+    if (failNextConnect) {
+      failNextConnect = false;
+      debugPrint('[BLE Mock] ${role.deviceName} 接続失敗');
+      throw Exception('${role.deviceName} への接続に失敗しました');
+    }
 
     _connectedRoles.add(role);
     _connectedRolesController.add(Set.of(_connectedRoles));

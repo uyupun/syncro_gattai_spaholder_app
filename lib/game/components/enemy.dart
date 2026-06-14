@@ -45,8 +45,8 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
   Future<void> onLoad() async {
     await super.onLoad();
     try {
-      _sprite = await Sprite.load(GameImage.rockmonster.path);
-      _splashSprite = await Sprite.load(GameImage.rockmonsterSplash.path);
+      _sprite = await Sprite.load(GameImage.yugarock.path);
+      _splashSprite = await Sprite.load(GameImage.yugarockSplash.path);
     } catch (e) {
       debugPrint('Failed to load image: $e');
     }

@@ -140,6 +140,21 @@ class _GameWrapperState extends State<GameWrapper> {
                 ),
               ),
             ),
+            Positioned(
+              top: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: _openExitDialog,
+                  child: SvgPicture.asset(
+                    'assets/images/exit.svg',
+                    width: 32,
+                    height: 32,
+                  ),
+                ),
+              ),
+            ),
             ValueListenableBuilder<bool>(
               valueListenable: _game.showDefeatMessage,
               builder: (context, show, _) {
@@ -176,21 +191,6 @@ class _GameWrapperState extends State<GameWrapper> {
                       onReleased: () => _game.stopStraightening(),
                     ),
                   ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 16,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: _openExitDialog,
-                  child: SvgPicture.asset(
-                    'assets/images/exit.svg',
-                    width: 32,
-                    height: 32,
-                  ),
                 ),
               ),
             ),

@@ -164,8 +164,8 @@ class _MyAppState extends State<MyApp> {
           onExitToTitle: _returnToTitle,
           bleService: _bleService,
           defeatMessage: switch (_currentStage) {
-            BattleStage.yugarock => 'ヒーロー、ここで倒れる！',
-            BattleStage.asyncron => '戦いは怪獣の勝利に終わった！',
+            BattleStage.yugarock => 'ヒーロー、ここで倒れる...！',
+            BattleStage.asyncron => '戦いは怪獣の勝利に終わった...！',
           },
           // 振り子動作はアシンクロン戦のみの難易度調整。ユガロック戦は肩・肘を固定する。
           enablePendulum: _currentStage == BattleStage.asyncron,

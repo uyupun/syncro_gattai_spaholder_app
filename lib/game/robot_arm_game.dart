@@ -90,7 +90,7 @@ class RobotArmGame extends Forge2DGame {
       _backgroundSprite = await Sprite.load(GameImage.gameBackground.path);
     } catch (e) {
       debugPrint(
-        'Failed to load background image: game_background.jpg, error: $e',
+        'Failed to load background image: game_background.png, error: $e',
       );
     }
 

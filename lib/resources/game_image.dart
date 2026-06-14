@@ -4,7 +4,7 @@ enum GameImage {
   upperBody('upper_body.png'),
   rockmonster('rockmonster.png'),
   rockmonsterSplash('rockmonster_splashA.png'),
-  gameBackground('game_background.jpg');
+  gameBackground('game_background.png');
 
   final String path;
   const GameImage(this.path);

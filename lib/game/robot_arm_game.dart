@@ -91,7 +91,6 @@ class RobotArmGame extends Forge2DGame {
   bool _physicsStoppedOnHit = false;
 
   // 敗北判定用
-  static const _kEnemyDamagePerSecond = 5.0;
   bool _isDefeated = false;
   final ValueNotifier<bool> showDefeatMessage = ValueNotifier(false);
 
@@ -120,6 +119,12 @@ class RobotArmGame extends Forge2DGame {
 
   /// シンクロアタック発動中、ドリルが敵に当たった時点で与えるダメージ量
   double? _pendingAttackDamage;
+
+  /// アシンクロン戦開始時のアシンクペンデュラム発動済みフラグ(初回のみ発動)
+  bool _asyncPendulumTriggered = false;
+
+  /// 画面中央に表示するメッセージ。2秒間表示後nullに戻る。
+  final ValueNotifier<String?> centerMessage = ValueNotifier(null);
 
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
@@ -284,25 +289,6 @@ class RobotArmGame extends Forge2DGame {
     return foreArm.body.worldPoint(Vector2(0, _layout.armTipLocalY));
   }
 
-  /// Snap Straight押下時に1回だけヒットチェック
-  void _checkHitOnce() {
-    if (_isCleared) return;
-
-    final tipPos = armTipPosition;
-    for (final enemy in enemies) {
-      final distance = tipPos.distanceTo(enemy.body.position);
-      final hitDistance = _config.tipRadius + enemy.radius;
-      if (distance < hitDistance) {
-        // todo: 現状は即撃破固定。将来的にダメージ量を調整する場合は
-        // 味方・敵双方の攻撃設定を持つ AttackConfig を新設してConfigから渡す。
-        enemy.takeDamage(_enemyHpConfig.maxHp);
-        enemyHp.value = enemy.hp;
-        _triggerWin(enemy);
-        return;
-      }
-    }
-  }
-
   /// シンクロアタックで伸ばしたドリルが敵に当たった時点でダメージを与える
   void _checkSynchroAttackHit() {
     if (_isCleared || _pendingAttackDamage == null || enemies.isEmpty) return;
@@ -350,11 +336,20 @@ class RobotArmGame extends Forge2DGame {
     FlameAudio.bgm.play(GameAudio.clear.path);
   }
 
-  /// ユガロック戦の実戦闘ロジック。
+  /// ユガロック戦/アシンクロン戦共通の実戦闘ロジック。
   /// BLE加速度センサーの入力からスパホルダーのシンクロ技を発動し、
-  /// ランダムな間隔(5〜10秒)でユガロックの技を発動する。
-  void _updateYugarockBattle(double dt) {
+  /// ランダムな間隔(5〜10秒)で敵の技を発動する。
+  /// アシンクロン戦では、開始直後に一度だけアシンクペンデュラムを発動する。
+  void _updateBattle(double dt) {
     if (enemies.isEmpty) return;
+
+    if (enablePendulum && !_asyncPendulumTriggered) {
+      _asyncPendulumTriggered = true;
+      debugPrint(
+        '[Battle] アシンクロン: ${_actionsConfig.asyncPendulum.nameJa} - 発動',
+      );
+      _showCenterMessage('アシンクロンの技の影響を受けている...！');
+    }
 
     if (_guardTimer > 0) {
       _guardTimer = (_guardTimer - dt).clamp(0, _guardDuration);
@@ -394,10 +389,10 @@ class RobotArmGame extends Forge2DGame {
     playerGuardActive.value = _guardTimer > 0;
 
     if (_enemyActionScheduler.update(dt)) {
-      final action =
-          _actionsConfig.yugarockActions[_random.nextInt(
-            _actionsConfig.yugarockActions.length,
-          )];
+      final enemyActions = enablePendulum
+          ? _actionsConfig.asyncronActions
+          : _actionsConfig.yugarockActions;
+      final action = enemyActions[_random.nextInt(enemyActions.length)];
       final isGuarding = _guardTimer > 0;
       var damage = action.power.toDouble();
       if (isGuarding) {
@@ -409,7 +404,7 @@ class RobotArmGame extends Forge2DGame {
       shoulder.takeDamage(damage);
       playerHp.value = shoulder.hp;
       debugPrint(
-        '[Battle] ユガロック: ${action.nameJa} '
+        '[Battle] ${enablePendulum ? "アシンクロン" : "ユガロック"}: ${action.nameJa} '
         '(damage=$damage, guarded=$isGuarding, '
         'playerHp=${shoulder.hp})',
       );
@@ -439,6 +434,16 @@ class RobotArmGame extends Forge2DGame {
         if (_enemyLabelGeneration == generation) {
           enemyActionLabel.value = null;
         }
+      }),
+    );
+  }
+
+  /// 画面中央にメッセージを2秒間表示する
+  void _showCenterMessage(String text) {
+    centerMessage.value = text;
+    unawaited(
+      Future.delayed(const Duration(seconds: 2), () {
+        centerMessage.value = null;
       }),
     );
   }
@@ -524,13 +529,7 @@ class RobotArmGame extends Forge2DGame {
 
     super.update(dt);
 
-    if (enablePendulum) {
-      // アシンクロン戦: 時間経過でダメージを受ける(仮実装。実戦闘ロジックは今後対応)
-      shoulder.takeDamage(_kEnemyDamagePerSecond * dt);
-      playerHp.value = shoulder.hp;
-    } else {
-      _updateYugarockBattle(dt);
-    }
+    _updateBattle(dt);
 
     if (shoulder.hp <= 0) {
       _handleDefeat();
@@ -568,11 +567,7 @@ class RobotArmGame extends Forge2DGame {
       foreArm.body.setTransform(foreArm.body.position, targetAngle);
       foreArm.body.angularVelocity = targetAngularVelocity;
 
-      if (enablePendulum) {
-        _checkHitOnce();
-      } else {
-        _checkSynchroAttackHit();
-      }
+      _checkSynchroAttackHit();
 
       if (_straighteningTimer >= _config.straighteningDuration) {
         stopStraightening();

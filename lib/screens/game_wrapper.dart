@@ -224,6 +224,29 @@ class _GameWrapperState extends State<GameWrapper> {
                 ),
               ),
             ),
+            ValueListenableBuilder<String?>(
+              valueListenable: _game.centerMessage,
+              builder: (context, message, _) {
+                if (message == null) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
             ValueListenableBuilder<bool>(
               valueListenable: _game.showDefeatMessage,
               builder: (context, show, _) {

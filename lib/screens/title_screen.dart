@@ -84,6 +84,7 @@ class _TitleScreenState extends State<TitleScreen> {
     _ConnectionUiState state, {
     String? message,
   }) {
+    if (!mounted) return;
     setState(() {
       if (role == BleDeviceRole.blue) {
         _blueState = state;

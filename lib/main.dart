@@ -168,6 +168,7 @@ class _MyAppState extends State<MyApp> {
         AppScreen.game => GameWrapper(
           onWin: _onWin,
           onLose: _onLose,
+          onExitToTitle: _returnToTitle,
           bleService: _bleService,
           defeatMessage: switch (_currentStage) {
             BattleStage.yugarock => 'ヒーロー、ここで倒れる！',

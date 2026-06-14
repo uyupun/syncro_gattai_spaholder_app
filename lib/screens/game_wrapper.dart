@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../debug/debug_config_overlay.dart';
 import '../game/arm_layout_config.dart';
@@ -9,11 +10,13 @@ import '../game/game_config.dart';
 import '../game/hp_bar_config.dart';
 import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
+import '../widgets/exit_dialog.dart';
 import '../widgets/hold_button.dart';
 
 class GameWrapper extends StatefulWidget {
   final VoidCallback onWin;
   final VoidCallback onLose;
+  final VoidCallback onExitToTitle;
   final BleService bleService;
   final String defeatMessage;
   final bool enablePendulum;
@@ -22,6 +25,7 @@ class GameWrapper extends StatefulWidget {
     super.key,
     required this.onWin,
     required this.onLose,
+    required this.onExitToTitle,
     required this.bleService,
     required this.defeatMessage,
     required this.enablePendulum,
@@ -34,6 +38,7 @@ class GameWrapper extends StatefulWidget {
 class _GameWrapperState extends State<GameWrapper> {
   BleService get _bleService => widget.bleService;
   bool _showDebugOverlay = false;
+  bool _showExitDialog = false;
 
   // 全Config state
   GameConfig _config = GameConfig();
@@ -85,6 +90,16 @@ class _GameWrapperState extends State<GameWrapper> {
     });
   }
 
+  void _openExitDialog() {
+    _game.pauseEngine();
+    setState(() => _showExitDialog = true);
+  }
+
+  void _continueGame() {
+    setState(() => _showExitDialog = false);
+    _game.resumeEngine();
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -134,6 +149,21 @@ class _GameWrapperState extends State<GameWrapper> {
             ),
           ),
         ),
+        Positioned(
+          top: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: _openExitDialog,
+              child: SvgPicture.asset(
+                'assets/images/exit.svg',
+                width: 32,
+                height: 32,
+              ),
+            ),
+          ),
+        ),
         if (kDebugMode)
           Positioned.fill(
             child: Center(
@@ -175,6 +205,18 @@ class _GameWrapperState extends State<GameWrapper> {
             // [OK]ボタンで確定してからゲーム再生成する。
             onApply: _recreateGame,
             onClose: () => setState(() => _showDebugOverlay = false),
+          ),
+        if (_showExitDialog)
+          Positioned.fill(
+            child: ColoredBox(
+              color: const Color(0x99000000),
+              child: ExitDialog(
+                continueLabel: 'まだ戦う',
+                exitLabel: '帰還する',
+                onContinue: _continueGame,
+                onExit: widget.onExitToTitle,
+              ),
+            ),
           ),
       ],
     );

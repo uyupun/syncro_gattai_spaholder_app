@@ -40,6 +40,7 @@ class PlayerActionDetector {
     Map<String, AccelData> accelData,
     List<String> connectedIds, {
     bool isGuarding = false,
+    bool isActionLocked = false,
   }) {
     final x = _bothExceed(accelData, connectedIds, (d) => d.x, thresholdX);
     final y = _bothExceed(
@@ -50,25 +51,32 @@ class PlayerActionDetector {
     );
     final z = _bothExceed(accelData, connectedIds, (d) => d.z, thresholdZ);
 
+    final prevX = _prevX;
+    final prevY = _prevY;
+    final prevZ = _prevZ;
+    _prevX = x;
+    _prevY = y;
+    _prevZ = z;
+
+    if (isActionLocked) {
+      return PlayerActionResult(PlayerActionType.none, _chargeLevel);
+    }
+
     PlayerActionResult result = PlayerActionResult(
       PlayerActionType.none,
       _chargeLevel,
     );
 
-    if (x && !_prevX && !isGuarding) {
+    if (x && !prevX && !isGuarding) {
       final level = _chargeLevel;
       _chargeLevel = 0;
       result = PlayerActionResult(PlayerActionType.attack, level);
-    } else if (y && !_prevY) {
+    } else if (y && !prevY) {
       result = PlayerActionResult(PlayerActionType.guard, _chargeLevel);
-    } else if (z && !_prevZ && _chargeLevel < maxChargeLevel && !isGuarding) {
+    } else if (z && !prevZ && _chargeLevel < maxChargeLevel && !isGuarding) {
       _chargeLevel++;
       result = PlayerActionResult(PlayerActionType.charge, _chargeLevel);
     }
-
-    _prevX = x;
-    _prevY = y;
-    _prevZ = z;
 
     return result;
   }

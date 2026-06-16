@@ -76,6 +76,25 @@ class RobotArmGame extends Forge2DGame {
   bool _isStraightening = false;
   double _straighteningTimer = 0;
 
+  /// シンクロチャージ発動後の技ロック時間(秒)
+  static const double _chargeLockDuration = 0.5;
+
+  /// シンクロアタック発動後のチャージレベル別ロック時間(秒)
+  static const List<double> _attackLockDurations = [
+    1.0,
+    1.1,
+    1.2,
+    1.5,
+    1.75,
+    2.0,
+  ];
+
+  /// シンクロチャージ発動後の技ロック残り時間(秒)
+  double _chargeActiveTimer = 0;
+
+  /// シンクロアタック発動後の技ロック残り時間(秒)
+  double _attackActiveTimer = 0;
+
   /// シンクロガードの効果時間(秒)
   static const double _guardDuration = 2.0;
 
@@ -359,27 +378,47 @@ class RobotArmGame extends Forge2DGame {
     if (_guardTimer > 0) {
       _guardTimer = (_guardTimer - dt).clamp(0, _guardDuration);
     }
+    if (_chargeActiveTimer > 0) {
+      _chargeActiveTimer = (_chargeActiveTimer - dt).clamp(
+        0,
+        _chargeLockDuration,
+      );
+    }
+    if (_attackActiveTimer > 0) {
+      _attackActiveTimer = (_attackActiveTimer - dt).clamp(
+        0,
+        _attackLockDurations.last,
+      );
+    }
 
     final isGuardingNow = _guardTimer > 0;
+    final isActionLocked =
+        _isStraightening || _chargeActiveTimer > 0 || _attackActiveTimer > 0;
     final playerResult = _playerActionDetector.detect(
       _accelData,
       _connectedIds,
       isGuarding: isGuardingNow,
+      isActionLocked: isActionLocked,
     );
     playerChargeLevel.value = _playerActionDetector.chargeLevel;
     switch (playerResult.type) {
       case PlayerActionType.attack:
-        if (isGuardingNow) break;
-        final multiplier =
-            PlayerActionDetector.chargeMultipliers[playerResult.chargeLevel];
+        final chargeLevel = playerResult.chargeLevel;
+        final multiplier = PlayerActionDetector.chargeMultipliers[chargeLevel];
         final damage = _actionsConfig.synchroAttack.power * multiplier;
         _pendingAttackDamage = damage;
+        _attackActiveTimer = _attackLockDurations[chargeLevel];
         debugPrint(
           '[Battle] スパホルダー: ${_actionsConfig.synchroAttack.nameJa} '
-          '(chargeLevel=${playerResult.chargeLevel}, '
+          '(chargeLevel=$chargeLevel, '
           'multiplier=$multiplier, damage=$damage) - ドリル始動',
         );
-        _showPlayerActionLabel(_actionsConfig.synchroAttack.nameJa);
+        _showPlayerActionLabel(
+          _actionsConfig.synchroAttack.nameJa,
+          duration: Duration(
+            milliseconds: (_attackLockDurations[chargeLevel] * 1000).toInt(),
+          ),
+        );
         startStraightening();
       case PlayerActionType.guard:
         _guardTimer = _guardDuration;
@@ -389,12 +428,17 @@ class RobotArmGame extends Forge2DGame {
           duration: Duration(milliseconds: (_guardDuration * 1000).toInt()),
         );
       case PlayerActionType.charge:
-        if (isGuardingNow) break;
+        _chargeActiveTimer = _chargeLockDuration;
         debugPrint(
           '[Battle] スパホルダー: ${_actionsConfig.synchroCharge.nameJa} '
           '(chargeLevel=${playerResult.chargeLevel})',
         );
-        _showPlayerActionLabel(_actionsConfig.synchroCharge.nameJa);
+        _showPlayerActionLabel(
+          _actionsConfig.synchroCharge.nameJa,
+          duration: Duration(
+            milliseconds: (_chargeLockDuration * 1000).toInt(),
+          ),
+        );
       case PlayerActionType.none:
         break;
     }

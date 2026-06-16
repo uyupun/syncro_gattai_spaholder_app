@@ -563,7 +563,6 @@ class RobotArmGame extends Forge2DGame {
     if (_isDefeated) return;
     _isDefeated = true;
     _stopAllPhysics();
-    showDefeatMessage.value = true;
 
     // 敗北時、スパホルダーを構成する各パーツを-45度傾けて倒れた姿勢にする
     const tiltAngle = -pi / 4;
@@ -580,9 +579,15 @@ class RobotArmGame extends Forge2DGame {
       foreArm.body.angle + tiltAngle,
     );
 
+    // 勝利と同じ3秒静止後にメッセージを表示し、さらに2秒後に遷移する
     unawaited(
       Future.delayed(const Duration(seconds: 3), () {
-        onLose?.call();
+        showDefeatMessage.value = true;
+        unawaited(
+          Future.delayed(const Duration(seconds: 2), () {
+            onLose?.call();
+          }),
+        );
       }),
     );
   }

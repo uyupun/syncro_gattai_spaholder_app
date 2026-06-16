@@ -384,7 +384,10 @@ class RobotArmGame extends Forge2DGame {
       case PlayerActionType.guard:
         _guardTimer = _guardDuration;
         debugPrint('[Battle] スパホルダー: ${_actionsConfig.synchroGuard.nameJa}');
-        _showPlayerActionLabel(_actionsConfig.synchroGuard.nameJa);
+        _showPlayerActionLabel(
+          _actionsConfig.synchroGuard.nameJa,
+          duration: Duration(milliseconds: (_guardDuration * 1000).toInt()),
+        );
       case PlayerActionType.charge:
         if (isGuardingNow) break;
         debugPrint(
@@ -428,12 +431,15 @@ class RobotArmGame extends Forge2DGame {
     }
   }
 
-  /// スパホルダーの技名を1秒間表示する
-  void _showPlayerActionLabel(String text) {
+  /// スパホルダーの技名を表示する。durationを省略した場合は1秒間表示する。
+  void _showPlayerActionLabel(
+    String text, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
     playerActionLabel.value = text;
     final generation = ++_playerLabelGeneration;
     unawaited(
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(duration, () {
         if (_playerLabelGeneration == generation) {
           playerActionLabel.value = null;
         }

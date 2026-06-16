@@ -132,6 +132,7 @@ class RobotArmGame extends Forge2DGame {
   /// 直近に発動した技名(スパホルダー/ユガロック)。1秒間表示後nullに戻る。
   final ValueNotifier<String?> playerActionLabel = ValueNotifier(null);
   final ValueNotifier<String?> enemyActionLabel = ValueNotifier(null);
+  final ValueNotifier<String?> asyncPendulumLabel = ValueNotifier(null);
   int _playerLabelGeneration = 0;
   int _enemyLabelGeneration = 0;
 
@@ -367,7 +368,21 @@ class RobotArmGame extends Forge2DGame {
       debugPrint(
         '[Battle] アシンクロン: ${_actionsConfig.asyncPendulum.nameJa} - 発動',
       );
-      _showCenterMessage('アシンクロンの技の影響を受けている...！');
+      asyncPendulumLabel.value = _actionsConfig.asyncPendulum.nameJa;
+      unawaited(
+        Future.delayed(const Duration(milliseconds: 2500), () {
+          asyncPendulumLabel.value = null;
+        }),
+      );
+      _showCenterMessage(
+        'アシンクロンの技の\n影響を受けている...！',
+        duration: const Duration(milliseconds: 2500),
+      );
+      unawaited(
+        bleService.sendVibration(25).catchError((Object e) {
+          debugPrint('sendVibration error: $e');
+        }),
+      );
     }
 
     if (_guardTimer > 0) {
@@ -499,11 +514,13 @@ class RobotArmGame extends Forge2DGame {
     );
   }
 
-  /// 画面中央にメッセージを2秒間表示する
-  void _showCenterMessage(String text) {
+  void _showCenterMessage(
+    String text, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
     centerMessage.value = text;
     unawaited(
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(duration, () {
         centerMessage.value = null;
       }),
     );

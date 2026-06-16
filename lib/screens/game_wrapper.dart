@@ -12,6 +12,7 @@ import '../game/hp_bar_config.dart';
 import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
 import '../widgets/action_label_text.dart';
+import '../widgets/outlined_text.dart';
 import '../widgets/charge_level_indicator.dart';
 import '../widgets/exit_dialog.dart';
 import '../widgets/hold_button.dart';
@@ -204,7 +205,23 @@ class _GameWrapperState extends State<GameWrapper> {
                   if (label == null) return const SizedBox.shrink();
                   return ActionLabelText(
                     label: label,
-                    colors: const [Color(0xFF86D5FF), Color(0xFF2732FC)],
+                    colors: widget.enablePendulum
+                        ? const [Color(0xFFFF32F8), Color(0xFF730DB2)]
+                        : const [Color(0xFF86D5FF), Color(0xFF2732FC)],
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              left: screenSize.width * 0.56,
+              top: screenSize.height * 0.12,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: _game.asyncPendulumLabel,
+                builder: (context, label, _) {
+                  if (label == null) return const SizedBox.shrink();
+                  return ActionLabelText(
+                    label: label,
+                    colors: const [Color(0xFFFF32F8), Color(0xFF730DB2)],
                   );
                 },
               ),
@@ -232,16 +249,7 @@ class _GameWrapperState extends State<GameWrapper> {
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
+                      child: OutlinedText(text: message, fontSize: 28),
                     ),
                   ),
                 );

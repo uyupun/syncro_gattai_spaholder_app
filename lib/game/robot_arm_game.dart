@@ -360,13 +360,16 @@ class RobotArmGame extends Forge2DGame {
       _guardTimer = (_guardTimer - dt).clamp(0, _guardDuration);
     }
 
+    final isGuardingNow = _guardTimer > 0;
     final playerResult = _playerActionDetector.detect(
       _accelData,
       _connectedIds,
+      isGuarding: isGuardingNow,
     );
     playerChargeLevel.value = _playerActionDetector.chargeLevel;
     switch (playerResult.type) {
       case PlayerActionType.attack:
+        if (isGuardingNow) break;
         final multiplier =
             PlayerActionDetector.chargeMultipliers[playerResult.chargeLevel];
         final damage = _actionsConfig.synchroAttack.power * multiplier;
@@ -383,6 +386,7 @@ class RobotArmGame extends Forge2DGame {
         debugPrint('[Battle] スパホルダー: ${_actionsConfig.synchroGuard.nameJa}');
         _showPlayerActionLabel(_actionsConfig.synchroGuard.nameJa);
       case PlayerActionType.charge:
+        if (isGuardingNow) break;
         debugPrint(
           '[Battle] スパホルダー: ${_actionsConfig.synchroCharge.nameJa} '
           '(chargeLevel=${playerResult.chargeLevel})',

@@ -33,10 +33,14 @@ class PlayerActionDetector {
   /// 現在のチャージレベル(0〜maxChargeLevel)
   int get chargeLevel => _chargeLevel;
 
+  /// チャージレベルを0にリセットする(ガード発動時などに使用)
+  void resetCharge() => _chargeLevel = 0;
+
   PlayerActionResult detect(
     Map<String, AccelData> accelData,
-    List<String> connectedIds,
-  ) {
+    List<String> connectedIds, {
+    bool isGuarding = false,
+  }) {
     final x = _bothExceed(accelData, connectedIds, (d) => d.x, thresholdX);
     final y = _bothExceed(
       accelData,
@@ -51,13 +55,13 @@ class PlayerActionDetector {
       _chargeLevel,
     );
 
-    if (x && !_prevX) {
+    if (x && !_prevX && !isGuarding) {
       final level = _chargeLevel;
       _chargeLevel = 0;
       result = PlayerActionResult(PlayerActionType.attack, level);
     } else if (y && !_prevY) {
       result = PlayerActionResult(PlayerActionType.guard, _chargeLevel);
-    } else if (z && !_prevZ && _chargeLevel < maxChargeLevel) {
+    } else if (z && !_prevZ && _chargeLevel < maxChargeLevel && !isGuarding) {
       _chargeLevel++;
       result = PlayerActionResult(PlayerActionType.charge, _chargeLevel);
     }

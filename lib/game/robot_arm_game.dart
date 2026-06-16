@@ -408,6 +408,13 @@ class RobotArmGame extends Forge2DGame {
       }
       shoulder.takeDamage(damage);
       playerHp.value = shoulder.hp;
+      if (damage > 0) {
+        unawaited(
+          bleService.sendVibration(50).catchError((Object e) {
+            debugPrint('sendVibration error: $e');
+          }),
+        );
+      }
       debugPrint(
         '[Battle] ${enablePendulum ? "アシンクロン" : "ユガロック"}: ${action.nameJa} '
         '(damage=$damage, guarded=$isGuarding, '

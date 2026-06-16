@@ -76,6 +76,25 @@ class RobotArmGame extends Forge2DGame {
   bool _isStraightening = false;
   double _straighteningTimer = 0;
 
+  /// シンクロチャージ発動後の技ロック時間(秒)
+  static const double _chargeLockDuration = 0.5;
+
+  /// シンクロアタック発動後のチャージレベル別ロック時間(秒)
+  static const List<double> _attackLockDurations = [
+    1.0,
+    1.1,
+    1.2,
+    1.5,
+    1.75,
+    2.0,
+  ];
+
+  /// シンクロチャージ発動後の技ロック残り時間(秒)
+  double _chargeActiveTimer = 0;
+
+  /// シンクロアタック発動後の技ロック残り時間(秒)
+  double _attackActiveTimer = 0;
+
   /// シンクロガードの効果時間(秒)
   static const double _guardDuration = 2.0;
 
@@ -113,6 +132,7 @@ class RobotArmGame extends Forge2DGame {
   /// 直近に発動した技名(スパホルダー/ユガロック)。1秒間表示後nullに戻る。
   final ValueNotifier<String?> playerActionLabel = ValueNotifier(null);
   final ValueNotifier<String?> enemyActionLabel = ValueNotifier(null);
+  final ValueNotifier<String?> asyncPendulumLabel = ValueNotifier(null);
   int _playerLabelGeneration = 0;
   int _enemyLabelGeneration = 0;
 
@@ -328,12 +348,7 @@ class RobotArmGame extends Forge2DGame {
     _stopAllPhysics();
 
     unawaited(
-      Future.delayed(const Duration(seconds: 3), () async {
-        try {
-          await bleService.sendVibration(100);
-        } catch (e) {
-          debugPrint('sendVibration error: $e');
-        }
+      Future.delayed(const Duration(seconds: 3), () {
         onWin?.call();
       }),
     );
@@ -353,41 +368,87 @@ class RobotArmGame extends Forge2DGame {
       debugPrint(
         '[Battle] アシンクロン: ${_actionsConfig.asyncPendulum.nameJa} - 発動',
       );
-      _showCenterMessage('アシンクロンの技の影響を受けている...！');
+      asyncPendulumLabel.value = _actionsConfig.asyncPendulum.nameJa;
+      unawaited(
+        Future.delayed(const Duration(milliseconds: 2500), () {
+          asyncPendulumLabel.value = null;
+        }),
+      );
+      _showCenterMessage(
+        'アシンクロンの技の\n影響を受けている...！',
+        duration: const Duration(milliseconds: 2500),
+      );
+      unawaited(
+        bleService.sendVibration(25).catchError((Object e) {
+          debugPrint('sendVibration error: $e');
+        }),
+      );
     }
 
     if (_guardTimer > 0) {
       _guardTimer = (_guardTimer - dt).clamp(0, _guardDuration);
     }
+    if (_chargeActiveTimer > 0) {
+      _chargeActiveTimer = (_chargeActiveTimer - dt).clamp(
+        0,
+        _chargeLockDuration,
+      );
+    }
+    if (_attackActiveTimer > 0) {
+      _attackActiveTimer = (_attackActiveTimer - dt).clamp(
+        0,
+        _attackLockDurations.last,
+      );
+    }
 
+    final isGuardingNow = _guardTimer > 0;
+    final isActionLocked =
+        _isStraightening || _chargeActiveTimer > 0 || _attackActiveTimer > 0;
     final playerResult = _playerActionDetector.detect(
       _accelData,
       _connectedIds,
+      isGuarding: isGuardingNow,
+      isActionLocked: isActionLocked,
     );
     playerChargeLevel.value = _playerActionDetector.chargeLevel;
     switch (playerResult.type) {
       case PlayerActionType.attack:
-        final multiplier =
-            PlayerActionDetector.chargeMultipliers[playerResult.chargeLevel];
+        final chargeLevel = playerResult.chargeLevel;
+        final multiplier = PlayerActionDetector.chargeMultipliers[chargeLevel];
         final damage = _actionsConfig.synchroAttack.power * multiplier;
         _pendingAttackDamage = damage;
+        _attackActiveTimer = _attackLockDurations[chargeLevel];
         debugPrint(
           '[Battle] スパホルダー: ${_actionsConfig.synchroAttack.nameJa} '
-          '(chargeLevel=${playerResult.chargeLevel}, '
+          '(chargeLevel=$chargeLevel, '
           'multiplier=$multiplier, damage=$damage) - ドリル始動',
         );
-        _showPlayerActionLabel(_actionsConfig.synchroAttack.nameJa);
+        _showPlayerActionLabel(
+          _actionsConfig.synchroAttack.nameJa,
+          duration: Duration(
+            milliseconds: (_attackLockDurations[chargeLevel] * 1000).toInt(),
+          ),
+        );
         startStraightening();
       case PlayerActionType.guard:
         _guardTimer = _guardDuration;
         debugPrint('[Battle] スパホルダー: ${_actionsConfig.synchroGuard.nameJa}');
-        _showPlayerActionLabel(_actionsConfig.synchroGuard.nameJa);
+        _showPlayerActionLabel(
+          _actionsConfig.synchroGuard.nameJa,
+          duration: Duration(milliseconds: (_guardDuration * 1000).toInt()),
+        );
       case PlayerActionType.charge:
+        _chargeActiveTimer = _chargeLockDuration;
         debugPrint(
           '[Battle] スパホルダー: ${_actionsConfig.synchroCharge.nameJa} '
           '(chargeLevel=${playerResult.chargeLevel})',
         );
-        _showPlayerActionLabel(_actionsConfig.synchroCharge.nameJa);
+        _showPlayerActionLabel(
+          _actionsConfig.synchroCharge.nameJa,
+          duration: Duration(
+            milliseconds: (_chargeLockDuration * 1000).toInt(),
+          ),
+        );
       case PlayerActionType.none:
         break;
     }
@@ -410,7 +471,7 @@ class RobotArmGame extends Forge2DGame {
       playerHp.value = shoulder.hp;
       if (damage > 0) {
         unawaited(
-          bleService.sendVibration(50).catchError((Object e) {
+          bleService.sendVibration((damage * 2).toInt()).catchError((Object e) {
             debugPrint('sendVibration error: $e');
           }),
         );
@@ -424,12 +485,15 @@ class RobotArmGame extends Forge2DGame {
     }
   }
 
-  /// スパホルダーの技名を1秒間表示する
-  void _showPlayerActionLabel(String text) {
+  /// スパホルダーの技名を表示する。durationを省略した場合は1秒間表示する。
+  void _showPlayerActionLabel(
+    String text, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
     playerActionLabel.value = text;
     final generation = ++_playerLabelGeneration;
     unawaited(
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(duration, () {
         if (_playerLabelGeneration == generation) {
           playerActionLabel.value = null;
         }
@@ -450,11 +514,13 @@ class RobotArmGame extends Forge2DGame {
     );
   }
 
-  /// 画面中央にメッセージを2秒間表示する
-  void _showCenterMessage(String text) {
+  void _showCenterMessage(
+    String text, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
     centerMessage.value = text;
     unawaited(
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(duration, () {
         centerMessage.value = null;
       }),
     );
@@ -509,7 +575,6 @@ class RobotArmGame extends Forge2DGame {
     if (_isDefeated) return;
     _isDefeated = true;
     _stopAllPhysics();
-    showDefeatMessage.value = true;
 
     // 敗北時、スパホルダーを構成する各パーツを-45度傾けて倒れた姿勢にする
     const tiltAngle = -pi / 4;
@@ -526,9 +591,15 @@ class RobotArmGame extends Forge2DGame {
       foreArm.body.angle + tiltAngle,
     );
 
+    // 勝利と同じ3秒静止後にメッセージを表示し、さらに2秒後に遷移する
     unawaited(
       Future.delayed(const Duration(seconds: 3), () {
-        onLose?.call();
+        showDefeatMessage.value = true;
+        unawaited(
+          Future.delayed(const Duration(seconds: 2), () {
+            onLose?.call();
+          }),
+        );
       }),
     );
   }

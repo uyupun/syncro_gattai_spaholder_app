@@ -8,6 +8,9 @@ abstract interface class BleService {
   Stream<List<String>> get connectedDevicesStream;
   List<String> get connectedDevices;
   Future<void> sendVibration(int strength);
+
+  /// 指定したロールのデバイスのみに振動を送る
+  Future<void> sendVibrationToRole(BleDeviceRole role, int strength);
   void dispose();
 
   /// 指定したロールのデバイスをスキャンして接続する

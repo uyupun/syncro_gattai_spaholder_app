@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 
-class ConnectionStatusLabel extends StatelessWidget {
+class OutlinedText extends StatelessWidget {
   final String text;
+  final double fontSize;
 
-  const ConnectionStatusLabel({super.key, required this.text});
+  const OutlinedText({
+    super.key,
+    required this.text,
+    this.fontSize = 16,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
-      fontSize: 16,
-      color: Color(0xFF1A1A1A),
+    final style = TextStyle(
+      fontSize: fontSize,
+      color: const Color(0xFF1A1A1A),
       fontWeight: FontWeight.bold,
     );
 

@@ -68,6 +68,13 @@ class BleMockAccessor implements BleService {
   }
 
   @override
+  Future<void> sendVibrationToRole(BleDeviceRole role, int strength) async {
+    debugPrint(
+      '[BLE Mock] sendVibrationToRole: ${role.deviceName} 強度 $strength',
+    );
+  }
+
+  @override
   Stream<Set<BleDeviceRole>> get connectedRolesStream =>
       _connectedRolesController.stream;
 

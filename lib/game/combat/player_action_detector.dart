@@ -14,9 +14,9 @@ class PlayerActionResult {
 
 /// BLE加速度センサー(2台分)の値からスパホルダーのシンクロ技の発動を検出する
 class PlayerActionDetector {
-  static const double thresholdX = 1.0;
-  static const double thresholdY = 0.75;
-  static const double thresholdZ = 2.0;
+  static const double thresholdX = 0.8;
+  static const double thresholdY = 0.9;
+  static const double thresholdZ = 1.7;
   static const int maxChargeLevel = 5;
 
   /// チャージレベルごとの攻撃倍率 (index = charge level)
@@ -33,10 +33,15 @@ class PlayerActionDetector {
   /// 現在のチャージレベル(0〜maxChargeLevel)
   int get chargeLevel => _chargeLevel;
 
+  /// チャージレベルを0にリセットする(ガード発動時などに使用)
+  void resetCharge() => _chargeLevel = 0;
+
   PlayerActionResult detect(
     Map<String, AccelData> accelData,
-    List<String> connectedIds,
-  ) {
+    List<String> connectedIds, {
+    bool isGuarding = false,
+    bool isActionLocked = false,
+  }) {
     final x = _bothExceed(accelData, connectedIds, (d) => d.x, thresholdX);
     final y = _bothExceed(
       accelData,
@@ -46,25 +51,32 @@ class PlayerActionDetector {
     );
     final z = _bothExceed(accelData, connectedIds, (d) => d.z, thresholdZ);
 
+    final prevX = _prevX;
+    final prevY = _prevY;
+    final prevZ = _prevZ;
+    _prevX = x;
+    _prevY = y;
+    _prevZ = z;
+
+    if (isActionLocked) {
+      return PlayerActionResult(PlayerActionType.none, _chargeLevel);
+    }
+
     PlayerActionResult result = PlayerActionResult(
       PlayerActionType.none,
       _chargeLevel,
     );
 
-    if (x && !_prevX) {
+    if (x && !prevX && !isGuarding) {
       final level = _chargeLevel;
       _chargeLevel = 0;
       result = PlayerActionResult(PlayerActionType.attack, level);
-    } else if (y && !_prevY) {
+    } else if (y && !prevY) {
       result = PlayerActionResult(PlayerActionType.guard, _chargeLevel);
-    } else if (z && !_prevZ && _chargeLevel < maxChargeLevel) {
+    } else if (z && !prevZ && _chargeLevel < maxChargeLevel && !isGuarding) {
       _chargeLevel++;
       result = PlayerActionResult(PlayerActionType.charge, _chargeLevel);
     }
-
-    _prevX = x;
-    _prevY = y;
-    _prevZ = z;
 
     return result;
   }

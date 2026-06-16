@@ -328,6 +328,37 @@ class BleManager implements BleService {
   }
 
   @override
+  Future<void> sendVibrationToRole(BleDeviceRole role, int strength) async {
+    final deviceId = _deviceRoles.entries
+        .where((e) => e.value == role)
+        .map((e) => e.key)
+        .firstOrNull;
+    if (deviceId == null) {
+      _printLog("送信不可: ${role.deviceName} は接続されていません");
+      return;
+    }
+
+    final device = _devices[deviceId];
+    if (device == null) return;
+
+    final characteristic = _vibratorCharacteristics
+        .where((c) => c.remoteId == device.remoteId)
+        .firstOrNull;
+    if (characteristic == null) {
+      _printLog("送信不可: ${role.deviceName} の振動モーター制御用の接続が見つかりません");
+      return;
+    }
+
+    final clamped = strength.clamp(0, _vibratorMaxStrength);
+    try {
+      await characteristic.write([clamped], withoutResponse: true);
+      _printLog("振動モーター送信(${role.deviceName}): 強度 $clamped");
+    } catch (e) {
+      _printLog("送信エラー(${role.deviceName}): $e");
+    }
+  }
+
+  @override
   Future<void> disconnectAll() async {
     await _scanSub?.cancel();
     // スキャン停止も確実に行う

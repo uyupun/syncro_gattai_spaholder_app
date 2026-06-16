@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../interfaces/ble_service.dart';
 import '../models/ble_device_role.dart';
 import '../widgets/connect_button.dart';
-import '../widgets/connection_status_label.dart';
+import '../widgets/outlined_text.dart';
 import '../widgets/start_button.dart';
 
 enum _ConnectionUiState { idle, connecting, connected, disconnecting }
@@ -138,6 +138,11 @@ class _TitleScreenState extends State<TitleScreen> {
 
     try {
       await _bleService.connectDevice(role);
+      unawaited(
+        _bleService.sendVibrationToRole(role, 10).catchError((Object e) {
+          debugPrint('振動エラー: $e');
+        }),
+      );
     } catch (e) {
       debugPrint('接続エラー: $e');
       _setState(role, _ConnectionUiState.idle, message: '接続に失敗しました');
@@ -206,7 +211,7 @@ class _TitleScreenState extends State<TitleScreen> {
           onTap: _onTapFor(role, state),
         ),
         if (message != null)
-          Positioned(top: -36, child: ConnectionStatusLabel(text: message)),
+          Positioned(top: -36, child: OutlinedText(text: message)),
       ],
     );
   }

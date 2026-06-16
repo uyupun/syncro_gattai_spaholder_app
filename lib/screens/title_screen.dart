@@ -138,6 +138,11 @@ class _TitleScreenState extends State<TitleScreen> {
 
     try {
       await _bleService.connectDevice(role);
+      unawaited(
+        _bleService.sendVibrationToRole(role, 10).catchError((Object e) {
+          debugPrint('振動エラー: $e');
+        }),
+      );
     } catch (e) {
       debugPrint('接続エラー: $e');
       _setState(role, _ConnectionUiState.idle, message: '接続に失敗しました');

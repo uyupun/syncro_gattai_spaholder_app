@@ -461,7 +461,7 @@ class RobotArmGame extends Forge2DGame {
       playerHp.value = shoulder.hp;
       if (damage > 0) {
         unawaited(
-          bleService.sendVibration(50).catchError((Object e) {
+          bleService.sendVibration((damage * 2).toInt()).catchError((Object e) {
             debugPrint('sendVibration error: $e');
           }),
         );

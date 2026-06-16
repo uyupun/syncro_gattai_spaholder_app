@@ -16,7 +16,7 @@ class PlayerActionResult {
 class PlayerActionDetector {
   static const double thresholdX = 0.8;
   static const double thresholdY = 0.9;
-  static const double thresholdZ = 1.8;
+  static const double thresholdZ = 1.7;
   static const int maxChargeLevel = 5;
 
   /// チャージレベルごとの攻撃倍率 (index = charge level)

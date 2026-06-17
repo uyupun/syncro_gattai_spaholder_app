@@ -21,11 +21,11 @@
       "name": "Yugarock",
       "actions": {
         "roll": {
-          "nameJa": "ローリング\nアタック",
+          "nameJa": "ころがる",
           "power": 10
         },
         "landfill": {
-          "nameJa": "土砂崩し",
+          "nameJa": "埋め立てる",
           "power": 20
         }
       }

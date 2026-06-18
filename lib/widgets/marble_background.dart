@@ -56,7 +56,7 @@ class _MarbleBackgroundState extends State<MarbleBackground>
     if (shader == null) {
       return Stack(
         children: [
-          Positioned.fill(child: ColoredBox(color: const Color(0xFF0C0D14))),
+          Positioned.fill(child: ColoredBox(color: const Color(0xFF0A0212))),
           if (widget.child != null) Positioned.fill(child: widget.child!),
         ],
       );

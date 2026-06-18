@@ -35,7 +35,7 @@ float fbm(vec2 p) {
     return v;
 }
 
-// sinの山頂を細い石目線にする (sharpness ↑ → より細く鋭い)
+// sharpness ↑ → 石目線が細くなる
 float veinLine(float v, float sharpness) {
     return pow(1.0 - abs(sin(v * 3.14159)), sharpness);
 }
@@ -45,73 +45,85 @@ void main() {
     vec2 fragCoord = FlutterFragCoord().xy;
     vec2 uv        = fragCoord / vec2(uWidth, uHeight);
 
-    float t      = uTime * 0.022;
+    // 赤と青でわずかに速度を変える → 常にすれ違い・交差し続ける
+    float t  = uTime * 0.038;   // 共通ワープ速度
+    float tR = uTime * 0.062;   // 赤は速め
+    float tB = uTime * 0.044;   // 青は遅め → 位相差が生まれる
+
     float aspect = uWidth / uHeight;
     vec2  p      = vec2(uv.x * aspect, uv.y) * 3.8;
 
-    // ─── 共通ドメインワーピング（両色が同じ「流れ」に乗る）────────────────────
+    // ─── 共通ドメインワーピング ─────────────────────────────────────────────────
     vec2 q = vec2(
-        fbm(p + vec2(0.10, 0.30) + vec2(t * 0.38, t * 0.21)),
-        fbm(p + vec2(4.80, 1.70) + vec2(t * 0.21, t * 0.38))
+        fbm(p + vec2(0.10, 0.30) + vec2(t * 0.55, t * 0.38)),
+        fbm(p + vec2(4.80, 1.70) + vec2(t * 0.38, t * 0.55))
     );
-    vec2 wp = p + 5.0 * q;
+    // ワープ強度を 5.0 → 7.5 に上げ、より激しく渦巻かせる
+    vec2 wp = p + 7.5 * q;
 
-    // 赤用追加ワープ: より水平方向に流れる
-    float wR = fbm(wp + vec2(1.50, 0.50) + vec2(t * 0.17, t * 0.08));
-    // 青用追加ワープ: より斜め〜垂直方向に流れる
-    float wB = fbm(wp + vec2(0.80, 6.20) + vec2(t * 0.09, t * 0.19));
+    // 赤・青それぞれ独立した追加ワープ（速度が違うので常にずれる）
+    float wR = fbm(wp + vec2(1.50, 0.50) + vec2(tR * 0.44, tR * 0.30));
+    float wB = fbm(wp + vec2(0.80, 6.20) + vec2(tB * 0.28, tB * 0.50));
 
-    // ─── 赤の石目パターン（水平寄り）─────────────────────────────────────────
+    // ─── 赤の石目（水平〜斜め・tR で流れる）──────────────────────────────────
     float mR = 0.0;
-    mR += sin(wp.x * 3.8  + wp.y * 0.9  + wR * 4.5  + t * 0.72);
-    mR += sin(wp.x * 1.9  - wp.y * 1.4  + wR * 3.0  + t * 0.50) * 0.65;
-    mR += sin(wp.x * 5.5  + wp.y * 0.3  + wR * 2.2  + t * 0.38) * 0.35;
+    mR += sin(wp.x * 3.8  + wp.y * 0.9  + wR * 5.0  + tR * 1.40);
+    mR += sin(wp.x * 1.9  - wp.y * 1.4  + wR * 3.5  + tR * 1.00) * 0.65;
+    mR += sin(wp.x * 5.5  + wp.y * 0.3  + wR * 2.5  + tR * 0.65) * 0.35;
     mR /= 2.0;
 
-    float rBroad  = veinLine(mR, 1.8);   // ぼんやりグロー
-    float rMedium = veinLine(mR, 6.0);   // 石目線
-    float rSharp  = veinLine(mR, 20.0);  // 輝きエッジ
+    // broad(1.1): 広いグロー → 色のにじみを見せる
+    float rBroad  = veinLine(mR, 1.1);
+    float rMedium = veinLine(mR, 5.5);
+    float rSharp  = veinLine(mR, 20.0);
 
-    // ─── 青の石目パターン（斜め〜垂直）───────────────────────────────────────
+    // ─── 青の石目（垂直〜斜め・tB で流れる）──────────────────────────────────
     float mB = 0.0;
-    mB += sin(wp.x * 0.7  + wp.y * 4.2  + wB * 4.0  - t * 0.63);
-    mB += sin(wp.x * -1.6 + wp.y * 3.0  + wB * 3.2  - t * 0.44) * 0.65;
-    mB += sin(wp.x * 1.1  + wp.y * 5.8  + wB * 2.0  - t * 0.29) * 0.35;
+    mB += sin(wp.x * 0.7  + wp.y * 4.2  + wB * 4.5  - tB * 1.20);
+    mB += sin(wp.x * -1.6 + wp.y * 3.0  + wB * 3.5  - tB * 0.88) * 0.65;
+    mB += sin(wp.x * 1.1  + wp.y * 5.8  + wB * 2.2  - tB * 0.55) * 0.35;
     mB /= 2.0;
 
-    float bBroad  = veinLine(mB, 1.8);
-    float bMedium = veinLine(mB, 6.0);
+    float bBroad  = veinLine(mB, 1.1);
+    float bMedium = veinLine(mB, 5.5);
     float bSharp  = veinLine(mB, 20.0);
 
-    // ─── 赤×青 混色 ───────────────────────────────────────────────────────────
+    // ─── カラーパレット ─────────────────────────────────────────────────────────
     // mix(cRed, cBlue, 0.5) ≈ vec3(0.435, 0.035, 0.670) ≈ #6F09AB ≈ #6F09AE
-    vec3 cRed  = vec3(0.75, 0.02, 0.36);   // ラズベリーレッド
-    vec3 cBlue = vec3(0.12, 0.05, 0.98);   // インディゴブルー
+    vec3 cRed   = vec3(0.75, 0.02, 0.36);   // ラズベリーレッド
+    vec3 cBlue  = vec3(0.12, 0.05, 0.98);   // インディゴブルー
+    vec3 cMix   = vec3(0.44, 0.04, 0.68);   // #6F09AE（混合ゾーン用）
+    vec3 cShine = vec3(0.88, 0.55, 1.00);   // ラベンダー白（ハイライト）
 
-    // broad 層: 赤と青の強さの比で色を決める
+    // ─── broad: 赤/青の比率で混色、交差量に応じて紫にブースト ──────────────────
     float totB = rBroad + bBroad;
     float blB  = totB > 0.001 ? bBroad / totB : 0.5;
     vec3  cB   = mix(cRed, cBlue, blB);
 
-    // medium 層
+    // 交差ゾーン強調: rBroad * bBroad は両方あるときだけ大きくなる
+    float mixPower = rBroad * bBroad * 5.0;
+
+    // medium
     float totM = rMedium + bMedium;
     float blM  = totM > 0.001 ? bMedium / totM : 0.5;
     vec3  cM   = mix(cRed, cBlue, blM);
 
-    // sharp 層（ラベンダー白にシフト）
+    // sharp（ハイライト: ラベンダーにシフト）
     float totS = rSharp + bSharp;
     float blS  = totS > 0.001 ? bSharp / totS : 0.5;
-    vec3  cShine = vec3(0.88, 0.55, 1.00);
-    vec3  cS     = mix(mix(cRed, cBlue, blS), cShine, 0.55);
+    vec3  cS   = mix(mix(cRed, cBlue, blS), cShine, 0.55);
 
     // ─── 下地と合成 ────────────────────────────────────────────────────────────
     vec3  cBase = vec3(0.03, 0.01, 0.06);
-    float bgTex = fbm(p * 0.5 + vec2(t * 0.03)) * 0.5 + 0.5;
+    float bgTex = fbm(p * 0.5 + vec2(t * 0.06)) * 0.5 + 0.5;
     vec3  col   = mix(cBase, cBase * 2.5, bgTex * bgTex);
 
-    col = mix(col, cB, clamp(totB * 0.85, 0.0, 1.0));
-    col = mix(col, cM, clamp(totM * 0.90, 0.0, 1.0));
+    col = mix(col, cB, clamp(totB * 0.90, 0.0, 1.0));
+    col = mix(col, cM, clamp(totM * 0.92, 0.0, 1.0));
     col = mix(col, cS, clamp(totS,        0.0, 1.0));
+
+    // 赤と青が交差する瞬間、#6F09AE の紫がにじみ出る
+    col += cMix * clamp(mixPower, 0.0, 0.75);
 
     // ─── ビネット ──────────────────────────────────────────────────────────────
     vec2  c   = uv - 0.5;

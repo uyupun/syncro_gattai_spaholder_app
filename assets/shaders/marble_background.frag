@@ -46,20 +46,27 @@ void main() {
     vec2 uv        = fragCoord / vec2(uWidth, uHeight);
 
     // 赤と青でわずかに速度を変える → 常にすれ違い・交差し続ける
-    float t  = uTime * 0.038;   // 共通ワープ速度
-    float tR = uTime * 0.062;   // 赤は速め
-    float tB = uTime * 0.044;   // 青は遅め → 位相差が生まれる
+    float t  = uTime * 0.055;   // 共通ワープ速度（アップ）
+    float tR = uTime * 0.090;   // 赤は速め
+    float tB = uTime * 0.062;   // 青は遅め → 位相差が生まれる
 
     float aspect = uWidth / uHeight;
-    vec2  p      = vec2(uv.x * aspect, uv.y) * 3.8;
 
-    // ─── 共通ドメインワーピング ─────────────────────────────────────────────────
+    // 全体をゆっくり大きく揺らす底流（sin/cos で円を描くようにドリフト）
+    vec2 drift = vec2(
+        sin(uTime * 0.028) * 1.2,
+        cos(uTime * 0.019) * 0.8
+    );
+
+    // スケールを 3.8 → 2.4 に下げて石目を大きく表示
+    vec2  p = vec2(uv.x * aspect, uv.y) * 2.4 + drift;
+
+    // ─── 共通ドメインワーピング（強度アップ）──────────────────────────────────
     vec2 q = vec2(
         fbm(p + vec2(0.10, 0.30) + vec2(t * 0.55, t * 0.38)),
         fbm(p + vec2(4.80, 1.70) + vec2(t * 0.38, t * 0.55))
     );
-    // ワープ強度を 5.0 → 7.5 に上げ、より激しく渦巻かせる
-    vec2 wp = p + 7.5 * q;
+    vec2 wp = p + 10.0 * q;   // ワープ強度 7.5 → 10.0
 
     // 赤・青それぞれ独立した追加ワープ（速度が違うので常にずれる）
     float wR = fbm(wp + vec2(1.50, 0.50) + vec2(tR * 0.44, tR * 0.30));
@@ -67,24 +74,24 @@ void main() {
 
     // ─── 赤の石目（水平〜斜め・tR で流れる）──────────────────────────────────
     float mR = 0.0;
-    mR += sin(wp.x * 3.8  + wp.y * 0.9  + wR * 5.0  + tR * 1.40);
-    mR += sin(wp.x * 1.9  - wp.y * 1.4  + wR * 3.5  + tR * 1.00) * 0.65;
-    mR += sin(wp.x * 5.5  + wp.y * 0.3  + wR * 2.5  + tR * 0.65) * 0.35;
+    mR += sin(wp.x * 2.6  + wp.y * 0.6  + wR * 5.0  + tR * 1.80);
+    mR += sin(wp.x * 1.3  - wp.y * 1.0  + wR * 3.5  + tR * 1.25) * 0.65;
+    mR += sin(wp.x * 3.8  + wp.y * 0.2  + wR * 2.5  + tR * 0.80) * 0.35;
     mR /= 2.0;
 
-    // broad(1.1): 広いグロー → 色のにじみを見せる
-    float rBroad  = veinLine(mR, 1.1);
+    // broad(1.0): さらに広いグロー → 色のにじみを強調
+    float rBroad  = veinLine(mR, 1.0);
     float rMedium = veinLine(mR, 5.5);
     float rSharp  = veinLine(mR, 20.0);
 
     // ─── 青の石目（垂直〜斜め・tB で流れる）──────────────────────────────────
     float mB = 0.0;
-    mB += sin(wp.x * 0.7  + wp.y * 4.2  + wB * 4.5  - tB * 1.20);
-    mB += sin(wp.x * -1.6 + wp.y * 3.0  + wB * 3.5  - tB * 0.88) * 0.65;
-    mB += sin(wp.x * 1.1  + wp.y * 5.8  + wB * 2.2  - tB * 0.55) * 0.35;
+    mB += sin(wp.x * 0.5  + wp.y * 2.9  + wB * 4.5  - tB * 1.55);
+    mB += sin(wp.x * -1.1 + wp.y * 2.1  + wB * 3.5  - tB * 1.10) * 0.65;
+    mB += sin(wp.x * 0.8  + wp.y * 4.0  + wB * 2.2  - tB * 0.70) * 0.35;
     mB /= 2.0;
 
-    float bBroad  = veinLine(mB, 1.1);
+    float bBroad  = veinLine(mB, 1.0);
     float bMedium = veinLine(mB, 5.5);
     float bSharp  = veinLine(mB, 20.0);
 

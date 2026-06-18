@@ -6,111 +6,117 @@ uniform float uHeight;
 
 out vec4 fragColor;
 
-// ─── Value noise ──────────────────────────────────────────────────────────────
+// ─── ノイズ ───────────────────────────────────────────────────────────────────
 float hash(vec2 p) {
     p = fract(p * vec2(127.1, 311.7));
     p += dot(p, p + 19.19);
     return fract(p.x * p.y);
 }
 
-float valueNoise(vec2 p) {
+float vnoise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    // Quintic smoothstep で滑らかに補間
     vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-
-    float a = hash(i + vec2(0.0, 0.0));
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    return mix(
+        mix(hash(i),                  hash(i + vec2(1.0, 0.0)), u.x),
+        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+        u.y
+    );
 }
 
-// ─── fBm (fractal Brownian motion) ────────────────────────────────────────────
 float fbm(vec2 p) {
-    float v   = 0.0;
-    float amp = 0.5;
-    mat2  rot = mat2(
-        cos(0.5),  sin(0.5),
-       -sin(0.5),  cos(0.5)
-    );
-    for (int i = 0; i < 6; i++) {
-        v   += amp * valueNoise(p);
-        p    = rot * p * 2.1 + vec2(100.0, 100.0);
-        amp *= 0.5;
+    float v = 0.0, a = 0.5;
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 5; i++) {
+        v += a * vnoise(p);
+        p  = rot * p * 2.1 + vec2(100.0);
+        a *= 0.5;
     }
     return v;
 }
 
-// ─── マーブル模様のメイン ──────────────────────────────────────────────────────
+// sinの山頂を細い石目線にする (sharpness ↑ → より細く鋭い)
+float veinLine(float v, float sharpness) {
+    return pow(1.0 - abs(sin(v * 3.14159)), sharpness);
+}
+
+// ─── メイン ───────────────────────────────────────────────────────────────────
 void main() {
     vec2 fragCoord = FlutterFragCoord().xy;
-    vec2 uv = fragCoord / vec2(uWidth, uHeight);
+    vec2 uv        = fragCoord / vec2(uWidth, uHeight);
 
-    // ゆっくりと時間で流れる（切れ目なく無限に続く）
-    float t = uTime * 0.04;
+    float t      = uTime * 0.022;
+    float aspect = uWidth / uHeight;
+    vec2  p      = vec2(uv.x * aspect, uv.y) * 3.8;
 
-    // ─── ドメインワーピング（2段階）───────────────────────────────────────────
-    vec2 p = uv * 4.5;
+    // ─── 共通ドメインワーピング（両色が同じ「流れ」に乗る）────────────────────
+    vec2 q = vec2(
+        fbm(p + vec2(0.10, 0.30) + vec2(t * 0.38, t * 0.21)),
+        fbm(p + vec2(4.80, 1.70) + vec2(t * 0.21, t * 0.38))
+    );
+    vec2 wp = p + 5.0 * q;
 
-    // 第1段階
-    float q0 = fbm(p + vec2(t * 0.28, t * 0.19));
-    float q1 = fbm(p + vec2(5.2 + t * 0.21, 1.3 + t * 0.31));
+    // 赤用追加ワープ: より水平方向に流れる
+    float wR = fbm(wp + vec2(1.50, 0.50) + vec2(t * 0.17, t * 0.08));
+    // 青用追加ワープ: より斜め〜垂直方向に流れる
+    float wB = fbm(wp + vec2(0.80, 6.20) + vec2(t * 0.09, t * 0.19));
 
-    // 第2段階
-    float r0 = fbm(p + 3.0 * vec2(q0, q1) + vec2(1.7, 9.2) + vec2(t * 0.14, t * 0.09));
-    float r1 = fbm(p + 3.0 * vec2(q0, q1) + vec2(8.3, 2.8) + vec2(t * 0.09, t * 0.14));
+    // ─── 赤の石目パターン（水平寄り）─────────────────────────────────────────
+    float mR = 0.0;
+    mR += sin(wp.x * 3.8  + wp.y * 0.9  + wR * 4.5  + t * 0.72);
+    mR += sin(wp.x * 1.9  - wp.y * 1.4  + wR * 3.0  + t * 0.50) * 0.65;
+    mR += sin(wp.x * 5.5  + wp.y * 0.3  + wR * 2.2  + t * 0.38) * 0.35;
+    mR /= 2.0;
 
-    float f = fbm(p + 3.0 * vec2(r0, r1));
+    float rBroad  = veinLine(mR, 1.8);   // ぼんやりグロー
+    float rMedium = veinLine(mR, 6.0);   // 石目線
+    float rSharp  = veinLine(mR, 20.0);  // 輝きエッジ
 
-    // ─── 大きな流れ筋（主要な石目）────────────────────────────────────────────
-    float vein1 = abs(sin(
-        (uv.x * 7.0 + uv.y * 2.5) + f * 11.0 + t * 0.45
-    ));
-    vein1 = pow(1.0 - vein1, 2.8);
+    // ─── 青の石目パターン（斜め〜垂直）───────────────────────────────────────
+    float mB = 0.0;
+    mB += sin(wp.x * 0.7  + wp.y * 4.2  + wB * 4.0  - t * 0.63);
+    mB += sin(wp.x * -1.6 + wp.y * 3.0  + wB * 3.2  - t * 0.44) * 0.65;
+    mB += sin(wp.x * 1.1  + wp.y * 5.8  + wB * 2.0  - t * 0.29) * 0.35;
+    mB /= 2.0;
 
-    // ─── 細い流れ筋（副次的な石目）────────────────────────────────────────────
-    float vein2 = abs(sin(
-        (uv.x * 3.5 - uv.y * 9.0) + f * 8.5 - t * 0.32
-    ));
-    vein2 = pow(1.0 - vein2, 6.0) * 0.6;
+    float bBroad  = veinLine(mB, 1.8);
+    float bMedium = veinLine(mB, 6.0);
+    float bSharp  = veinLine(mB, 20.0);
 
-    // ─── 極細の光る筋（ハイライト）────────────────────────────────────────────
-    float veinShine = abs(sin(
-        (uv.x * 5.0 + uv.y * 6.0) + f * 9.0 + t * 0.6
-    ));
-    veinShine = pow(1.0 - veinShine, 12.0) * 0.4;
+    // ─── 赤×青 混色 ───────────────────────────────────────────────────────────
+    // mix(cRed, cBlue, 0.5) ≈ vec3(0.435, 0.035, 0.670) ≈ #6F09AB ≈ #6F09AE
+    vec3 cRed  = vec3(0.75, 0.02, 0.36);   // ラズベリーレッド
+    vec3 cBlue = vec3(0.12, 0.05, 0.98);   // インディゴブルー
 
-    // ─── カラーパレット（ダークパープルマーブル / #6F09AE 基調）──────────────
-    // 暗い下地：黒に近い深紫
-    vec3 cBase   = vec3(0.04, 0.01, 0.07);
-    // ダークパープル
-    vec3 cDeep   = vec3(0.10, 0.02, 0.18);
-    // ミッドパープル
-    vec3 cSlate  = vec3(0.27, 0.04, 0.43);
-    // メインの石目: #6F09AE → vec3(0.435, 0.035, 0.682)
-    vec3 cVein   = vec3(0.435, 0.035, 0.682);
-    // 明るいラベンダーハイライト
-    vec3 cShine  = vec3(0.78, 0.45, 0.98);
+    // broad 層: 赤と青の強さの比で色を決める
+    float totB = rBroad + bBroad;
+    float blB  = totB > 0.001 ? bBroad / totB : 0.5;
+    vec3  cB   = mix(cRed, cBlue, blB);
 
-    // 下地をfBmで混ぜて奥行きを出す
-    float fNorm = clamp(f * 1.2 + 0.1, 0.0, 1.0);
-    vec3 col = mix(cBase, cDeep, fNorm);
-    col = mix(col, cSlate, clamp(fNorm - 0.3, 0.0, 1.0) * 1.5);
+    // medium 層
+    float totM = rMedium + bMedium;
+    float blM  = totM > 0.001 ? bMedium / totM : 0.5;
+    vec3  cM   = mix(cRed, cBlue, blM);
 
-    // 石目を重ねる
-    col += cVein  * vein1;
-    col += cVein  * vein2;
-    col += cShine * veinShine;
+    // sharp 層（ラベンダー白にシフト）
+    float totS = rSharp + bSharp;
+    float blS  = totS > 0.001 ? bSharp / totS : 0.5;
+    vec3  cShine = vec3(0.88, 0.55, 1.00);
+    vec3  cS     = mix(mix(cRed, cBlue, blS), cShine, 0.55);
 
-    // 紫の深みアクセント
-    col += vec3(0.04, 0.0, 0.08) * (1.0 - fNorm);
+    // ─── 下地と合成 ────────────────────────────────────────────────────────────
+    vec3  cBase = vec3(0.03, 0.01, 0.06);
+    float bgTex = fbm(p * 0.5 + vec2(t * 0.03)) * 0.5 + 0.5;
+    vec3  col   = mix(cBase, cBase * 2.5, bgTex * bgTex);
 
-    // ─── ビネット（周辺を暗く）────────────────────────────────────────────────
-    vec2  center  = uv - 0.5;
-    float vignette = 1.0 - dot(center, center) * 1.4;
-    col *= clamp(vignette, 0.0, 1.0);
+    col = mix(col, cB, clamp(totB * 0.85, 0.0, 1.0));
+    col = mix(col, cM, clamp(totM * 0.90, 0.0, 1.0));
+    col = mix(col, cS, clamp(totS,        0.0, 1.0));
+
+    // ─── ビネット ──────────────────────────────────────────────────────────────
+    vec2  c   = uv - 0.5;
+    float vig = clamp(1.0 - dot(c, c) * 1.5, 0.0, 1.0);
+    col *= vig;
 
     fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }

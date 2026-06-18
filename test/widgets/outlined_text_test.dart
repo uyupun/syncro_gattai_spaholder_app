@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:syncro_gattai_spaholder_app/widgets/connection_status_label.dart';
+import 'package:syncro_gattai_spaholder_app/widgets/outlined_text.dart';
 
 void main() {
-  group('ConnectionStatusLabel', () {
+  group('OutlinedText', () {
     testWidgets('テキストが縁取り用と塗り用の2重で表示される', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: ConnectionStatusLabel(text: '接続しました')),
+        const MaterialApp(home: OutlinedText(text: '接続しました')),
       );
 
       expect(find.text('接続しました'), findsNWidgets(2));
@@ -14,7 +14,7 @@ void main() {
 
     testWidgets('塗りテキストのスタイルが適用される', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: ConnectionStatusLabel(text: '切断完了')),
+        const MaterialApp(home: OutlinedText(text: '切断完了')),
       );
 
       final texts = tester.widgetList<Text>(find.text('切断完了'));
@@ -25,7 +25,7 @@ void main() {
 
     testWidgets('縁取りテキストのスタイルが適用される', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: ConnectionStatusLabel(text: '切断完了')),
+        const MaterialApp(home: OutlinedText(text: '切断完了')),
       );
 
       final texts = tester.widgetList<Text>(find.text('切断完了'));

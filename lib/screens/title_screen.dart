@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../interfaces/ble_service.dart';
 import '../models/ble_device_role.dart';
 import '../widgets/connect_button.dart';
+import '../widgets/marble_background.dart';
 import '../widgets/outlined_text.dart';
 import '../widgets/start_button.dart';
 
@@ -218,72 +219,68 @@ class _TitleScreenState extends State<TitleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            'assets/images/title_screen_background.png',
-            fit: BoxFit.cover,
-          ),
-        ),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/title.png',
-                width: 500,
-                height: 230,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Text(
-                    'ROBOT ARM',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 64,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 10,
-                          color: Colors.blueAccent,
-                          offset: Offset(0, 0),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildConnectButton(
-                      color: ConnectButtonColor.blue,
-                      role: BleDeviceRole.blue,
-                      state: _blueState,
-                      message: _blueMessage,
-                    ),
-                    StartButton(
-                      label: '出動',
-                      disabled: !_canStart,
-                      onTap: widget.onStart,
-                    ),
-                    _buildConnectButton(
-                      color: ConnectButtonColor.red,
-                      role: BleDeviceRole.red,
-                      state: _redState,
-                      message: _redMessage,
-                    ),
-                  ],
+    return MarbleBackground(
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/title.png',
+                  width: 500,
+                  height: 230,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Text(
+                      'ROBOT ARM',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 64,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 8,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10,
+                            color: Colors.blueAccent,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              ),
-            ],
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildConnectButton(
+                        color: ConnectButtonColor.blue,
+                        role: BleDeviceRole.blue,
+                        state: _blueState,
+                        message: _blueMessage,
+                      ),
+                      StartButton(
+                        label: '出動',
+                        disabled: !_canStart,
+                        onTap: widget.onStart,
+                      ),
+                      _buildConnectButton(
+                        color: ConnectButtonColor.red,
+                        role: BleDeviceRole.red,
+                        state: _redState,
+                        message: _redMessage,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

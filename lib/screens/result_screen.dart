@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../resources/game_se.dart';
 import '../widgets/primary_button.dart';
 
 class ResultScreen extends StatelessWidget {
@@ -63,7 +64,13 @@ class ResultScreen extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           child: Padding(
             padding: const EdgeInsets.only(bottom: 40),
-            child: PrimaryButton(label: '帰還する', onTap: onTitle),
+            child: PrimaryButton(
+              label: '帰還する',
+              onTap: () {
+                GameSe.giveUpButton.play();
+                onTitle();
+              },
+            ),
           ),
         ),
       ],

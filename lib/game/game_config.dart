@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../interfaces/json_exportable.dart';
@@ -24,6 +22,9 @@ class GameConfig implements JsonExportable {
   final double elbowSpeedRange;
   final double elbowBentAngle;
 
+  /// ユガロック戦で計算した照準角度に加算するオフセット(度)
+  final double yugarockArmAngleOffsetDeg;
+
   GameConfig({
     Vector2? gravity,
     double? zoom,
@@ -38,11 +39,12 @@ class GameConfig implements JsonExportable {
     double? shoulderSpeedRange,
     double? elbowSpeedRange,
     double? elbowBentAngle,
+    double? yugarockArmAngleOffsetDeg,
   }) : gravity = gravity ?? Vector2(0, 15),
        zoom = zoom ?? 20.0,
        shoulderTorque = shoulderTorque ?? 8000.0,
        elbowTorque = elbowTorque ?? 15000.0,
-       armLength = armLength ?? 14.0,
+       armLength = armLength ?? 12.0,
        shoulderPos = shoulderPos ?? Vector2(-10, -7),
        tipRadius = tipRadius ?? 0.8,
        enemyRadius = enemyRadius ?? 6.0,
@@ -50,7 +52,8 @@ class GameConfig implements JsonExportable {
        randomChangeInterval = randomChangeInterval ?? 0.3,
        shoulderSpeedRange = shoulderSpeedRange ?? 24.0,
        elbowSpeedRange = elbowSpeedRange ?? 36.0,
-       elbowBentAngle = elbowBentAngle ?? pi / 2;
+       elbowBentAngle = elbowBentAngle ?? 2.4,
+       yugarockArmAngleOffsetDeg = yugarockArmAngleOffsetDeg ?? 15.0;
 
   factory GameConfig.defaultConfig() => GameConfig();
 
@@ -80,6 +83,8 @@ class GameConfig implements JsonExportable {
       shoulderSpeedRange: (json['shoulderSpeedRange'] as num?)?.toDouble(),
       elbowSpeedRange: (json['elbowSpeedRange'] as num?)?.toDouble(),
       elbowBentAngle: (json['elbowBentAngle'] as num?)?.toDouble(),
+      yugarockArmAngleOffsetDeg: (json['yugarockArmAngleOffsetDeg'] as num?)
+          ?.toDouble(),
     );
   }
 
@@ -99,6 +104,7 @@ class GameConfig implements JsonExportable {
       'shoulderSpeedRange': shoulderSpeedRange,
       'elbowSpeedRange': elbowSpeedRange,
       'elbowBentAngle': elbowBentAngle,
+      'yugarockArmAngleOffsetDeg': yugarockArmAngleOffsetDeg,
     };
   }
 
@@ -124,6 +130,7 @@ class GameConfig implements JsonExportable {
     double? shoulderSpeedRange,
     double? elbowSpeedRange,
     double? elbowBentAngle,
+    double? yugarockArmAngleOffsetDeg,
   }) {
     return GameConfig(
       gravity: gravity ?? this.gravity,
@@ -140,6 +147,8 @@ class GameConfig implements JsonExportable {
       shoulderSpeedRange: shoulderSpeedRange ?? this.shoulderSpeedRange,
       elbowSpeedRange: elbowSpeedRange ?? this.elbowSpeedRange,
       elbowBentAngle: elbowBentAngle ?? this.elbowBentAngle,
+      yugarockArmAngleOffsetDeg:
+          yugarockArmAngleOffsetDeg ?? this.yugarockArmAngleOffsetDeg,
     );
   }
 }

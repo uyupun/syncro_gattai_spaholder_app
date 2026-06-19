@@ -6,7 +6,7 @@ class EnemyActionScheduler {
   static const List<int> intervalSecondsOptions = [5, 6, 7, 8, 9, 10];
 
   /// アシンクロン戦の間隔(ユガロック戦より少しだけ短い)
-  static const List<int> fastIntervalSecondsOptions = [4, 5, 6, 7, 8];
+  static const List<int> fastIntervalSecondsOptions = [5, 6, 7, 8, 9, 10];
 
   final List<int> _intervalSecondsOptions;
   final Random _random;

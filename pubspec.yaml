@@ -31,7 +31,9 @@ flutter:
     - assets/images/
     - assets/bg/
     - assets/bgm/
-    - assets/illust/
+    - assets/illust/asyncron/
+    - assets/illust/spaholder/
+    - assets/illust/yugarock/
     - assets/se/
     - assets/arm_layout.json
     - assets/enemy_config.json

@@ -1,3 +1,4 @@
+import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,8 @@ class ArmPart extends BodyComponent implements HpReadable, Damageable {
   final bool isDrill;
   final double _tipRadius;
   final Offset _tipOffset;
+  final Vector2? imageAnchor;
+  final Vector2? imageRenderSize;
   Sprite? _sprite;
 
   final double _maxHp;
@@ -28,6 +31,8 @@ class ArmPart extends BodyComponent implements HpReadable, Damageable {
     this.isDrill = false,
     double? tipRadius,
     Offset? tipOffset,
+    this.imageAnchor,
+    this.imageRenderSize,
     double maxHp = 100,
   }) : _pos = position,
        _size = size,
@@ -58,9 +63,11 @@ class ArmPart extends BodyComponent implements HpReadable, Damageable {
     await super.onLoad();
     if (_imagePath != null) {
       try {
-        _sprite = await Sprite.load(_imagePath);
+        _sprite = await Sprite.load(
+          _imagePath,
+          images: Images(prefix: 'assets/illust/'),
+        );
       } catch (e) {
-        // 画像の読み込みに失敗した場合はスプライトをnullのままにする
         debugPrint('Failed to load image: $_imagePath, error: $e');
       }
     }
@@ -104,21 +111,25 @@ class ArmPart extends BodyComponent implements HpReadable, Damageable {
     }
 
     if (_sprite != null) {
-      // 画像を使用してレンダリング（アスペクト比を維持）
-      final spriteSize = _sprite!.srcSize;
-      final aspectRatio = spriteSize.x / spriteSize.y;
-
-      // 指定されたサイズ内でアスペクト比を維持しながらフィット
-      Vector2 renderSize;
-      if (_size.x / _size.y > aspectRatio) {
-        // 高さに合わせてスケール
-        renderSize = Vector2(_size.y * aspectRatio, _size.y);
+      if (imageAnchor != null && imageRenderSize != null) {
+        // 共有キャンバス画像: 指定ピボット点でボディ中心に合わせてレンダリング
+        _sprite!.render(
+          canvas,
+          size: imageRenderSize!,
+          anchor: Anchor(imageAnchor!.x, imageAnchor!.y),
+        );
       } else {
-        // 幅に合わせてスケール
-        renderSize = Vector2(_size.x, _size.x / aspectRatio);
+        // 従来: ボディサイズに合わせてアスペクト比を維持しながらフィット
+        final spriteSize = _sprite!.srcSize;
+        final aspectRatio = spriteSize.x / spriteSize.y;
+        Vector2 renderSize;
+        if (_size.x / _size.y > aspectRatio) {
+          renderSize = Vector2(_size.y * aspectRatio, _size.y);
+        } else {
+          renderSize = Vector2(_size.x, _size.x / aspectRatio);
+        }
+        _sprite!.render(canvas, size: renderSize, anchor: Anchor.center);
       }
-
-      _sprite!.render(canvas, size: renderSize, anchor: Anchor.center);
     } else {
       // 画像がない場合は従来の矩形描画
       final paint = Paint()..color = _color;

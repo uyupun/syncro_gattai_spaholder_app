@@ -1,3 +1,4 @@
+import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
@@ -10,28 +11,33 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
   final Vector2 _initialPosition;
   final double _radius;
   final double _spriteScale;
+  final double _actionSpriteScale;
   final double _maxHp;
   final String _spritePath;
-  final String _splashSpritePath;
+  final List<String> _actionSpritePaths;
   double _currentHp;
-  Sprite? _sprite;
-  Sprite? _splashSprite;
-  bool _isHit = false;
+  Sprite? _normalSprite;
+  final List<Sprite?> _actionSprites = [];
+  Sprite? _currentSprite;
 
   Enemy({
     required Vector2 position,
     required double radius,
     required double spriteScale,
+    double? actionSpriteScale,
     double maxHp = 100,
     String? spritePath,
-    String? splashSpritePath,
+    List<String>? actionSpritePaths,
   }) : _initialPosition = position.clone(),
        _radius = radius,
        _spriteScale = spriteScale,
+       _actionSpriteScale = actionSpriteScale ?? spriteScale,
        _maxHp = maxHp,
        _currentHp = maxHp,
        _spritePath = spritePath ?? GameImage.yugarock.path,
-       _splashSpritePath = splashSpritePath ?? GameImage.yugarockSplash.path;
+       _actionSpritePaths =
+           actionSpritePaths ??
+           [GameImage.yugarockRolling.path, GameImage.yugarockFillIn.path];
 
   double get radius => _radius;
 
@@ -47,19 +53,33 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
     _currentHp = (_currentHp - amount).clamp(0, _maxHp);
   }
 
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    try {
-      _sprite = await Sprite.load(_spritePath);
-      _splashSprite = await Sprite.load(_splashSpritePath);
-    } catch (e) {
-      debugPrint('Failed to load image: $e');
+  void onHit() {}
+
+  /// 技インデックスに対応するスプライトを1秒間表示する
+  void showActionSprite(int index) {
+    if (index < _actionSprites.length) {
+      _currentSprite = _actionSprites[index];
     }
   }
 
-  void onHit() {
-    _isHit = true;
+  /// 通常スプライトに戻す
+  void clearActionSprite() {
+    _currentSprite = _normalSprite;
+  }
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    final illustImages = Images(prefix: 'assets/illust/');
+    try {
+      _normalSprite = await Sprite.load(_spritePath, images: illustImages);
+      _currentSprite = _normalSprite;
+      for (final path in _actionSpritePaths) {
+        _actionSprites.add(await Sprite.load(path, images: illustImages));
+      }
+    } catch (e) {
+      debugPrint('Failed to load image: $e');
+    }
   }
 
   @override
@@ -90,17 +110,18 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
       ..strokeWidth = 0.2;
     canvas.drawCircle(Offset.zero, _radius, hitboxBorder);
 
-    final currentSprite = _isHit ? _splashSprite : _sprite;
-
-    if (currentSprite != null) {
-      final size = _radius * _spriteScale;
-      currentSprite.render(
+    if (_currentSprite != null) {
+      final scale = _currentSprite == _normalSprite
+          ? _spriteScale
+          : _actionSpriteScale;
+      final size = _radius * scale;
+      _currentSprite!.render(
         canvas,
         size: Vector2.all(size),
         anchor: Anchor.center,
       );
     } else {
-      final paint = Paint()..color = _isHit ? Colors.orange : Colors.redAccent;
+      final paint = Paint()..color = Colors.redAccent;
       canvas.drawCircle(Offset.zero, _radius, paint);
 
       final border = Paint()

@@ -1,26 +1,30 @@
 {
   "upperArm": {
-    "position": { "x": -10, "y": -4 },
-    "size": { "x": 4.35, "y": 8 }
+    "position": { "x": -7, "y": -2.54 },
+    "size": { "x": 4, "y": 8 },
+    "imageAnchor": { "x": 0.4449, "y": 0.3203 }
   },
   "foreArm": {
-    "position": { "x": -8.5, "y": 1.5 },
-    "size": { "x": 4.85, "y": 8 }
+    "position": { "x": -1.84, "y": -3.84 },
+    "size": { "x": 4, "y": 8 },
+    "imageAnchor": { "x": 0.7025, "y": 0.2284 }
   },
   "shoulder": {
-    "position": { "x": -12, "y": 0 },
-    "size": { "x": 16, "y": 16 }
+    "position": { "x": -12, "y": -2.54 },
+    "size": { "x": 8, "y": 8 },
+    "imageAnchor": { "x": 0.1949, "y": 0.3203 }
   },
   "joints": {
     "shoulder": {
-      "anchorA": { "x": 6, "y": -4.5 },
-      "anchorB": { "x": 0, "y": -4 }
+      "anchorA": { "x": 5, "y": 0 },
+      "anchorB": { "x": 0, "y": 0 }
     },
     "elbow": {
-      "anchorA": { "x": 1.75, "y": 3 },
-      "anchorB": { "x": -1, "y": -3.5 }
+      "anchorA": { "x": 5.16, "y": -1.30 },
+      "anchorB": { "x": 0, "y": 0 }
     }
   },
-  "tipOffset": { "x": 2.0, "y": 3.5 },
-  "armTipLocalY": 3.5
+  "tipOffset": { "x": 5.81, "y": -2.10 },
+  "armTipLocalY": -2.10,
+  "imageRenderSize": { "x": 20.0, "y": 14.14 }
 }

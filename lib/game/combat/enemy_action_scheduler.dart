@@ -5,8 +5,8 @@ class EnemyActionScheduler {
   /// ユガロック戦のデフォルト間隔
   static const List<int> intervalSecondsOptions = [5, 6, 7, 8, 9, 10];
 
-  /// アシンクロン戦の間隔(ユガロック戦より少しだけ短い)
-  static const List<int> fastIntervalSecondsOptions = [5, 6, 7, 8, 9, 10];
+  /// アシンクロン戦の間隔（ダメージ量が多い分長めの間隔）
+  static const List<int> fastIntervalSecondsOptions = [6, 7, 8, 9, 10, 11];
 
   final List<int> _intervalSecondsOptions;
   final Random _random;

@@ -14,9 +14,9 @@ class PlayerActionResult {
 
 /// BLE加速度センサー(2台分)の値からスパホルダーのシンクロ技の発動を検出する
 class PlayerActionDetector {
-  static const double thresholdX = 0.8;
-  static const double thresholdY = 0.9;
-  static const double thresholdZ = 1.7;
+  static const double thresholdX = 0.77;
+  static const double thresholdY = 0.95;
+  static const double thresholdZ = 1.65;
   static const int maxChargeLevel = 5;
 
   /// チャージレベルごとの攻撃倍率 (index = charge level)

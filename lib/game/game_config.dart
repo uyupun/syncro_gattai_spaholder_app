@@ -44,7 +44,7 @@ class GameConfig implements JsonExportable {
        zoom = zoom ?? 20.0,
        shoulderTorque = shoulderTorque ?? 8000.0,
        elbowTorque = elbowTorque ?? 15000.0,
-       armLength = armLength ?? 12.0,
+       armLength = armLength ?? 13.5,
        shoulderPos = shoulderPos ?? Vector2(-10, -7),
        tipRadius = tipRadius ?? 0.8,
        enemyRadius = enemyRadius ?? 6.0,
@@ -52,8 +52,8 @@ class GameConfig implements JsonExportable {
        randomChangeInterval = randomChangeInterval ?? 0.3,
        shoulderSpeedRange = shoulderSpeedRange ?? 24.0,
        elbowSpeedRange = elbowSpeedRange ?? 36.0,
-       elbowBentAngle = elbowBentAngle ?? 2.4,
-       yugarockArmAngleOffsetDeg = yugarockArmAngleOffsetDeg ?? 15.0;
+       elbowBentAngle = elbowBentAngle ?? 0,
+       yugarockArmAngleOffsetDeg = yugarockArmAngleOffsetDeg ?? 20.0;
 
   factory GameConfig.defaultConfig() => GameConfig();
 

@@ -116,8 +116,27 @@ class RobotArmGame extends Forge2DGame {
   double _yugarockOscillationTime = 0.0;
 
   static const double _yugarockOscMinDeg = -50.0;
-  static const double _yugarockOscMaxDeg = 15.0;
+  static const double _yugarockOscMaxDeg = 20.0;
   static const double _yugarockOscPeriodSec = 4.0;
+
+  // ランジアニメーション(スパホルダー)
+  double _lungeXOffset = 0.0;
+  double _prevLungeXOffset = 0.0;
+  double _lungeTimer = 0.0;
+  double _lungeSign = 0.0;
+  late double _shoulderBasePosX;
+  late double _shoulderBasePosY;
+  static const double _lungeDuration = 0.2;
+  static const double _lungeDistance = 3.0;
+
+  // ランジアニメーション(敵)
+  double _enemyLungeXOffset = 0.0;
+  double _prevEnemyLungeXOffset = 0.0;
+  double _enemyLungeTimer = 0.0;
+  double _enemyLungeDistance = 0.0;
+  late double _enemyBasePosX;
+  late double _enemyBasePosY;
+  static const double _enemyLungeDuration = 0.2;
 
   // ヒットチェック用
   final List<Enemy> enemies = [];
@@ -245,6 +264,8 @@ class RobotArmGame extends Forge2DGame {
       maxHp: _playerHpConfig.maxHp,
     );
     await world.add(shoulder);
+    _shoulderBasePosX = sh.positionX;
+    _shoulderBasePosY = sh.positionY;
 
     // --- ジョイント生成 ---
     final sj = _layout.shoulderJoint;
@@ -347,6 +368,8 @@ class RobotArmGame extends Forge2DGame {
     );
     enemies.add(enemy);
     await world.add(enemy);
+    _enemyBasePosX = enemyPos.x;
+    _enemyBasePosY = enemyPos.y;
   }
 
   /// 腕の先端のワールド座標を取得
@@ -383,6 +406,7 @@ class RobotArmGame extends Forge2DGame {
       _pendingAttackDamage = null;
       enemy.takeDamage(damage);
       enemyHp.value = enemy.hp;
+      _startEnemyLunge(0.5);
       debugPrint(
         '[Battle] ${_actionsConfig.synchroAttack.nameJa}がヒット! '
         'damage=$damage, enemyHp=${enemy.hp}',
@@ -481,6 +505,7 @@ class RobotArmGame extends Forge2DGame {
           'multiplier=$multiplier, damage=$damage) - ドリル始動',
         );
         GameSe.syncroAttack.play();
+        _startLunge(1.0);
         _showPlayerActionLabel(
           _actionsConfig.synchroAttack.nameJa,
           duration: Duration(
@@ -530,6 +555,7 @@ class RobotArmGame extends Forge2DGame {
       }
       shoulder.takeDamage(damage);
       playerHp.value = shoulder.hp;
+      _startLunge(-1.0);
       if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
         _hpLowPlayed = true;
         GameSe.hpLow.play();
@@ -603,6 +629,66 @@ class RobotArmGame extends Forge2DGame {
   }
 
   /// 物理演算を完全に停止
+  void _startLunge(double sign) {
+    _lungeSign = sign;
+    _lungeTimer = _lungeDuration;
+  }
+
+  void _updateLunge(double dt) {
+    if (_lungeTimer > 0) {
+      _lungeTimer = (_lungeTimer - dt).clamp(0.0, _lungeDuration);
+      final progress = _lungeTimer / _lungeDuration;
+      _lungeXOffset = _lungeSign * _lungeDistance * sin(progress * pi);
+    } else {
+      _lungeXOffset = 0.0;
+    }
+
+    final delta = _lungeXOffset - _prevLungeXOffset;
+    if (delta != 0.0) {
+      shoulder.body.setTransform(
+        Vector2(_shoulderBasePosX + _lungeXOffset, _shoulderBasePosY),
+        shoulder.body.angle,
+      );
+      final lunge = Vector2(delta, 0);
+      upperArm.body.setTransform(
+        upperArm.body.position + lunge,
+        upperArm.body.angle,
+      );
+      foreArm.body.setTransform(
+        foreArm.body.position + lunge,
+        foreArm.body.angle,
+      );
+    }
+    _prevLungeXOffset = _lungeXOffset;
+  }
+
+  void _startEnemyLunge(double distance) {
+    _enemyLungeDistance = distance;
+    _enemyLungeTimer = _enemyLungeDuration;
+  }
+
+  void _updateEnemyLunge(double dt) {
+    if (_enemyLungeTimer > 0) {
+      _enemyLungeTimer = (_enemyLungeTimer - dt).clamp(
+        0.0,
+        _enemyLungeDuration,
+      );
+      final progress = _enemyLungeTimer / _enemyLungeDuration;
+      _enemyLungeXOffset = _enemyLungeDistance * sin(progress * pi);
+    } else {
+      _enemyLungeXOffset = 0.0;
+    }
+
+    final delta = _enemyLungeXOffset - _prevEnemyLungeXOffset;
+    if (delta != 0.0 && enemies.isNotEmpty) {
+      enemies.first.body.setTransform(
+        Vector2(_enemyBasePosX + _enemyLungeXOffset, _enemyBasePosY),
+        enemies.first.body.angle,
+      );
+    }
+    _prevEnemyLungeXOffset = _enemyLungeXOffset;
+  }
+
   void _stopAllPhysics() {
     stopRandomMode();
     stopStraightening();
@@ -702,6 +788,9 @@ class RobotArmGame extends Forge2DGame {
         _applyRandomMovement();
       }
     }
+
+    _updateLunge(dt);
+    _updateEnemyLunge(dt);
 
     if (!enablePendulum) {
       // ユガロック戦: arm1をコサイン揺動させる。攻撃中は時間を進めず角度を固定

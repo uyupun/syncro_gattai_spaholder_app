@@ -23,7 +23,10 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
-  uses-material-design: true  
+  uses-material-design: true
+  shaders:
+    - assets/shaders/marble_background.frag
+    - assets/shaders/retro_filter.frag
   assets:
     - assets/images/
     - assets/audio/

@@ -26,6 +26,7 @@ flutter:
   uses-material-design: true
   shaders:
     - assets/shaders/marble_background.frag
+    - assets/shaders/retro_filter.frag
   assets:
     - assets/images/
     - assets/audio/

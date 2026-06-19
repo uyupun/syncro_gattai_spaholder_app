@@ -13,6 +13,7 @@ import 'screens/enemy_intro_screen.dart';
 import 'screens/game_wrapper.dart';
 import 'screens/result_screen.dart';
 import 'screens/title_screen.dart';
+import 'widgets/pure_shader_retro.dart';
 
 const bool _kUseMockBleOverride = bool.fromEnvironment('USE_MOCK_BLE');
 const bool _kShowBleDebugPage = bool.fromEnvironment('SHOW_BLE_DEBUG');
@@ -149,32 +150,34 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: switch (_currentScreen) {
-        AppScreen.title => TitleScreen(
-          onStart: _startEnemyIntro,
-          bleService: _bleService,
-        ),
-        AppScreen.enemyIntro => EnemyIntroScreen(
-          stage: _currentStage,
-          onComplete: _startBattle,
-        ),
-        AppScreen.game => GameWrapper(
-          onWin: _onWin,
-          onLose: _onLose,
-          onExitToTitle: _returnToTitle,
-          bleService: _bleService,
-          defeatMessage: switch (_currentStage) {
-            BattleStage.yugarock => 'ヒーロー、ここで倒れる...！',
-            BattleStage.asyncron => '戦いは怪獣の勝利に終わった...！',
-          },
-          // 振り子動作はアシンクロン戦のみの難易度調整。ユガロック戦は肩・肘を固定する。
-          enablePendulum: _currentStage == BattleStage.asyncron,
-        ),
-        AppScreen.result => ResultScreen(
-          result: _currentResult,
-          onTitle: _returnToTitle,
-        ),
-      },
+      body: PureShaderRetro(
+        child: switch (_currentScreen) {
+          AppScreen.title => TitleScreen(
+            onStart: _startEnemyIntro,
+            bleService: _bleService,
+          ),
+          AppScreen.enemyIntro => EnemyIntroScreen(
+            stage: _currentStage,
+            onComplete: _startBattle,
+          ),
+          AppScreen.game => GameWrapper(
+            onWin: _onWin,
+            onLose: _onLose,
+            onExitToTitle: _returnToTitle,
+            bleService: _bleService,
+            defeatMessage: switch (_currentStage) {
+              BattleStage.yugarock => 'ヒーロー、ここで倒れる...！',
+              BattleStage.asyncron => '戦いは怪獣の勝利に終わった...！',
+            },
+            // 振り子動作はアシンクロン戦のみの難易度調整。ユガロック戦は肩・肘を固定する。
+            enablePendulum: _currentStage == BattleStage.asyncron,
+          ),
+          AppScreen.result => ResultScreen(
+            result: _currentResult,
+            onTitle: _returnToTitle,
+          ),
+        },
+      ),
     );
   }
 }

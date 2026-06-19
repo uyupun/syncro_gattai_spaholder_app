@@ -15,38 +15,6 @@ class ResultScreen extends StatelessWidget {
     GameResult.asyncronLose || GameResult.allClear => 'assets/bg/victory.png',
   };
 
-  /// キャラクター画像のリスト
-  List<String> get _characterImages => switch (result) {
-    GameResult.yugarockLose => [
-      'assets/images/spaholder_lose.png',
-      'assets/images/yugarock.png',
-    ],
-    GameResult.asyncronLose => [
-      'assets/images/yugarock_splashA.png',
-      'assets/images/spaholder.png',
-      'assets/images/yugarock_splashA.png',
-    ],
-    GameResult.allClear => [
-      'assets/images/yugarock_splashA.png',
-      'assets/images/spaholder.png',
-      'assets/images/asyncron_lose.png',
-    ],
-  };
-
-  List<Widget> _buildCharacterWidgets() {
-    if (_characterImages.length == 3) {
-      return [
-        Image.asset(_characterImages[0], width: 180, fit: BoxFit.contain),
-        Image.asset(_characterImages[1], width: 350, fit: BoxFit.contain),
-        Image.asset(_characterImages[2], width: 180, fit: BoxFit.contain),
-      ];
-    } else {
-      return _characterImages
-          .map((path) => Image.asset(path, width: 250, fit: BoxFit.contain))
-          .toList();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -54,10 +22,26 @@ class ResultScreen extends StatelessWidget {
         Positioned.fill(
           child: Image.asset(_backgroundImage, fit: BoxFit.cover),
         ),
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _buildCharacterWidgets(),
+        Align(
+          alignment: Alignment.center,
+          child: Text(
+            switch (result) {
+              GameResult.yugarockLose => '負けてしまった...',
+              GameResult.asyncronLose => '勝利！',
+              GameResult.allClear => '完全勝利！',
+            },
+            style: const TextStyle(
+              fontSize: 64,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  offset: Offset(2, 2),
+                  blurRadius: 4,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
           ),
         ),
         Align(

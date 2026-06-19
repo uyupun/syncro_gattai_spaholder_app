@@ -7,22 +7,24 @@ void main() {
   group('ArmLayoutConfig', () {
     test('デフォルト値が正しい', () {
       final config = ArmLayoutConfig();
-      expect(config.upperArm.positionX, -10);
-      expect(config.upperArm.positionY, -4);
-      expect(config.upperArm.sizeX, 4.35);
+      expect(config.upperArm.positionX, -7);
+      expect(config.upperArm.positionY, -2.54);
+      expect(config.upperArm.sizeX, 4);
       expect(config.upperArm.sizeY, 8);
-      expect(config.foreArm.positionX, -8.5);
-      expect(config.foreArm.sizeX, 4.85);
+      expect(config.foreArm.positionX, -1.84);
+      expect(config.foreArm.sizeX, 4);
       expect(config.shoulder.positionX, -12);
-      expect(config.shoulder.sizeX, 16);
-      expect(config.shoulderJoint.anchorAX, 6);
-      expect(config.shoulderJoint.anchorAY, -4.5);
+      expect(config.shoulder.sizeX, 8);
+      expect(config.shoulderJoint.anchorAX, 5);
+      expect(config.shoulderJoint.anchorAY, 0);
       expect(config.shoulderJoint.anchorBX, 0);
-      expect(config.elbowJoint.anchorAX, 1.75);
-      expect(config.elbowJoint.anchorBY, -3.5);
-      expect(config.tipOffsetX, 2.0);
-      expect(config.tipOffsetY, 3.5);
-      expect(config.armTipLocalY, 3.5);
+      expect(config.elbowJoint.anchorAX, 5.16);
+      expect(config.elbowJoint.anchorBY, 0);
+      expect(config.tipOffsetX, 5.81);
+      expect(config.tipOffsetY, -2.10);
+      expect(config.armTipLocalY, -2.10);
+      expect(config.imageRenderWidth, 20.0);
+      expect(config.imageRenderHeight, 14.14);
     });
 
     test('fromJsonで全フィールド正しく読込', () {
@@ -65,9 +67,10 @@ void main() {
 
     test('fromJsonで欠損フィールドはデフォルト値', () {
       final config = ArmLayoutConfig.fromJson({});
-      expect(config.upperArm.positionX, -10);
-      expect(config.tipOffsetY, 3.5);
-      expect(config.armTipLocalY, 3.5);
+      expect(config.upperArm.positionX, -7);
+      expect(config.tipOffsetY, -2.10);
+      expect(config.armTipLocalY, -2.10);
+      expect(config.imageRenderWidth, 20.0);
     });
 
     test('copyWithで指定フィールドのみ変更される', () {

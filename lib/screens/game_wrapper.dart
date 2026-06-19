@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../debug/debug_config_overlay.dart';
 import '../game/actions_config.dart';
 import '../game/arm_layout_config.dart';
 import '../game/enemy_config.dart';
@@ -15,7 +14,6 @@ import '../widgets/action_label_text.dart';
 import '../widgets/outlined_text.dart';
 import '../widgets/charge_level_indicator.dart';
 import '../widgets/exit_dialog.dart';
-import '../widgets/hold_button.dart';
 import '../widgets/hp_bar_widget.dart';
 
 class GameWrapper extends StatefulWidget {
@@ -44,13 +42,12 @@ class GameWrapper extends StatefulWidget {
 
 class _GameWrapperState extends State<GameWrapper> {
   BleService get _bleService => widget.bleService;
-  bool _showDebugOverlay = false;
   bool _showExitDialog = false;
 
   // 全Config state
-  GameConfig _config = GameConfig();
-  ArmLayoutConfig _layout = ArmLayoutConfig();
-  EnemyConfig _enemyConfig = EnemyConfig();
+  final GameConfig _config = GameConfig();
+  final ArmLayoutConfig _layout = ArmLayoutConfig();
+  final EnemyConfig _enemyConfig = EnemyConfig();
   HpBarConfig _playerHpConfig = HpBarConfig();
   HpBarConfig _enemyHpConfig = HpBarConfig();
   ActionsConfig _actionsConfig = ActionsConfig();
@@ -280,27 +277,11 @@ class _GameWrapperState extends State<GameWrapper> {
                 );
               },
             ),
-            Positioned(
-              bottom: 30,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HoldButton(
-                      icon: Icons.vertical_align_center,
-                      onPressed: () => _game.startStraightening(),
-                      onReleased: () => _game.stopStraightening(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             if (kDebugMode)
               Positioned.fill(
                 child: Center(
                   child: GestureDetector(
+                    onTap: () => _game.debugAttack(),
                     onTapDown: (_) => _game.startStraightening(),
                     onTapUp: (_) => _game.stopStraightening(),
                     onTapCancel: () => _game.stopStraightening(),
@@ -311,35 +292,6 @@ class _GameWrapperState extends State<GameWrapper> {
                     ),
                   ),
                 ),
-              ),
-            if (kDebugMode)
-              Positioned(
-                top: 10,
-                right: 10,
-                child: IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.white70),
-                  onPressed: () =>
-                      setState(() => _showDebugOverlay = !_showDebugOverlay),
-                ),
-              ),
-            if (kDebugMode && _showDebugOverlay)
-              DebugConfigOverlay(
-                initialConfig: _config,
-                initialLayout: _layout,
-                initialEnemyConfig: _enemyConfig,
-                initialPlayerHpConfig: _playerHpConfig,
-                initialEnemyHpConfig: _enemyHpConfig,
-                onConfigChanged: (newConfig) => _config = newConfig,
-                onLayoutChanged: (newLayout) => _layout = newLayout,
-                onEnemyConfigChanged: (newConfig) => _enemyConfig = newConfig,
-                onPlayerHpConfigChanged: (newConfig) =>
-                    _playerHpConfig = newConfig,
-                onEnemyHpConfigChanged: (newConfig) =>
-                    _enemyHpConfig = newConfig,
-                // Why: 即時反映だとゲーム状態(クリア判定等)がリセットされてしまうため、
-                // [OK]ボタンで確定してからゲーム再生成する。
-                onApply: _recreateGame,
-                onClose: () => setState(() => _showDebugOverlay = false),
               ),
             if (_showExitDialog)
               Positioned.fill(

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +14,7 @@ void main() {
       expect(config.zoom, 20.0);
       expect(config.shoulderTorque, 8000.0);
       expect(config.elbowTorque, 15000.0);
-      expect(config.armLength, 14.0);
+      expect(config.armLength, 12.0);
       expect(config.shoulderPos.x, -10);
       expect(config.shoulderPos.y, -7);
       expect(config.tipRadius, 0.8);
@@ -24,7 +23,8 @@ void main() {
       expect(config.randomChangeInterval, 0.3);
       expect(config.shoulderSpeedRange, 24.0);
       expect(config.elbowSpeedRange, 36.0);
-      expect(config.elbowBentAngle, pi / 2);
+      expect(config.elbowBentAngle, 2.4);
+      expect(config.yugarockArmAngleOffsetDeg, 15.0);
     });
 
     test('defaultConfig でデフォルト値が返る', () {
@@ -48,6 +48,7 @@ void main() {
         'shoulderSpeedRange': 30.0,
         'elbowSpeedRange': 50.0,
         'elbowBentAngle': -0.8,
+        'yugarockArmAngleOffsetDeg': 20.0,
       };
 
       final config = GameConfig.fromJson(json);
@@ -66,6 +67,7 @@ void main() {
       expect(config.shoulderSpeedRange, 30.0);
       expect(config.elbowSpeedRange, 50.0);
       expect(config.elbowBentAngle, -0.8);
+      expect(config.yugarockArmAngleOffsetDeg, 20.0);
     });
 
     test('toJson 往復で値が保持される', () {

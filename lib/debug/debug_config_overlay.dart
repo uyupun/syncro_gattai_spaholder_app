@@ -445,12 +445,20 @@ class _DebugConfigOverlayState extends State<DebugConfigOverlay>
         ),
         _sectionHeader('敵'),
         _ConfigStepperTile(
-          label: 'spriteScale',
-          displayName: '敵スプライト倍率',
+          label: 'yugarockSpriteScale',
+          displayName: 'ユガロック倍率',
           steps: const [0.1, 0.5],
-          value: _enemyConfig.spriteScale,
+          value: _enemyConfig.yugarockSpriteScale,
           onChanged: (v) =>
-              _updateEnemyConfig((c) => c.copyWith(spriteScale: v)),
+              _updateEnemyConfig((c) => c.copyWith(yugarockSpriteScale: v)),
+        ),
+        _ConfigStepperTile(
+          label: 'asyncronSpriteScale',
+          displayName: 'アシンクロン倍率',
+          steps: const [0.1, 0.5],
+          value: _enemyConfig.asyncronSpriteScale,
+          onChanged: (v) =>
+              _updateEnemyConfig((c) => c.copyWith(asyncronSpriteScale: v)),
         ),
       ],
     );

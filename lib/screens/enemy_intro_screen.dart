@@ -48,7 +48,7 @@ class _EnemyIntroScreenState extends State<EnemyIntroScreen> {
               _message,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 36,
+                fontSize: 40,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 4,
               ),

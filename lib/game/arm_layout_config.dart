@@ -12,6 +12,8 @@ class ArmLayoutConfig implements JsonExportable {
   final double tipOffsetX;
   final double tipOffsetY;
   final double armTipLocalY;
+  final double imageRenderWidth;
+  final double imageRenderHeight;
 
   ArmLayoutConfig({
     PartConfig? upperArm,
@@ -22,44 +24,59 @@ class ArmLayoutConfig implements JsonExportable {
     double? tipOffsetX,
     double? tipOffsetY,
     double? armTipLocalY,
+    double? imageRenderWidth,
+    double? imageRenderHeight,
   }) : upperArm =
            upperArm ??
            const PartConfig(
-             positionX: -10,
-             positionY: -4,
-             sizeX: 4.35,
+             positionX: -7,
+             positionY: -2.54,
+             sizeX: 4,
              sizeY: 8,
+             imageAnchorX: 0.4449,
+             imageAnchorY: 0.3203,
            ),
        foreArm =
            foreArm ??
            const PartConfig(
-             positionX: -8.5,
-             positionY: 1.5,
-             sizeX: 4.85,
+             positionX: -1.84,
+             positionY: -3.84,
+             sizeX: 4,
              sizeY: 8,
+             imageAnchorX: 0.7025,
+             imageAnchorY: 0.2284,
            ),
        shoulder =
            shoulder ??
-           const PartConfig(positionX: -12, positionY: 0, sizeX: 16, sizeY: 16),
+           const PartConfig(
+             positionX: -12,
+             positionY: -2.54,
+             sizeX: 8,
+             sizeY: 8,
+             imageAnchorX: 0.1949,
+             imageAnchorY: 0.3203,
+           ),
        shoulderJoint =
            shoulderJoint ??
            const JointConfig(
-             anchorAX: 6,
-             anchorAY: -4.5,
+             anchorAX: 5,
+             anchorAY: 0,
              anchorBX: 0,
-             anchorBY: -4,
+             anchorBY: 0,
            ),
        elbowJoint =
            elbowJoint ??
            const JointConfig(
-             anchorAX: 1.75,
-             anchorAY: 3,
-             anchorBX: -1,
-             anchorBY: -3.5,
+             anchorAX: 5.16,
+             anchorAY: -1.30,
+             anchorBX: 0,
+             anchorBY: 0,
            ),
-       tipOffsetX = tipOffsetX ?? 2.0,
-       tipOffsetY = tipOffsetY ?? 3.5,
-       armTipLocalY = armTipLocalY ?? 3.5;
+       tipOffsetX = tipOffsetX ?? 5.81,
+       tipOffsetY = tipOffsetY ?? -2.10,
+       armTipLocalY = armTipLocalY ?? -2.10,
+       imageRenderWidth = imageRenderWidth ?? 20.0,
+       imageRenderHeight = imageRenderHeight ?? 14.14;
 
   factory ArmLayoutConfig.fromJson(Map<String, dynamic> json) {
     final upperArmJson = json['upperArm'] as Map<String, dynamic>?;
@@ -69,6 +86,8 @@ class ArmLayoutConfig implements JsonExportable {
     final shoulderJointJson = joints?['shoulder'] as Map<String, dynamic>?;
     final elbowJointJson = joints?['elbow'] as Map<String, dynamic>?;
     final tipOffsetJson = json['tipOffset'] as Map<String, dynamic>?;
+    final imageRenderSizeJson =
+        json['imageRenderSize'] as Map<String, dynamic>?;
 
     return ArmLayoutConfig(
       upperArm: upperArmJson != null ? PartConfig.fromJson(upperArmJson) : null,
@@ -83,6 +102,8 @@ class ArmLayoutConfig implements JsonExportable {
       tipOffsetX: (tipOffsetJson?['x'] as num?)?.toDouble(),
       tipOffsetY: (tipOffsetJson?['y'] as num?)?.toDouble(),
       armTipLocalY: (json['armTipLocalY'] as num?)?.toDouble(),
+      imageRenderWidth: (imageRenderSizeJson?['x'] as num?)?.toDouble(),
+      imageRenderHeight: (imageRenderSizeJson?['y'] as num?)?.toDouble(),
     );
   }
 
@@ -97,6 +118,7 @@ class ArmLayoutConfig implements JsonExportable {
     },
     'tipOffset': {'x': tipOffsetX, 'y': tipOffsetY},
     'armTipLocalY': armTipLocalY,
+    'imageRenderSize': {'x': imageRenderWidth, 'y': imageRenderHeight},
   };
 
   ArmLayoutConfig copyWith({
@@ -108,6 +130,8 @@ class ArmLayoutConfig implements JsonExportable {
     double? tipOffsetX,
     double? tipOffsetY,
     double? armTipLocalY,
+    double? imageRenderWidth,
+    double? imageRenderHeight,
   }) {
     return ArmLayoutConfig(
       upperArm: upperArm ?? this.upperArm,
@@ -118,6 +142,8 @@ class ArmLayoutConfig implements JsonExportable {
       tipOffsetX: tipOffsetX ?? this.tipOffsetX,
       tipOffsetY: tipOffsetY ?? this.tipOffsetY,
       armTipLocalY: armTipLocalY ?? this.armTipLocalY,
+      imageRenderWidth: imageRenderWidth ?? this.imageRenderWidth,
+      imageRenderHeight: imageRenderHeight ?? this.imageRenderHeight,
     );
   }
 

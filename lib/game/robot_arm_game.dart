@@ -109,8 +109,15 @@ class RobotArmGame extends Forge2DGame {
   final Random _random = Random();
   double _randomChangeTimer = 0;
 
-  // 固定モード(ユガロック戦)用
+  // ユガロック戦: arm1の基準角度
   double _fixedShoulderAngle = 0;
+
+  // ユガロック戦: arm1の揺動タイマー
+  double _yugarockOscillationTime = 0.0;
+
+  static const double _yugarockOscMinDeg = -50.0;
+  static const double _yugarockOscMaxDeg = 15.0;
+  static const double _yugarockOscPeriodSec = 4.0;
 
   // ヒットチェック用
   final List<Enemy> enemies = [];
@@ -188,6 +195,11 @@ class RobotArmGame extends Forge2DGame {
     await _spawnEnemies();
 
     // --- パーツ生成 ---
+    final imageRenderSize = Vector2(
+      _layout.imageRenderWidth,
+      _layout.imageRenderHeight,
+    );
+
     final ua = _layout.upperArm;
     upperArm = ArmPart(
       position: Vector2(ua.positionX, ua.positionY),
@@ -195,6 +207,10 @@ class RobotArmGame extends Forge2DGame {
       isStatic: false,
       color: Colors.blueAccent,
       imagePath: GameImage.upperArm.path,
+      imageAnchor: ua.imageAnchorX != null && ua.imageAnchorY != null
+          ? Vector2(ua.imageAnchorX!, ua.imageAnchorY!)
+          : null,
+      imageRenderSize: imageRenderSize,
     );
     await world.add(upperArm);
 
@@ -208,6 +224,10 @@ class RobotArmGame extends Forge2DGame {
       isDrill: true,
       tipRadius: _config.tipRadius,
       tipOffset: Offset(_layout.tipOffsetX, _layout.tipOffsetY),
+      imageAnchor: fa.imageAnchorX != null && fa.imageAnchorY != null
+          ? Vector2(fa.imageAnchorX!, fa.imageAnchorY!)
+          : null,
+      imageRenderSize: imageRenderSize,
     );
     await world.add(foreArm);
 
@@ -218,6 +238,10 @@ class RobotArmGame extends Forge2DGame {
       isStatic: true,
       color: Colors.grey,
       imagePath: GameImage.upperBody.path,
+      imageAnchor: sh.imageAnchorX != null && sh.imageAnchorY != null
+          ? Vector2(sh.imageAnchorX!, sh.imageAnchorY!)
+          : null,
+      imageRenderSize: imageRenderSize,
       maxHp: _playerHpConfig.maxHp,
     );
     await world.add(shoulder);
@@ -252,12 +276,15 @@ class RobotArmGame extends Forge2DGame {
     if (enablePendulum) {
       startRandomMode();
     } else {
-      // ユガロック戦: 肩を敵の方向へ向けて固定し、肘は少し曲げた姿勢で待機させる
-      _fixedShoulderAngle = _calcShoulderAngleTowardEnemy();
-      upperArm.body.setTransform(upperArm.body.position, _fixedShoulderAngle);
+      // ユガロック戦: 基準角を計算し、最大オフセット位置(+30度)から揺動開始
+      _fixedShoulderAngle =
+          _calcShoulderAngleTowardEnemy() +
+          _config.yugarockArmAngleOffsetDeg * pi / 180;
+      final startAngle = _fixedShoulderAngle + _yugarockOscMaxDeg * pi / 180;
+      upperArm.body.setTransform(upperArm.body.position, startAngle);
       foreArm.body.setTransform(
         foreArm.body.position,
-        _fixedShoulderAngle + _config.elbowBentAngle,
+        startAngle + _config.elbowBentAngle,
       );
     }
   }
@@ -283,7 +310,7 @@ class RobotArmGame extends Forge2DGame {
     final straightTipDir =
         Vector2(ej.anchorAX, ej.anchorAY) -
         Vector2(ej.anchorBX, ej.anchorBY) +
-        Vector2(0, _layout.armTipLocalY) -
+        Vector2(_layout.tipOffsetX, _layout.tipOffsetY) -
         Vector2(sj.anchorBX, sj.anchorBY);
 
     final enemyPos = Vector2(
@@ -304,14 +331,19 @@ class RobotArmGame extends Forge2DGame {
     final enemy = Enemy(
       position: enemyPos,
       radius: _config.enemyRadius,
-      spriteScale: _enemyConfig.spriteScale,
+      spriteScale: enablePendulum
+          ? _enemyConfig.asyncronSpriteScale
+          : _enemyConfig.yugarockSpriteScale,
+      actionSpriteScale: enablePendulum
+          ? null
+          : _enemyConfig.asyncronSpriteScale,
       maxHp: _enemyHpConfig.maxHp,
       spritePath: enablePendulum
           ? GameImage.asyncron.path
           : GameImage.yugarock.path,
-      splashSpritePath: enablePendulum
-          ? GameImage.asyncronLose.path
-          : GameImage.yugarockSplash.path,
+      actionSpritePaths: enablePendulum
+          ? [GameImage.asyncronStream.path, GameImage.asyncronVacuum.path]
+          : [GameImage.yugarockRolling.path, GameImage.yugarockFillIn.path],
     );
     enemies.add(enemy);
     await world.add(enemy);
@@ -319,7 +351,23 @@ class RobotArmGame extends Forge2DGame {
 
   /// 腕の先端のワールド座標を取得
   Vector2 get armTipPosition {
-    return foreArm.body.worldPoint(Vector2(0, _layout.armTipLocalY));
+    return foreArm.body.worldPoint(
+      Vector2(_layout.tipOffsetX, _layout.tipOffsetY),
+    );
+  }
+
+  void debugAttack() {
+    final enemy = enemies.first;
+    final damage = 20.0;
+    enemy.takeDamage(damage);
+    enemyHp.value = enemy.hp;
+    debugPrint(
+      '[Battle] ${_actionsConfig.synchroAttack.nameJa}がヒット! '
+      'damage=$damage, enemyHp=${enemy.hp}',
+    );
+    if (enemy.hp <= 0) {
+      _triggerWin(enemy);
+    }
   }
 
   /// シンクロアタックで伸ばしたドリルが敵に当たった時点でダメージを与える
@@ -354,6 +402,9 @@ class RobotArmGame extends Forge2DGame {
     _physicsStoppedOnHit = true;
 
     _stopAllPhysics();
+
+    // 敵を45度傾けて倒れた姿勢にする(スパホルダーとは逆向き)
+    enemy.body.setTransform(enemy.body.position, pi / 4);
 
     unawaited(
       Future.delayed(const Duration(seconds: 3), () {
@@ -499,6 +550,13 @@ class RobotArmGame extends Forge2DGame {
           ? [GameSe.asyncStream, GameSe.asyncVacuum]
           : [GameSe.yugarockRoll, GameSe.yugarockFillIn];
       enemySes[actionIdx].play();
+      if (enemies.isNotEmpty) {
+        final e = enemies.first;
+        e.showActionSprite(actionIdx);
+        unawaited(
+          Future.delayed(const Duration(seconds: 2), e.clearActionSprite),
+        );
+      }
       _showEnemyActionLabel(action.nameJa);
     }
   }
@@ -519,12 +577,12 @@ class RobotArmGame extends Forge2DGame {
     );
   }
 
-  /// ユガロックの技名を1秒間表示する
+  /// 敵の技名を2秒間表示する
   void _showEnemyActionLabel(String text) {
     enemyActionLabel.value = text;
     final generation = ++_enemyLabelGeneration;
     unawaited(
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(seconds: 2), () {
         if (_enemyLabelGeneration == generation) {
           enemyActionLabel.value = null;
         }
@@ -637,7 +695,7 @@ class RobotArmGame extends Forge2DGame {
       return;
     }
 
-    if (isRandomMode) {
+    if (isRandomMode && _attackActiveTimer <= 0) {
       _randomChangeTimer += dt;
       if (_randomChangeTimer >= _config.randomChangeInterval) {
         _randomChangeTimer = 0;
@@ -646,14 +704,25 @@ class RobotArmGame extends Forge2DGame {
     }
 
     if (!enablePendulum) {
-      // ユガロック戦: 肩を固定し、攻撃中以外は肘を曲げた姿勢に固定する
-      upperArm.body.setTransform(upperArm.body.position, _fixedShoulderAngle);
+      // ユガロック戦: arm1をコサイン揺動させる。攻撃中は時間を進めず角度を固定
+      if (!_isStraightening) {
+        _yugarockOscillationTime += dt;
+      }
+      const oscCenter = (_yugarockOscMinDeg + _yugarockOscMaxDeg) / 2.0; // -5.0
+      const oscAmplitude =
+          (_yugarockOscMaxDeg - _yugarockOscMinDeg) / 2.0; // 40.0
+      final omega = 2 * pi / _yugarockOscPeriodSec;
+      final offsetDeg =
+          oscCenter + oscAmplitude * cos(omega * _yugarockOscillationTime);
+      final currentShoulderAngle = _fixedShoulderAngle + offsetDeg * pi / 180;
+
+      upperArm.body.setTransform(upperArm.body.position, currentShoulderAngle);
       upperArm.body.angularVelocity = 0;
 
       if (!_isStraightening) {
         foreArm.body.setTransform(
           foreArm.body.position,
-          _fixedShoulderAngle + _config.elbowBentAngle,
+          currentShoulderAngle + _config.elbowBentAngle,
         );
         foreArm.body.angularVelocity = 0;
       }

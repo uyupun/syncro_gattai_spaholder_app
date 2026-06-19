@@ -39,7 +39,7 @@ class _EnemyIntroScreenState extends State<EnemyIntroScreen> {
           if (widget.stage == BattleStage.asyncron)
             Positioned.fill(
               child: Image.asset(
-                'assets/images/asyncron_intro_background.png',
+                'assets/bg/asyncron_title.png',
                 fit: BoxFit.cover,
               ),
             ),

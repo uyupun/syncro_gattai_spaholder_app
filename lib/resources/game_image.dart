@@ -5,8 +5,7 @@ enum GameImage {
   yugarock('yugarock.png'),
   yugarockSplash('yugarock_splashA.png'),
   asyncron('asyncron.png'),
-  asyncronLose('asyncron_lose.png'),
-  gameBackground('game_background.png');
+  asyncronLose('asyncron_lose.png');
 
   final String path;
   const GameImage(this.path);

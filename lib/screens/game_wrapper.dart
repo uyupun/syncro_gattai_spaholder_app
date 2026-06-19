@@ -25,6 +25,7 @@ class GameWrapper extends StatefulWidget {
   final BleService bleService;
   final String defeatMessage;
   final bool enablePendulum;
+  final String backgroundImagePath;
 
   const GameWrapper({
     super.key,
@@ -34,6 +35,7 @@ class GameWrapper extends StatefulWidget {
     required this.bleService,
     required this.defeatMessage,
     required this.enablePendulum,
+    required this.backgroundImagePath,
   });
 
   @override
@@ -94,6 +96,7 @@ class _GameWrapperState extends State<GameWrapper> {
       enemyHpConfig: _enemyHpConfig,
       actionsConfig: _actionsConfig,
       enablePendulum: widget.enablePendulum,
+      backgroundImagePath: widget.backgroundImagePath,
     );
   }
 

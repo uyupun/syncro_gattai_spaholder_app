@@ -10,9 +10,8 @@ class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key, required this.result, required this.onTitle});
 
   String get _backgroundImage => switch (result) {
-    GameResult.yugarockLose => 'assets/images/result_screen_background_2.png',
-    GameResult.asyncronLose ||
-    GameResult.allClear => 'assets/images/result_screen_background_1.png',
+    GameResult.yugarockLose => 'assets/bg/defeat.png',
+    GameResult.asyncronLose || GameResult.allClear => 'assets/bg/victory.png',
   };
 
   /// キャラクター画像のリスト

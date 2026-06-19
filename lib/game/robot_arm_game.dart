@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,8 @@ class RobotArmGame extends Forge2DGame {
   /// true: アシンクロン戦の二重振り子モード / false: ユガロック戦の固定モード
   final bool enablePendulum;
 
+  final String backgroundImagePath;
+
   RobotArmGame({
     this.onWin,
     this.onLose,
@@ -43,6 +46,7 @@ class RobotArmGame extends Forge2DGame {
     HpBarConfig? enemyHpConfig,
     ActionsConfig? actionsConfig,
     this.enablePendulum = true,
+    this.backgroundImagePath = 'assets/bg/yugarock-battle.png',
   }) : _config = config,
        _layout = layout,
        _enemyConfig = enemyConfig,
@@ -167,10 +171,12 @@ class RobotArmGame extends Forge2DGame {
 
     // --- 背景画像を読み込み ---
     try {
-      _backgroundSprite = await Sprite.load(GameImage.gameBackground.path);
+      final filename = backgroundImagePath.split('/').last;
+      final bgImages = Images(prefix: 'assets/bg/');
+      _backgroundSprite = await Sprite.load(filename, images: bgImages);
     } catch (e) {
       debugPrint(
-        'Failed to load background image: game_background.png, error: $e',
+        'Failed to load background image: $backgroundImagePath, error: $e',
       );
     }
 

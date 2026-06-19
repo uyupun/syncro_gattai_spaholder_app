@@ -77,10 +77,11 @@ class _MarblePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // ⭕️ GLSLの定義順（uSize.x, uSize.y, uTime）に合わせてインデックスを修正
     shader
-      ..setFloat(0, time)
-      ..setFloat(1, size.width)
-      ..setFloat(2, size.height);
+      ..setFloat(0, size.width)
+      ..setFloat(1, size.height)
+      ..setFloat(2, time);
 
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }

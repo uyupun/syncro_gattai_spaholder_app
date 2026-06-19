@@ -1,108 +1,80 @@
 #include <flutter/runtime_effect.glsl>
 
+uniform vec2 uSize;
 uniform float uTime;
-uniform float uWidth;
-uniform float uHeight;
 
 out vec4 fragColor;
 
-// ─── Value Noise ──────────────────────────────────────────────────────────────
 float hash(vec2 p) {
-    p = fract(p * vec2(127.1, 311.7));
-    p += dot(p, p + 19.19);
-    return fract(p.x * p.y);
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-float vnoise(vec2 p) {
+// バリューノイズ
+float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    return mix(
-        mix(hash(i),                  hash(i + vec2(1.0, 0.0)), u.x),
-        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-        u.y
-    );
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+               mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
 }
 
-// ─── タービュランス ────────────────────────────────────────────────────────────
-// abs(noise) の多重加算で「鋭い稜線」を生む。
-// これがマーブルの石目らしさの核心。通常の fBm だと稜線が出ない。
-float turb(vec2 p) {
-    float v = 0.0, a = 1.0;
-    for (int i = 0; i < 7; i++) {
-        v += a * abs(vnoise(p) * 2.0 - 1.0);
-        p  = p * 2.05 + vec2(73.1, 52.7);
-        a *= 0.5;
-    }
-    return v / 1.98;   // [0, 1] に正規化
+// イラスト特有の「滑らかで大きなうねり」を作る
+float fbm(vec2 p) {
+    float v = 0.0;
+    v += 0.50 * noise(p); p = p * 2.0 * mat2(0.8, 0.6, -0.6, 0.8);
+    v += 0.25 * noise(p);
+    return v;
 }
 
-// ─── メイン ───────────────────────────────────────────────────────────────────
 void main() {
-    vec2 fragCoord = FlutterFragCoord().xy;
-    vec2 uv        = fragCoord / vec2(uWidth, uHeight);
+    // 座標の正規化
+    vec2 p = (FlutterFragCoord().xy - 0.5 * uSize) / min(uSize.x, uSize.y);
+    p *= 1.5; 
+    
+    float t = uTime * 0.15;
 
-    float aspect = uWidth / uHeight;
-    vec2  pos    = vec2(uv.x * aspect, uv.y);
+    // ドメインワーピング
+    vec2 q = vec2(
+        fbm(p + vec2(0.0, 0.0) + t * 0.1),
+        fbm(p + vec2(5.2, 1.3) + t * 0.12)
+    );
+    vec2 r = vec2(
+        fbm(p + 2.5 * q + vec2(1.7, 9.2) - t * 0.15),
+        fbm(p + 2.5 * q + vec2(8.3, 2.8) - t * 0.1)
+    );
 
-    // ─── 大きくゆっくり揺れる底流（全体の流れ感）──────────────────────────────
-    float st = uTime * 0.016;
-    float warp = vnoise(pos * 1.1 + vec2(st * 0.55, st * 0.35)) * 0.38
-               + vnoise(pos * 0.55 + vec2(st * 0.28, st * 0.62)) * 0.22;
-    vec2 wp = pos + warp * 0.65;   // 25〜40% 程度の大きな空間歪み
+    float n = fbm(p * 1.5 + r * 2.5);
 
-    vec2 p = wp * 3.2;
+    // 等高線のようにパキッと階層を分ける
+    float val = n * 8.0 - t * 0.8 + 1000.0;
+    float bandIdx = floor(val);
+    float localF = fract(val);
 
-    // ─── タービュランス（赤・青で共有 → 同じ石の地層で歪む）──────────────────
-    float t = turb(p);
+    // 🎨 カラーパレット
+    vec3 colRed    = vec3(0.761, 0.247, 0.220); // ご指定の赤 #C23F38
+    vec3 colBlue   = vec3(0.125, 0.275, 0.612); // ご指定の青 #20469C
+    vec3 colPurple = vec3(0.435, 0.035, 0.682); // ご指定の紫 #6F09AE
+    
+    // ⭐ 変更点：白を廃止し、少し馴染みの良い「黒っぽい色」を追加
+    vec3 colBlack  = vec3(0.05, 0.05, 0.08);    // ダークカラー
 
-    // ─── 赤の石目 ─────────────────────────────────────────────────────────────
-    // 方向がゆっくり回転 → 石目が「ゆらゆら」と向きを変える
-    float aR  = uTime * 0.015;
-    float phR = uTime * 0.30;
-    // sin の引数をタービュランスで大きく歪める（7.5 = 歪み強度）
-    float rawR = sin(dot(p, vec2(cos(aR), sin(aR))) * 3.5 + t * 7.5 + phR);
-    float mR   = rawR * 0.5 + 0.5;   // [0, 1]
+    // 3色を順番にベタ塗りでループさせる
+    float modId = mod(bandIdx, 3.0);
+    vec3 baseCol;
+    if (modId < 1.0) {
+        baseCol = colRed;
+    } else if (modId < 2.0) {
+        baseCol = colBlue;
+    } else {
+        baseCol = colPurple;
+    }
 
-    // ─── 青の石目 ─────────────────────────────────────────────────────────────
-    // 赤と独立した角速度で回転し、逆方向にも流れる → 常に交差パターンが変化
-    float aB  = -uTime * 0.011 + 1.57;   // π/2 offset で直交しやすくする
-    float phB = -uTime * 0.22;            // 逆方向に流れる
-    float rawB = sin(dot(p, vec2(cos(aB), sin(aB))) * 3.5 + t * 7.5 + phB);
-    float mB   = rawB * 0.5 + 0.5;
+    // 🖍️ 黒っぽい境界線を描き込む
+    float dist = min(localF, 1.0 - localF);
+    float lineFactor = 1.0 - smoothstep(0.09, 0.12, dist);
 
-    // ─── べき乗で石目を細い輝く線にシャープ化 ─────────────────────────────────
-    // pow(x, n) は n が大きいほど細い線になる（マーブルの特徴的な細脈）
-    float vR = pow(mR, 4.5);
-    float vB = pow(mB, 4.5);
+    // ベースのベタ塗り色の上に、黒い線を合成
+    vec3 finalCol = mix(baseCol, colBlack, lineFactor);
 
-    // ─── カラー合成 ────────────────────────────────────────────────────────────
-    vec3 cBase   = vec3(0.04, 0.01, 0.07);   // 黒紫の石（下地）
-    vec3 cRed    = vec3(0.82, 0.03, 0.18);   // 深紅の石目
-    vec3 cBlue   = vec3(0.10, 0.03, 0.95);   // 深青の石目
-    vec3 cPurple = vec3(0.44, 0.04, 0.68);   // #6F09AE（交差部）
-    vec3 cShine  = vec3(0.92, 0.60, 1.00);   // ラベンダー白（最輝点）
-
-    // 下地: rawR / rawB でごく微妙な石の色むらを付ける（追加コストなし）
-    float stoneVar = (rawR * 0.12 + rawB * 0.08) * 0.5 + 0.5;
-    vec3  col = mix(cBase, cBase * 1.9, stoneVar * stoneVar * 0.5);
-
-    // 赤・青の石目を重ねる
-    col = mix(col, cRed,  vR);
-    col = mix(col, cBlue, vB);
-
-    // 交差部: vR * vB は両方の石目が重なる場所でのみ大きくなる
-    // → 赤と青が出会う瞬間に #6F09AE の紫が浮かぶ
-    float cross = vR * vB;
-    col = mix(col, cPurple, clamp(cross * 5.5, 0.0, 0.90));
-
-    // 最輝点（石目の中心線が交わる点）→ ラベンダー白でキラリと光る
-    col = mix(col, cShine, clamp(cross * cross * 14.0, 0.0, 0.72));
-
-    // ─── ビネット ──────────────────────────────────────────────────────────────
-    vec2  c   = uv - 0.5;
-    float vig = clamp(1.0 - dot(c, c) * 1.4, 0.0, 1.0);
-    col *= vig;
-
-    fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+    fragColor = vec4(finalCol, 1.0);
 }

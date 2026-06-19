@@ -1,54 +1,53 @@
 #include <flutter/runtime_effect.glsl>
 
 uniform vec2 uSize;
-uniform float uTime;
-uniform float uNoiseIntensity; // 0.0(通常) 〜 1.0(ノイズ発生)
+uniform float uTime;           
+uniform float uNoiseIntensity; 
 uniform sampler2D uTexture;
 
 out vec4 fragColor;
 
-// 擬似ランダムノイズを生成する関数
-float noise(vec2 st) {
-    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
 void main() {
     vec2 uv = FlutterFragCoord().xy / uSize;
     
-    float wave = 0.0;
-    float shift = 0.0012; // 目の負担を減らすため、通常時のRGBズレ（にじみ）も少しマイルドに
+    // 1. 画面の中心からの距離を計算（周辺ボケを作るため）
+    vec2 center = vec2(0.5, 0.5);
+    vec2 toCenter = uv - center;
+    float dist = length(toCenter); // 中心から離れるほど大きくなる値 (0.0 〜 約0.7)
     
-    // ノイズ発生時（一瞬だけパチッとさせる処理）
-    if (uNoiseIntensity > 0.0) {
-        // 横方向の瞬間的なブレ
-        float stripe = noise(vec2(floor(uv.y * 15.0), uTime));
-        if (stripe > 0.4) {
-            wave = (noise(vec2(uTime)) - 0.5) * 0.012 * uNoiseIntensity;
-        }
-        
-        // 色収差を一瞬強くする
-        shift += 0.004 * uNoiseIntensity * noise(vec2(uTime));
-    }
+    // 💡 【外側の強さを 0.005 に抑える調整】
+    // 後ろの加算値を 0.010 ➔ 0.0054 に下げました。
+    // これにより、中心付近の「0.0012」のにじみを維持したまま、
+    // 最も離れた四隅でも強さが「約0.005」を狙う、非常に上品な【 内 ＜ 外 】が完成します。
+    float intensity = (0.0012 / max(dist, 0.001)) + 0.0054;
+    vec2 direction = toCenter * intensity; 
     
-    // サンプリング（画像の切り出し）
-    float r = texture(uTexture, vec2(uv.x + shift + wave, uv.y)).r;
-    float g = texture(uTexture, vec2(uv.x + wave,         uv.y)).g;
-    float b = texture(uTexture, vec2(uv.x - shift + wave, uv.y)).b;
+    // 3. 【色収差 ＋ 擬似レンズブラー】（構造は元のまま維持）
+    float r = 0.0;
+    float g = 0.0;
+    float b = 0.0;
     
-    // ❌ 【完全削除】目を疲れさせる原因だった「黒い横線（走査線）」の処理はすべてカットしました！
+    // 赤チャンネル：外側に大きく広げてぼかす
+    r += texture(uTexture, uv + direction * 1.5).r * 0.4;
+    r += texture(uTexture, uv + direction * 1.0).r * 0.3;
+    r += texture(uTexture, uv + direction * 0.5).r * 0.2;
+    r += texture(uTexture, uv).r * 0.1;
     
-    // 画面全体へのパチパチ砂嵐ノイズ（ノイズ発生時のみ）
-    if (uNoiseIntensity > 0.0) {
-        float n = (noise(uv + uTime) - 0.5) * 0.05 * uNoiseIntensity;
-        r += n; g += n; b += n;
-    }
+    // 緑チャンネル：中心付近に留めて芯を作る
+    g += texture(uTexture, uv + direction * 0.5).g * 0.2;
+    g += texture(uTexture, uv).g * 0.6;
+    g += texture(uTexture, uv - direction * 0.5).g * 0.2;
     
-    // 💡 【新規実装】全体的にとても薄い黒や茶色のフィルタ（ウォーム・シネマトーン）
-    // 全体の明るさをわずかに落とし（薄い黒ベール）、青み(b)を少し強めに抑えることで、
-    // フィルムカメラのような、ほんのり温かみのある茶色（セピア調）のニュアンスを出します。
-    r = r * 0.96 + 0.025; // 赤みをほんのり残す
-    g = g * 0.93 + 0.018; // 緑をブレンド
-    b = b * 0.84 + 0.005; // 青を落として黄色〜茶色寄りにシフト
+    // 青チャンネル：内側に大きく狭めてぼかす
+    b += texture(uTexture, uv).b * 0.1;
+    b += texture(uTexture, uv - direction * 0.5).b * 0.2;
+    b += texture(uTexture, uv - direction * 1.0).b * 0.3;
+    b += texture(uTexture, uv - direction * 1.5).b * 0.4;
+
+    // 4. 前回の「薄い黒・茶色のヴィンテージトーン」を維持
+    r = r * 0.96 + 0.025;
+    g = g * 0.93 + 0.018;
+    b = b * 0.84 + 0.005;
     
     fragColor = vec4(r, g, b, 1.0);
 }

@@ -183,6 +183,10 @@ class _MyAppState extends State<MyApp> {
             },
             // 振り子動作はアシンクロン戦のみの難易度調整。ユガロック戦は肩・肘を固定する。
             enablePendulum: _currentStage == BattleStage.asyncron,
+            backgroundImagePath: switch (_currentStage) {
+              BattleStage.yugarock => 'assets/bg/yugarock-battle.png',
+              BattleStage.asyncron => 'assets/bg/asyncron-battle.png',
+            },
           ),
           AppScreen.result => ResultScreen(
             result: _currentResult,

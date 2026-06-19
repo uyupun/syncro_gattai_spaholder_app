@@ -84,7 +84,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _playBgm('title.mp3');
+    FlameAudio.updatePrefix('assets/');
+    _playBgm('bgm/title.mp3');
   }
 
   @override
@@ -100,13 +101,17 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _startEnemyIntro() {
+    _playBgm('bgm/yugarock-title.mp3');
     setState(() {
       _currentScreen = AppScreen.enemyIntro;
     });
   }
 
   void _startBattle() {
-    _playBgm('game.mp3');
+    _playBgm(switch (_currentStage) {
+      BattleStage.yugarock => 'bgm/yugarock-battle.mp3',
+      BattleStage.asyncron => 'bgm/asyncron-battle.mp3',
+    });
     setState(() {
       _currentScreen = AppScreen.game;
     });
@@ -115,11 +120,13 @@ class _MyAppState extends State<MyApp> {
   void _onWin() {
     switch (_currentStage) {
       case BattleStage.yugarock:
+        _playBgm('bgm/asyncron-title.mp3');
         setState(() {
           _currentStage = BattleStage.asyncron;
           _currentScreen = AppScreen.enemyIntro;
         });
       case BattleStage.asyncron:
+        _playBgm('bgm/victory.mp3');
         setState(() {
           _currentStage = BattleStage.yugarock;
           _currentResult = GameResult.allClear;
@@ -129,18 +136,23 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _onLose() {
+    final result = switch (_currentStage) {
+      BattleStage.yugarock => GameResult.yugarockLose,
+      BattleStage.asyncron => GameResult.asyncronLose,
+    };
+    _playBgm(switch (result) {
+      GameResult.yugarockLose => 'bgm/defeat.mp3',
+      GameResult.asyncronLose || GameResult.allClear => 'bgm/victory.mp3',
+    });
     setState(() {
-      _currentResult = switch (_currentStage) {
-        BattleStage.yugarock => GameResult.yugarockLose,
-        BattleStage.asyncron => GameResult.asyncronLose,
-      };
+      _currentResult = result;
       _currentStage = BattleStage.yugarock;
       _currentScreen = AppScreen.result;
     });
   }
 
   void _returnToTitle() {
-    _playBgm('title.mp3');
+    _playBgm('bgm/title.mp3');
     setState(() {
       _currentStage = BattleStage.yugarock;
       _currentScreen = AppScreen.title;

@@ -2,13 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flame/components.dart';
-import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
 import '../interfaces/ble_service.dart';
 import '../models/accel_data.dart';
-import '../resources/game_audio.dart';
 import '../resources/game_image.dart';
 import 'actions_config.dart';
 import 'arm_layout_config.dart';
@@ -352,8 +350,6 @@ class RobotArmGame extends Forge2DGame {
         onWin?.call();
       }),
     );
-    FlameAudio.bgm.stop();
-    FlameAudio.bgm.play(GameAudio.clear.path);
   }
 
   /// ユガロック戦/アシンクロン戦共通の実戦闘ロジック。

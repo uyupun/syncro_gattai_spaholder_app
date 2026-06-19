@@ -29,7 +29,6 @@ flutter:
     - assets/shaders/retro_filter.frag
   assets:
     - assets/images/
-    - assets/audio/
     - assets/bg/
     - assets/bgm/
     - assets/illust/

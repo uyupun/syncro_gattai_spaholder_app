@@ -356,6 +356,20 @@ class RobotArmGame extends Forge2DGame {
     );
   }
 
+  void debugAttack() {
+    final enemy = enemies.first;
+    final damage = 20.0;
+    enemy.takeDamage(damage);
+    enemyHp.value = enemy.hp;
+    debugPrint(
+      '[Battle] ${_actionsConfig.synchroAttack.nameJa}がヒット! '
+      'damage=$damage, enemyHp=${enemy.hp}',
+    );
+    if (enemy.hp <= 0) {
+      _triggerWin(enemy);
+    }
+  }
+
   /// シンクロアタックで伸ばしたドリルが敵に当たった時点でダメージを与える
   void _checkSynchroAttackHit() {
     if (_isCleared || _pendingAttackDamage == null || enemies.isEmpty) return;

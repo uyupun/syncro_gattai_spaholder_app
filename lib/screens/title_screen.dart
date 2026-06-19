@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../interfaces/ble_service.dart';
 import '../models/ble_device_role.dart';
+import '../resources/game_se.dart';
 import '../widgets/connect_button.dart';
 import '../widgets/marble_background.dart';
 import '../widgets/outlined_text.dart';
@@ -58,22 +59,26 @@ class _TitleScreenState extends State<TitleScreen> {
           if (_blueState != _ConnectionUiState.connected) {
             _blueState = _ConnectionUiState.connected;
             _showMessage(BleDeviceRole.blue, '接続しました');
+            GameSe.connectComplete.play();
           }
         } else if (_blueState == _ConnectionUiState.connected ||
             _blueState == _ConnectionUiState.disconnecting) {
           _blueState = _ConnectionUiState.idle;
           _showMessage(BleDeviceRole.blue, '切断完了');
+          GameSe.disconnectComplete.play();
         }
 
         if (roles.contains(BleDeviceRole.red)) {
           if (_redState != _ConnectionUiState.connected) {
             _redState = _ConnectionUiState.connected;
             _showMessage(BleDeviceRole.red, '接続しました');
+            GameSe.connectComplete.play();
           }
         } else if (_redState == _ConnectionUiState.connected ||
             _redState == _ConnectionUiState.disconnecting) {
           _redState = _ConnectionUiState.idle;
           _showMessage(BleDeviceRole.red, '切断完了');
+          GameSe.disconnectComplete.play();
         }
       });
     });
@@ -135,6 +140,7 @@ class _TitleScreenState extends State<TitleScreen> {
   }
 
   Future<void> _connect(BleDeviceRole role) async {
+    GameSe.connectButton.play();
     _setState(role, _ConnectionUiState.connecting);
 
     try {
@@ -151,6 +157,7 @@ class _TitleScreenState extends State<TitleScreen> {
   }
 
   Future<void> _disconnect(BleDeviceRole role) async {
+    GameSe.disconnectButton.play();
     _setState(role, _ConnectionUiState.disconnecting);
 
     try {
@@ -263,7 +270,10 @@ class _TitleScreenState extends State<TitleScreen> {
                   StartButton(
                     label: '出動',
                     disabled: !_canStart,
-                    onTap: widget.onStart,
+                    onTap: () {
+                      GameSe.sortieButton.play();
+                      widget.onStart();
+                    },
                   ),
                   _buildConnectButton(
                     color: ConnectButtonColor.red,

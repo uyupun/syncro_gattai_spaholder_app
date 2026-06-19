@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../interfaces/ble_service.dart';
 import '../models/accel_data.dart';
 import '../resources/game_image.dart';
+import '../resources/game_se.dart';
 import 'actions_config.dart';
 import 'arm_layout_config.dart';
 import 'combat/enemy_action_scheduler.dart';
@@ -119,6 +120,9 @@ class RobotArmGame extends Forge2DGame {
   // 敗北判定用
   bool _isDefeated = false;
   final ValueNotifier<bool> showDefeatMessage = ValueNotifier(false);
+
+  // HP低下SE再生済みフラグ(25%以下で1回だけ鳴らす)
+  bool _hpLowPlayed = false;
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -425,6 +429,7 @@ class RobotArmGame extends Forge2DGame {
           '(chargeLevel=$chargeLevel, '
           'multiplier=$multiplier, damage=$damage) - ドリル始動',
         );
+        GameSe.syncroAttack.play();
         _showPlayerActionLabel(
           _actionsConfig.synchroAttack.nameJa,
           duration: Duration(
@@ -435,6 +440,7 @@ class RobotArmGame extends Forge2DGame {
       case PlayerActionType.guard:
         _guardTimer = _guardDuration;
         debugPrint('[Battle] スパホルダー: ${_actionsConfig.synchroGuard.nameJa}');
+        GameSe.syncroGuard.play();
         _showPlayerActionLabel(
           _actionsConfig.synchroGuard.nameJa,
           duration: Duration(milliseconds: (_guardDuration * 1000).toInt()),
@@ -445,6 +451,7 @@ class RobotArmGame extends Forge2DGame {
           '[Battle] スパホルダー: ${_actionsConfig.synchroCharge.nameJa} '
           '(chargeLevel=${playerResult.chargeLevel})',
         );
+        GameSe.syncroCharge.play();
         _showPlayerActionLabel(
           _actionsConfig.synchroCharge.nameJa,
           duration: Duration(
@@ -460,7 +467,8 @@ class RobotArmGame extends Forge2DGame {
       final enemyActions = enablePendulum
           ? _actionsConfig.asyncronActions
           : _actionsConfig.yugarockActions;
-      final action = enemyActions[_random.nextInt(enemyActions.length)];
+      final actionIdx = _random.nextInt(enemyActions.length);
+      final action = enemyActions[actionIdx];
       final isGuarding = _guardTimer > 0;
       var damage = action.power.toDouble();
       if (isGuarding) {
@@ -471,6 +479,10 @@ class RobotArmGame extends Forge2DGame {
       }
       shoulder.takeDamage(damage);
       playerHp.value = shoulder.hp;
+      if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
+        _hpLowPlayed = true;
+        GameSe.hpLow.play();
+      }
       if (damage > 0) {
         unawaited(
           bleService.sendVibration((damage * 2).toInt()).catchError((Object e) {
@@ -483,6 +495,10 @@ class RobotArmGame extends Forge2DGame {
         '(damage=$damage, guarded=$isGuarding, '
         'playerHp=${shoulder.hp})',
       );
+      final enemySes = enablePendulum
+          ? [GameSe.asyncStream, GameSe.asyncVacuum]
+          : [GameSe.yugarockRoll, GameSe.yugarockFillIn];
+      enemySes[actionIdx].play();
       _showEnemyActionLabel(action.nameJa);
     }
   }

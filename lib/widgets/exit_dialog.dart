@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../resources/game_se.dart';
 import 'outline_button.dart';
 import 'primary_button.dart';
 
@@ -41,9 +42,21 @@ class ExitDialog extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                OutlineButton(label: continueLabel, onTap: onContinue),
+                OutlineButton(
+                  label: continueLabel,
+                  onTap: () {
+                    GameSe.keepFightingButton.play();
+                    onContinue();
+                  },
+                ),
                 const SizedBox(width: 40),
-                PrimaryButton(label: exitLabel, onTap: onExit),
+                PrimaryButton(
+                  label: exitLabel,
+                  onTap: () {
+                    GameSe.giveUpButton.play();
+                    onExit();
+                  },
+                ),
               ],
             ),
           ],

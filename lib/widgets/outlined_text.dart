@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class OutlinedText extends StatelessWidget {
   final String text;
   final double fontSize;
+  final double strokeWidth;
 
-  const OutlinedText({super.key, required this.text, this.fontSize = 16});
+  const OutlinedText({
+    super.key,
+    required this.text,
+    this.fontSize = 16,
+    this.strokeWidth = 4,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +28,7 @@ class OutlinedText extends StatelessWidget {
           style: style.copyWith(
             foreground: Paint()
               ..style = PaintingStyle.stroke
-              ..strokeWidth = 4
+              ..strokeWidth = strokeWidth
               ..color = const Color(0xFFF5F5F5),
           ),
         ),

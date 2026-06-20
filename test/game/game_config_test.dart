@@ -14,7 +14,7 @@ void main() {
       expect(config.zoom, 20.0);
       expect(config.shoulderTorque, 8000.0);
       expect(config.elbowTorque, 15000.0);
-      expect(config.armLength, 12.0);
+      expect(config.armLength, 13.5);
       expect(config.shoulderPos.x, -10);
       expect(config.shoulderPos.y, -7);
       expect(config.tipRadius, 0.8);
@@ -23,8 +23,8 @@ void main() {
       expect(config.randomChangeInterval, 0.3);
       expect(config.shoulderSpeedRange, 24.0);
       expect(config.elbowSpeedRange, 36.0);
-      expect(config.elbowBentAngle, 2.4);
-      expect(config.yugarockArmAngleOffsetDeg, 15.0);
+      expect(config.elbowBentAngle, 0);
+      expect(config.yugarockArmAngleOffsetDeg, 20.0);
     });
 
     test('defaultConfig でデフォルト値が返る', () {

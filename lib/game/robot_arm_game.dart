@@ -784,9 +784,6 @@ class RobotArmGame extends Forge2DGame {
   @override
   void render(Canvas canvas) {
     if (_backgroundSprite != null) {
-      final paint = Paint()..color = Colors.white.withValues(alpha: 0.5);
-      canvas.saveLayer(null, paint);
-
       final screenSize = size;
       final spriteSize = _backgroundSprite!.srcSize;
       final aspectRatio = spriteSize.x / spriteSize.y;
@@ -801,8 +798,6 @@ class RobotArmGame extends Forge2DGame {
         anchor: Anchor.center,
         position: screenSize / 2,
       );
-
-      canvas.restore();
     }
 
     super.render(canvas);

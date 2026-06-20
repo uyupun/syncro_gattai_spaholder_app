@@ -56,6 +56,10 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
     _currentHp = (_currentHp - amount).clamp(0, _maxHp);
   }
 
+  void heal(double amount) {
+    _currentHp = (_currentHp + amount).clamp(0, _maxHp);
+  }
+
   void onHit() {}
 
   /// 技インデックスに対応するスプライトを1秒間表示する

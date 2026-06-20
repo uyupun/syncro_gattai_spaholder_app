@@ -597,6 +597,14 @@ class RobotArmGame extends Forge2DGame {
       }
       shoulder.takeDamage(damage);
       playerHp.value = shoulder.hp;
+      // アシンクバキューム: アシンクロン自身がダメージの半分(繰り上げ)を回復
+      if (enablePendulum &&
+          actionIdx == 1 &&
+          damage > 0 &&
+          enemies.isNotEmpty) {
+        enemies.first.heal((damage / 2).ceilToDouble());
+        enemyHp.value = enemies.first.hp;
+      }
       if (damage > 0) _startLunge(-1.0);
       if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
         _hpLowPlayed = true;

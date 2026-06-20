@@ -572,7 +572,7 @@ class RobotArmGame extends Forge2DGame {
       }
       shoulder.takeDamage(damage);
       playerHp.value = shoulder.hp;
-      _startLunge(-1.0);
+      if (damage > 0) _startLunge(-1.0);
       if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
         _hpLowPlayed = true;
         GameSe.hpLow.play();

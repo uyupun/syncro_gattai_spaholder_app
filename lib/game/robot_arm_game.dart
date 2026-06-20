@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
@@ -168,6 +169,7 @@ class RobotArmGame extends Forge2DGame {
 
   // HP低下SE再生済みフラグ(25%以下で1回だけ鳴らす)
   bool _hpLowPlayed = false;
+  AudioPlayer? _hpLowPlayer;
 
   // 背景画像
   Sprite? _backgroundSprite;
@@ -344,6 +346,7 @@ class RobotArmGame extends Forge2DGame {
   void onRemove() {
     _accelDataSub?.cancel();
     _connectedDevicesSub?.cancel();
+    _hpLowPlayer?.stop();
     super.onRemove();
   }
 
@@ -461,6 +464,7 @@ class RobotArmGame extends Forge2DGame {
     _isCleared = true;
     _physicsStoppedOnHit = true;
 
+    _hpLowPlayer?.stop();
     _stopAllPhysics();
 
     // 敵を45度傾けて倒れた姿勢にする(スパホルダーとは逆向き)
@@ -596,7 +600,7 @@ class RobotArmGame extends Forge2DGame {
       if (damage > 0) _startLunge(-1.0);
       if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
         _hpLowPlayed = true;
-        GameSe.hpLow.play();
+        unawaited(GameSe.hpLow.loop().then((p) => _hpLowPlayer = p));
       }
       if (damage > 0) {
         unawaited(
@@ -806,6 +810,7 @@ class RobotArmGame extends Forge2DGame {
   void _handleDefeat() {
     if (_isDefeated) return;
     _isDefeated = true;
+    _hpLowPlayer?.stop();
     _stopAllPhysics();
 
     // 敗北時、スパホルダーを構成する各パーツを-45度傾けて倒れた姿勢にする

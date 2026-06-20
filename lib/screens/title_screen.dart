@@ -219,7 +219,10 @@ class _TitleScreenState extends State<TitleScreen> {
           onTap: _onTapFor(role, state),
         ),
         if (message != null)
-          Positioned(top: -36, child: OutlinedText(text: message)),
+          Positioned(
+            top: -36,
+            child: OutlinedText(text: message, fontSize: 20),
+          ),
       ],
     );
   }
@@ -233,7 +236,7 @@ class _TitleScreenState extends State<TitleScreen> {
           children: [
             Image.asset(
               'assets/images/title.png',
-              width: 500,
+              width: 600,
               height: 230,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {

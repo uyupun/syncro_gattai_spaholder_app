@@ -26,7 +26,7 @@ class ResultScreen extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             switch (result) {
-              GameResult.yugarockLose => '負けてしまった...',
+              GameResult.yugarockLose => '敗北...！',
               GameResult.asyncronLose => '勝利！',
               GameResult.allClear => '完全勝利！',
             },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../widgets/outlined_text.dart';
 
 class EnemyIntroScreen extends StatefulWidget {
   final BattleStage stage;
@@ -44,14 +45,10 @@ class _EnemyIntroScreenState extends State<EnemyIntroScreen> {
               ),
             ),
           Center(
-            child: Text(
-              _message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4,
-              ),
+            child: OutlinedText(
+              text: _message,
+              fontSize: 40,
+              strokeWidth: widget.stage == BattleStage.asyncron ? 8 : 4,
             ),
           ),
         ],

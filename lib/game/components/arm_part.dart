@@ -58,6 +58,10 @@ class ArmPart extends BodyComponent implements HpReadable, Damageable {
     _currentHp = (_currentHp - amount).clamp(0, _maxHp);
   }
 
+  void heal(double amount) {
+    _currentHp = (_currentHp + amount).clamp(0, _maxHp);
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();

@@ -166,7 +166,7 @@ class _GameWrapperState extends State<GameWrapper> {
                   if (label == null) return const SizedBox.shrink();
                   return ActionLabelText(
                     label: label,
-                    colors: const [Color(0xFFFFFB05), Color(0xFFFCC727)],
+                    colors: const [Color(0xFFFF32F8), Color(0xFF730DB2)],
                   );
                 },
               ),
@@ -194,8 +194,8 @@ class _GameWrapperState extends State<GameWrapper> {
                   return ActionLabelText(
                     label: label,
                     colors: widget.enablePendulum
-                        ? const [Color(0xFFFF32F8), Color(0xFF730DB2)]
-                        : const [Color(0xFF86D5FF), Color(0xFF2732FC)],
+                        ? const [Color(0xFFFFBB00), Color(0xFFFF5500)]
+                        : const [Color(0xFF88FF44), Color(0xFF00AA00)],
                   );
                 },
               ),
@@ -209,7 +209,7 @@ class _GameWrapperState extends State<GameWrapper> {
                   if (label == null) return const SizedBox.shrink();
                   return ActionLabelText(
                     label: label,
-                    colors: const [Color(0xFFFF32F8), Color(0xFF730DB2)],
+                    colors: const [Color(0xFFFFBB00), Color(0xFFFF5500)],
                   );
                 },
               ),

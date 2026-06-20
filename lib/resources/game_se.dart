@@ -21,4 +21,6 @@ enum GameSe {
   const GameSe(this.path);
 
   void play() => FlameAudio.play(path);
+
+  Future<AudioPlayer> loop() => FlameAudio.loop(path);
 }

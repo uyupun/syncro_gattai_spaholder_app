@@ -464,6 +464,7 @@ class RobotArmGame extends Forge2DGame {
           debugPrint('sendVibration error: $e');
         }),
       );
+      _startLunge(-1.0);
     }
 
     if (_guardTimer > 0) {

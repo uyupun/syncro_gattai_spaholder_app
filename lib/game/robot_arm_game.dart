@@ -138,6 +138,21 @@ class RobotArmGame extends Forge2DGame {
   late double _enemyBasePosY;
   static const double _enemyLungeDuration = 0.2;
 
+  // ボブアニメーション(スパホルダー)
+  double _playerBobTime = 0.0;
+  double _playerBobYOffset = 0.0;
+  double _prevPlayerBobYOffset = 0.0;
+  static const double _playerBobAmplitude = 0.2;
+  static const double _playerBobPeriodSec = 2.0;
+
+  // ボブアニメーション(敵)
+  double _enemyBobTime = 0.0;
+  double _enemyBobYOffset = 0.0;
+  double _prevEnemyBobYOffset = 0.0;
+  double _enemyActingTimer = 0.0;
+  static const double _enemyBobAmplitude = 0.2;
+  static const double _enemyBobPeriodSec = 2.5;
+
   // ヒットチェック用
   final List<Enemy> enemies = [];
   bool _isCleared = false;
@@ -541,6 +556,7 @@ class RobotArmGame extends Forge2DGame {
     playerGuardActive.value = _guardTimer > 0;
 
     if (_enemyActionScheduler.update(dt)) {
+      _enemyActingTimer = 2.0;
       final enemyActions = enablePendulum
           ? _actionsConfig.asyncronActions
           : _actionsConfig.yugarockActions;
@@ -644,23 +660,37 @@ class RobotArmGame extends Forge2DGame {
       _lungeXOffset = 0.0;
     }
 
-    final delta = _lungeXOffset - _prevLungeXOffset;
-    if (delta != 0.0) {
+    final isActing =
+        _isStraightening || _chargeActiveTimer > 0 || _attackActiveTimer > 0;
+    if (!isActing) {
+      _playerBobTime += dt;
+      _playerBobYOffset =
+          _playerBobAmplitude *
+          sin(2 * pi / _playerBobPeriodSec * _playerBobTime);
+    }
+
+    final xDelta = _lungeXOffset - _prevLungeXOffset;
+    final yDelta = _playerBobYOffset - _prevPlayerBobYOffset;
+    if (xDelta != 0.0 || yDelta != 0.0) {
       shoulder.body.setTransform(
-        Vector2(_shoulderBasePosX + _lungeXOffset, _shoulderBasePosY),
+        Vector2(
+          _shoulderBasePosX + _lungeXOffset,
+          _shoulderBasePosY + _playerBobYOffset,
+        ),
         shoulder.body.angle,
       );
-      final lunge = Vector2(delta, 0);
+      final moveVec = Vector2(xDelta, yDelta);
       upperArm.body.setTransform(
-        upperArm.body.position + lunge,
+        upperArm.body.position + moveVec,
         upperArm.body.angle,
       );
       foreArm.body.setTransform(
-        foreArm.body.position + lunge,
+        foreArm.body.position + moveVec,
         foreArm.body.angle,
       );
     }
     _prevLungeXOffset = _lungeXOffset;
+    _prevPlayerBobYOffset = _playerBobYOffset;
   }
 
   void _startEnemyLunge(double distance) {
@@ -680,14 +710,27 @@ class RobotArmGame extends Forge2DGame {
       _enemyLungeXOffset = 0.0;
     }
 
-    final delta = _enemyLungeXOffset - _prevEnemyLungeXOffset;
-    if (delta != 0.0 && enemies.isNotEmpty) {
+    if (_enemyActingTimer > 0) {
+      _enemyActingTimer = (_enemyActingTimer - dt).clamp(0.0, 2.0);
+    } else {
+      _enemyBobTime += dt;
+      _enemyBobYOffset =
+          _enemyBobAmplitude * sin(2 * pi / _enemyBobPeriodSec * _enemyBobTime);
+    }
+
+    final xDelta = _enemyLungeXOffset - _prevEnemyLungeXOffset;
+    final yDelta = _enemyBobYOffset - _prevEnemyBobYOffset;
+    if ((xDelta != 0.0 || yDelta != 0.0) && enemies.isNotEmpty) {
       enemies.first.body.setTransform(
-        Vector2(_enemyBasePosX + _enemyLungeXOffset, _enemyBasePosY),
+        Vector2(
+          _enemyBasePosX + _enemyLungeXOffset,
+          _enemyBasePosY + _enemyBobYOffset,
+        ),
         enemies.first.body.angle,
       );
     }
     _prevEnemyLungeXOffset = _enemyLungeXOffset;
+    _prevEnemyBobYOffset = _enemyBobYOffset;
   }
 
   void _stopAllPhysics() {

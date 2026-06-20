@@ -153,6 +153,10 @@ class RobotArmGame extends Forge2DGame {
   static const double _enemyBobAmplitude = 0.2;
   static const double _enemyBobPeriodSec = 2.5;
 
+  // fill_in.png 表示中はスパホルダーと同じ Y に配置
+  bool _enemyFillInActive = false;
+  bool _prevEnemyFillInActive = false;
+
   // ヒットチェック用
   final List<Enemy> enemies = [];
   bool _isCleared = false;
@@ -225,8 +229,19 @@ class RobotArmGame extends Forge2DGame {
       );
     }
 
+    // --- 画面下端に各キャラクターを配置するためのYオフセットを計算 ---
+    final screenBottomY = size.y / 2 / _config.zoom;
+    final sh0 = _layout.shoulder;
+    final shAnchorY = sh0.imageAnchorY ?? 0.5;
+    final characterBottomY =
+        sh0.positionY + _layout.imageRenderHeight * (1.0 - shAnchorY);
+    // 正値 = 画面外(下方向)にはみ出すオフセット
+    const characterBottomOffset = 0.5;
+    final sceneYOffset =
+        (screenBottomY + characterBottomOffset) - characterBottomY;
+
     // --- 敵を配置 ---
-    await _spawnEnemies();
+    await _spawnEnemies(screenBottomY: screenBottomY);
 
     // --- パーツ生成 ---
     final imageRenderSize = Vector2(
@@ -236,7 +251,7 @@ class RobotArmGame extends Forge2DGame {
 
     final ua = _layout.upperArm;
     upperArm = ArmPart(
-      position: Vector2(ua.positionX, ua.positionY),
+      position: Vector2(ua.positionX, ua.positionY + sceneYOffset),
       size: Vector2(ua.sizeX, ua.sizeY),
       isStatic: false,
       color: Colors.blueAccent,
@@ -250,7 +265,7 @@ class RobotArmGame extends Forge2DGame {
 
     final fa = _layout.foreArm;
     foreArm = ArmPart(
-      position: Vector2(fa.positionX, fa.positionY),
+      position: Vector2(fa.positionX, fa.positionY + sceneYOffset),
       size: Vector2(fa.sizeX, fa.sizeY),
       isStatic: false,
       color: Colors.lightBlueAccent,
@@ -267,7 +282,7 @@ class RobotArmGame extends Forge2DGame {
 
     final sh = _layout.shoulder;
     shoulder = ArmPart(
-      position: Vector2(sh.positionX, sh.positionY),
+      position: Vector2(sh.positionX, sh.positionY + sceneYOffset),
       size: Vector2(sh.sizeX, sh.sizeY),
       isStatic: true,
       color: Colors.grey,
@@ -280,7 +295,7 @@ class RobotArmGame extends Forge2DGame {
     );
     await world.add(shoulder);
     _shoulderBasePosX = sh.positionX;
-    _shoulderBasePosY = sh.positionY;
+    _shoulderBasePosY = sh.positionY + sceneYOffset;
 
     // --- ジョイント生成 ---
     final sj = _layout.shoulderJoint;
@@ -349,20 +364,20 @@ class RobotArmGame extends Forge2DGame {
         Vector2(_layout.tipOffsetX, _layout.tipOffsetY) -
         Vector2(sj.anchorBX, sj.anchorBY);
 
-    final enemyPos = Vector2(
-      _config.shoulderPos.x + _config.armLength + _config.enemyRadius,
-      0,
-    );
-    final enemyDir = enemyPos - shoulderPivot;
+    final enemyDir = enemies.first.body.position - shoulderPivot;
 
     return atan2(enemyDir.y, enemyDir.x) -
         atan2(straightTipDir.y, straightTipDir.x);
   }
 
-  Future<void> _spawnEnemies() async {
+  Future<void> _spawnEnemies({required double screenBottomY}) async {
+    final enemyScale = enablePendulum
+        ? _enemyConfig.asyncronSpriteScale
+        : _enemyConfig.yugarockSpriteScale;
+    final enemySpriteHalfH = _config.enemyRadius * enemyScale / 2;
     final enemyPos = Vector2(
       _config.shoulderPos.x + _config.armLength + _config.enemyRadius,
-      0,
+      screenBottomY - enemySpriteHalfH,
     );
     final enemy = Enemy(
       position: enemyPos,
@@ -373,6 +388,12 @@ class RobotArmGame extends Forge2DGame {
       actionSpriteScale: enablePendulum
           ? null
           : _enemyConfig.asyncronSpriteScale,
+      actionSpriteScales: enablePendulum
+          ? null
+          : [
+              _enemyConfig.yugarockSpriteScale,
+              _enemyConfig.yugarockSpriteScale * 0.8,
+            ],
       maxHp: _enemyHpConfig.maxHp,
       spritePath: enablePendulum
           ? GameImage.asyncron.path
@@ -596,8 +617,12 @@ class RobotArmGame extends Forge2DGame {
       if (enemies.isNotEmpty) {
         final e = enemies.first;
         e.showActionSprite(actionIdx);
+        if (!enablePendulum && actionIdx == 1) _enemyFillInActive = true;
         unawaited(
-          Future.delayed(const Duration(seconds: 2), e.clearActionSprite),
+          Future.delayed(const Duration(seconds: 2), () {
+            e.clearActionSprite();
+            _enemyFillInActive = false;
+          }),
         );
       }
       _showEnemyActionLabel(action.nameJa);
@@ -718,19 +743,25 @@ class RobotArmGame extends Forge2DGame {
           _enemyBobAmplitude * sin(2 * pi / _enemyBobPeriodSec * _enemyBobTime);
     }
 
+    final enemyBaseY = (!enablePendulum && _enemyFillInActive)
+        ? _enemyBasePosY + 1.5
+        : _enemyBasePosY;
     final xDelta = _enemyLungeXOffset - _prevEnemyLungeXOffset;
     final yDelta = _enemyBobYOffset - _prevEnemyBobYOffset;
-    if ((xDelta != 0.0 || yDelta != 0.0) && enemies.isNotEmpty) {
+    final fillInChanged = _enemyFillInActive != _prevEnemyFillInActive;
+    if ((xDelta != 0.0 || yDelta != 0.0 || fillInChanged) &&
+        enemies.isNotEmpty) {
       enemies.first.body.setTransform(
         Vector2(
           _enemyBasePosX + _enemyLungeXOffset,
-          _enemyBasePosY + _enemyBobYOffset,
+          enemyBaseY + _enemyBobYOffset,
         ),
         enemies.first.body.angle,
       );
     }
     _prevEnemyLungeXOffset = _enemyLungeXOffset;
     _prevEnemyBobYOffset = _enemyBobYOffset;
+    _prevEnemyFillInActive = _enemyFillInActive;
   }
 
   void _stopAllPhysics() {

@@ -12,6 +12,7 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
   final double _radius;
   final double _spriteScale;
   final double _actionSpriteScale;
+  final List<double>? _actionSpriteScales;
   final double _maxHp;
   final String _spritePath;
   final List<String> _actionSpritePaths;
@@ -25,6 +26,7 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
     required double radius,
     required double spriteScale,
     double? actionSpriteScale,
+    List<double>? actionSpriteScales,
     double maxHp = 100,
     String? spritePath,
     List<String>? actionSpritePaths,
@@ -32,6 +34,7 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
        _radius = radius,
        _spriteScale = spriteScale,
        _actionSpriteScale = actionSpriteScale ?? spriteScale,
+       _actionSpriteScales = actionSpriteScales,
        _maxHp = maxHp,
        _currentHp = maxHp,
        _spritePath = spritePath ?? GameImage.yugarock.path,
@@ -111,15 +114,24 @@ class Enemy extends BodyComponent implements HpReadable, Damageable {
     canvas.drawCircle(Offset.zero, _radius, hitboxBorder);
 
     if (_currentSprite != null) {
-      final scale = _currentSprite == _normalSprite
-          ? _spriteScale
-          : _actionSpriteScale;
-      final size = _radius * scale;
-      _currentSprite!.render(
-        canvas,
-        size: Vector2.all(size),
-        anchor: Anchor.center,
-      );
+      double scale;
+      if (_currentSprite == _normalSprite) {
+        scale = _spriteScale;
+      } else {
+        final actionIndex = _actionSprites.indexOf(_currentSprite);
+        final scales = _actionSpriteScales;
+        scale =
+            (scales != null && actionIndex >= 0 && actionIndex < scales.length)
+            ? scales[actionIndex]
+            : _actionSpriteScale;
+      }
+      final maxDim = _radius * scale;
+      final src = _currentSprite!.srcSize;
+      final aspectRatio = src.x / src.y;
+      final renderSize = aspectRatio >= 1
+          ? Vector2(maxDim, maxDim / aspectRatio)
+          : Vector2(maxDim * aspectRatio, maxDim);
+      _currentSprite!.render(canvas, size: renderSize, anchor: Anchor.center);
     } else {
       final paint = Paint()..color = Colors.redAccent;
       canvas.drawCircle(Offset.zero, _radius, paint);

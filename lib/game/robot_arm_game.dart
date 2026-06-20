@@ -263,6 +263,7 @@ class RobotArmGame extends Forge2DGame {
           : null,
       imageRenderSize: imageRenderSize,
     );
+    upperArm.priority = 1;
     await world.add(upperArm);
 
     final fa = _layout.foreArm;
@@ -280,6 +281,7 @@ class RobotArmGame extends Forge2DGame {
           : null,
       imageRenderSize: imageRenderSize,
     );
+    foreArm.priority = 0;
     await world.add(foreArm);
 
     final sh = _layout.shoulder;
@@ -295,6 +297,7 @@ class RobotArmGame extends Forge2DGame {
       imageRenderSize: imageRenderSize,
       maxHp: _playerHpConfig.maxHp,
     );
+    shoulder.priority = 2;
     await world.add(shoulder);
     _shoulderBasePosX = sh.positionX;
     _shoulderBasePosY = sh.positionY + sceneYOffset;

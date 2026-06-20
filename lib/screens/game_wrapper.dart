@@ -152,18 +152,6 @@ class _GameWrapperState extends State<GameWrapper> {
                         builder: (context, chargeLevel, _) =>
                             ChargeLevelIndicator(chargeLevel: chargeLevel),
                       ),
-                      const SizedBox(width: 10),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: _game.playerGuardActive,
-                        builder: (context, guardActive, _) {
-                          if (!guardActive) return const SizedBox.shrink();
-                          return SvgPicture.asset(
-                            'assets/images/shield.svg',
-                            width: 14,
-                            height: 16,
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ],

@@ -27,7 +27,7 @@ class ResultScreen extends StatelessWidget {
           child: Text(
             switch (result) {
               GameResult.yugarockLose => '敗北...！',
-              GameResult.asyncronLose => '勝利！',
+              GameResult.asyncronLose => '惜敗...！',
               GameResult.allClear => '完全勝利！',
             },
             style: const TextStyle(

@@ -88,7 +88,7 @@ class _PureShaderRetroState extends State<PureShaderRetro> {
       final boundary =
           _globalKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
-      if (boundary == null || boundary.debugNeedsPaint) return null;
+      if (boundary == null) return null;
       return await boundary.toImage(pixelRatio: 1.0);
     } catch (_) {
       return null;

@@ -503,7 +503,7 @@ class RobotArmGame extends Forge2DGame {
         duration: const Duration(milliseconds: 2500),
       );
       unawaited(
-        bleService.sendVibration(25).catchError((Object e) {
+        bleService.sendVibration(50).catchError((Object e) {
           debugPrint('sendVibration error: $e');
         }),
       );
@@ -615,7 +615,7 @@ class RobotArmGame extends Forge2DGame {
       }
       if (damage > 0) {
         unawaited(
-          bleService.sendVibration((damage * 2).toInt()).catchError((Object e) {
+          bleService.sendVibration((damage * 4).toInt()).catchError((Object e) {
             debugPrint('sendVibration error: $e');
           }),
         );

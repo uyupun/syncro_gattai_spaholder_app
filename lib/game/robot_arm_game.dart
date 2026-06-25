@@ -606,7 +606,7 @@ class RobotArmGame extends Forge2DGame {
           var damage = action.power.toDouble();
           if (isGuarding) {
             final guardRate = 0.5 + _random.nextDouble() * 0.5;
-            damage = (damage * (1 - guardRate)).floorToDouble();
+            damage = (damage * (1 - guardRate)).roundToDouble();
           }
           shoulder.takeDamage(damage);
           playerHp.value = shoulder.hp;

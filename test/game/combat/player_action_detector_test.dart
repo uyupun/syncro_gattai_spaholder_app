@@ -46,17 +46,34 @@ void main() {
 
     test('Y軸(絶対値)がしきい値を超えるとguardを検出する', () {
       final detector = PlayerActionDetector();
-      final result = detector.detect(_both(y: -0.9), _ids);
+      final result = detector.detect(_both(y: -1.2), _ids);
       expect(result.type, PlayerActionType.guard);
     });
 
     test('guard中はisGuardingがtrueになる', () {
       final detector = PlayerActionDetector();
-      detector.detect(_both(y: 0.9), _ids);
+      detector.detect(_both(y: 1.2), _ids);
       expect(detector.isGuarding, true);
 
       detector.detect(_both(y: 0), _ids);
       expect(detector.isGuarding, false);
+    });
+
+    test('複数軸が同時に閾値を超えた場合、値 - 閾値の差分が最大の技を発動する', () {
+      // X: 1.0 - 0.77 = 0.23, Y: 1.1 - 0.95 = 0.15 → Xが最大 → attack
+      final detector1 = PlayerActionDetector();
+      final result1 = detector1.detect(_both(x: 1.0, y: 1.1), _ids);
+      expect(result1.type, PlayerActionType.attack);
+
+      // Y: 1.5 - 0.95 = 0.55, X: 0.8 - 0.77 = 0.03 → Yが最大 → guard
+      final detector2 = PlayerActionDetector();
+      final result2 = detector2.detect(_both(x: 0.8, y: 1.5), _ids);
+      expect(result2.type, PlayerActionType.guard);
+
+      // Z: 2.0 - 1.65 = 0.35, X: 0.78 - 0.77 = 0.01 → Zが最大 → charge
+      final detector3 = PlayerActionDetector();
+      final result3 = detector3.detect(_both(x: 0.78, z: 2.0), _ids);
+      expect(result3.type, PlayerActionType.charge);
     });
 
     test('Z軸がしきい値を超えるとchargeを検出し、チャージレベルが増加する', () {

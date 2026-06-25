@@ -584,63 +584,76 @@ class RobotArmGame extends Forge2DGame {
     playerGuardActive.value = _guardTimer > 0;
 
     if (_enemyActionScheduler.update(dt)) {
-      _enemyActingTimer = 2.0;
       final enemyActions = enablePendulum
           ? _actionsConfig.asyncronActions
           : _actionsConfig.yugarockActions;
       final actionIdx = _random.nextInt(enemyActions.length);
       final action = enemyActions[actionIdx];
-      final isGuarding = _guardTimer > 0;
-      var damage = action.power.toDouble();
-      if (isGuarding) {
-        damage = (damage - _actionsConfig.synchroGuard.power).clamp(
-          0,
-          double.infinity,
-        );
-      }
-      shoulder.takeDamage(damage);
-      playerHp.value = shoulder.hp;
-      // アシンクバキューム: アシンクロン自身がダメージの半分(繰り上げ)を回復
-      if (enablePendulum &&
-          actionIdx == 1 &&
-          damage > 0 &&
-          enemies.isNotEmpty) {
-        enemies.first.heal((damage / 2).ceilToDouble());
-        enemyHp.value = enemies.first.hp;
-      }
-      if (damage > 0) _startLunge(-1.0);
-      if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
-        _hpLowPlayed = true;
-        unawaited(GameSe.hpLow.loop().then((p) => _hpLowPlayer = p));
-      }
-      if (damage > 0) {
-        unawaited(
-          bleService.sendVibration((damage * 4).toInt()).catchError((Object e) {
-            debugPrint('sendVibration error: $e');
-          }),
-        );
-      }
-      debugPrint(
-        '[Battle] ${enablePendulum ? "アシンクロン" : "ユガロック"}: ${action.nameJa} '
-        '(damage=$damage, guarded=$isGuarding, '
-        'playerHp=${shoulder.hp})',
+
+      // 攻撃1秒前に技名を予告表示（予告1秒 + 攻撃後2秒 = 計3秒間表示）
+      _showEnemyActionLabel(
+        action.nameJa,
+        duration: const Duration(seconds: 3),
       );
-      final enemySes = enablePendulum
-          ? [GameSe.asyncStream, GameSe.asyncVacuum]
-          : [GameSe.yugarockRoll, GameSe.yugarockFillIn];
-      enemySes[actionIdx].play();
-      if (enemies.isNotEmpty) {
-        final e = enemies.first;
-        e.showActionSprite(actionIdx);
-        if (!enablePendulum && actionIdx == 1) _enemyFillInActive = true;
-        unawaited(
-          Future.delayed(const Duration(seconds: 2), () {
-            e.clearActionSprite();
-            _enemyFillInActive = false;
-          }),
-        );
-      }
-      _showEnemyActionLabel(action.nameJa);
+
+      // 1秒後に実際の攻撃を発動
+      unawaited(
+        Future.delayed(const Duration(seconds: 1), () {
+          if (_isCleared || _isDefeated) return;
+
+          _enemyActingTimer = 2.0;
+          final isGuarding = _guardTimer > 0;
+          var damage = action.power.toDouble();
+          if (isGuarding) {
+            final guardRate = 0.5 + _random.nextDouble() * 0.5;
+            damage = (damage * (1 - guardRate)).roundToDouble();
+          }
+          shoulder.takeDamage(damage);
+          playerHp.value = shoulder.hp;
+          // アシンクバキューム: アシンクロン自身がダメージの半分(繰り上げ)を回復
+          if (enablePendulum &&
+              actionIdx == 1 &&
+              damage > 0 &&
+              enemies.isNotEmpty) {
+            enemies.first.heal((damage / 2).ceilToDouble());
+            enemyHp.value = enemies.first.hp;
+          }
+          if (damage > 0) _startLunge(-1.0);
+          if (!_hpLowPlayed && playerHp.value <= _playerHpConfig.maxHp * 0.25) {
+            _hpLowPlayed = true;
+            unawaited(GameSe.hpLow.loop().then((p) => _hpLowPlayer = p));
+          }
+          if (damage > 0) {
+            unawaited(
+              bleService.sendVibration((damage * 4).toInt()).catchError((
+                Object e,
+              ) {
+                debugPrint('sendVibration error: $e');
+              }),
+            );
+          }
+          debugPrint(
+            '[Battle] ${enablePendulum ? "アシンクロン" : "ユガロック"}: ${action.nameJa} '
+            '(damage=$damage, guarded=$isGuarding, '
+            'playerHp=${shoulder.hp})',
+          );
+          final enemySes = enablePendulum
+              ? [GameSe.asyncStream, GameSe.asyncVacuum]
+              : [GameSe.yugarockRoll, GameSe.yugarockFillIn];
+          enemySes[actionIdx].play();
+          if (enemies.isNotEmpty) {
+            final e = enemies.first;
+            e.showActionSprite(actionIdx);
+            if (!enablePendulum && actionIdx == 1) _enemyFillInActive = true;
+            unawaited(
+              Future.delayed(const Duration(seconds: 2), () {
+                e.clearActionSprite();
+                _enemyFillInActive = false;
+              }),
+            );
+          }
+        }),
+      );
     }
   }
 
@@ -660,12 +673,15 @@ class RobotArmGame extends Forge2DGame {
     );
   }
 
-  /// 敵の技名を2秒間表示する
-  void _showEnemyActionLabel(String text) {
+  /// 敵の技名を表示する。durationを省略した場合は2秒間表示する。
+  void _showEnemyActionLabel(
+    String text, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
     enemyActionLabel.value = text;
     final generation = ++_enemyLabelGeneration;
     unawaited(
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(duration, () {
         if (_enemyLabelGeneration == generation) {
           enemyActionLabel.value = null;
         }

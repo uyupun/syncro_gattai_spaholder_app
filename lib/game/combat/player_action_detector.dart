@@ -15,7 +15,7 @@ class PlayerActionResult {
 /// BLE加速度センサー(2台分)の値からスパホルダーのシンクロ技の発動を検出する
 class PlayerActionDetector {
   static const double thresholdX = 0.77;
-  static const double thresholdY = 0.95;
+  static const double thresholdY = 1.17;
   static const double thresholdZ = 1.65;
   static const int maxChargeLevel = 5;
 
@@ -42,14 +42,13 @@ class PlayerActionDetector {
     bool isGuarding = false,
     bool isActionLocked = false,
   }) {
-    final x = _bothExceed(accelData, connectedIds, (d) => d.x, thresholdX);
-    final y = _bothExceed(
-      accelData,
-      connectedIds,
-      (d) => d.y.abs(),
-      thresholdY,
-    );
-    final z = _bothExceed(accelData, connectedIds, (d) => d.z, thresholdZ);
+    final xVal = _minAxisValue(accelData, connectedIds, (d) => d.x);
+    final yVal = _minAxisValue(accelData, connectedIds, (d) => d.y.abs());
+    final zVal = _minAxisValue(accelData, connectedIds, (d) => d.z);
+
+    final x = xVal != null && xVal >= thresholdX;
+    final y = yVal != null && yVal >= thresholdY;
+    final z = zVal != null && zVal >= thresholdZ;
 
     final prevX = _prevX;
     final prevY = _prevY;
@@ -62,35 +61,46 @@ class PlayerActionDetector {
       return PlayerActionResult(PlayerActionType.none, _chargeLevel);
     }
 
-    PlayerActionResult result = PlayerActionResult(
-      PlayerActionType.none,
-      _chargeLevel,
-    );
+    // 各軸の立ち上がりエッジと発動条件を確認
+    final xRising = x && !prevX && !isGuarding;
+    final yRising = y && !prevY;
+    final zRising = z && !prevZ && _chargeLevel < maxChargeLevel && !isGuarding;
 
-    if (x && !prevX && !isGuarding) {
-      final level = _chargeLevel;
-      _chargeLevel = 0;
-      result = PlayerActionResult(PlayerActionType.attack, level);
-    } else if (y && !prevY) {
-      result = PlayerActionResult(PlayerActionType.guard, _chargeLevel);
-    } else if (z && !prevZ && _chargeLevel < maxChargeLevel && !isGuarding) {
-      _chargeLevel++;
-      result = PlayerActionResult(PlayerActionType.charge, _chargeLevel);
+    if (!xRising && !yRising && !zRising) {
+      return PlayerActionResult(PlayerActionType.none, _chargeLevel);
     }
 
-    return result;
+    // 複数軸が同時に立ち上がった場合、「値 - 閾値」が最大の軸の技を発動
+    final xExcess = xRising ? xVal - thresholdX : double.negativeInfinity;
+    final yExcess = yRising ? yVal - thresholdY : double.negativeInfinity;
+    final zExcess = zRising ? zVal - thresholdZ : double.negativeInfinity;
+
+    if (xExcess >= yExcess && xExcess >= zExcess) {
+      final level = _chargeLevel;
+      _chargeLevel = 0;
+      return PlayerActionResult(PlayerActionType.attack, level);
+    } else if (yExcess >= zExcess) {
+      return PlayerActionResult(PlayerActionType.guard, _chargeLevel);
+    } else {
+      _chargeLevel++;
+      return PlayerActionResult(PlayerActionType.charge, _chargeLevel);
+    }
   }
 
-  bool _bothExceed(
+  /// 接続デバイス全台の軸値の最小値を返す。2台未満またはデータ欠損時はnullを返す。
+  double? _minAxisValue(
     Map<String, AccelData> accelData,
     List<String> connectedIds,
     double Function(AccelData) axis,
-    double threshold,
   ) {
-    if (connectedIds.length < 2) return false;
-    return connectedIds.every((id) {
+    if (connectedIds.length < 2) return null;
+    double? minVal;
+    for (final id in connectedIds) {
       final data = accelData[id];
-      return data != null && axis(data) >= threshold;
-    });
+      if (data == null) return null;
+      final val = axis(data);
+      if (minVal == null || val < minVal) minVal = val;
+    }
+    return minVal;
   }
 }

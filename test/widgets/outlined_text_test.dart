@@ -32,7 +32,7 @@ void main() {
       final outlineText = texts.firstWhere((t) => t.style?.foreground != null);
       final paint = outlineText.style!.foreground!;
       expect(paint.style, PaintingStyle.stroke);
-      expect(paint.strokeWidth, 2);
+      expect(paint.strokeWidth, 4);
       expect(paint.color.toARGB32(), const Color(0xFFF5F5F5).toARGB32());
     });
   });

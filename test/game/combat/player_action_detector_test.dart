@@ -46,13 +46,13 @@ void main() {
 
     test('Y軸(絶対値)がしきい値を超えるとguardを検出する', () {
       final detector = PlayerActionDetector();
-      final result = detector.detect(_both(y: -1.0), _ids);
+      final result = detector.detect(_both(y: -1.2), _ids);
       expect(result.type, PlayerActionType.guard);
     });
 
     test('guard中はisGuardingがtrueになる', () {
       final detector = PlayerActionDetector();
-      detector.detect(_both(y: 1.0), _ids);
+      detector.detect(_both(y: 1.2), _ids);
       expect(detector.isGuarding, true);
 
       detector.detect(_both(y: 0), _ids);

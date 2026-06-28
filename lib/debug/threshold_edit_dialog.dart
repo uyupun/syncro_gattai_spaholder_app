@@ -96,19 +96,23 @@ class _ThresholdEditDialogState extends State<ThresholdEditDialog> {
                 _buildField(label: 'X軸 (攻撃)', controller: _xController),
                 _buildField(label: 'Y軸 (ガード)', controller: _yController),
                 _buildField(label: 'Z軸 (チャージ)', controller: _zController),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(onPressed: _reset, child: const Text('リセット')),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('キャンセル'),
+                    ),
+                    ElevatedButton(onPressed: _apply, child: const Text('適用')),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: _reset, child: const Text('リセット')),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(onPressed: _apply, child: const Text('適用')),
-      ],
     );
   }
 }

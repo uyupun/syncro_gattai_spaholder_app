@@ -22,11 +22,11 @@
       "actions": {
         "roll": {
           "nameJa": "ころがる",
-          "power": 10
+          "power": 5
         },
         "landfill": {
           "nameJa": "埋め立てる",
-          "power": 20
+          "power": 5
         }
       }
     },
@@ -35,11 +35,11 @@
       "actions": {
         "asyncStream": {
           "nameJa": "アシンク\nストリーム",
-          "power": 20
+          "power": 15
         },
         "asyncVacuum": {
           "nameJa": "アシンク\nバキューム",
-          "power": 30
+          "power": 15
         },
         "asyncPendulum": {
           "nameJa": "アシンク\nペンデュラム",

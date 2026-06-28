@@ -246,8 +246,8 @@ class _TitleScreenState extends State<TitleScreen> {
             child: GestureDetector(
               onTap: _openThresholdDialog,
               child: Container(
-                width: 40,
-                height: 40,
+                width: 64,
+                height: 64,
                 color: Colors.transparent,
               ),
             ),

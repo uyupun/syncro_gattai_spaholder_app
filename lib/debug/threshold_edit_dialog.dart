@@ -81,30 +81,38 @@ class _ThresholdEditDialogState extends State<ThresholdEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
     return AlertDialog(
       title: const Text('閾値設定'),
-      content: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: 260,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildField(label: 'X軸 (攻撃)', controller: _xController),
-              _buildField(label: 'Y軸 (ガード)', controller: _yController),
-              _buildField(label: 'Z軸 (チャージ)', controller: _zController),
-            ],
+      content: SizedBox(
+        width: screenSize.width,
+        height: screenSize.height * 0.8,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildField(label: 'X軸 (攻撃)', controller: _xController),
+                _buildField(label: 'Y軸 (ガード)', controller: _yController),
+                _buildField(label: 'Z軸 (チャージ)', controller: _zController),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(onPressed: _reset, child: const Text('リセット')),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('キャンセル'),
+                    ),
+                    ElevatedButton(onPressed: _apply, child: const Text('適用')),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: _reset, child: const Text('リセット')),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(onPressed: _apply, child: const Text('適用')),
-      ],
     );
   }
 }

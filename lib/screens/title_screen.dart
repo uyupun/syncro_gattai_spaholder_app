@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../debug/threshold_edit_dialog.dart';
 import '../interfaces/ble_service.dart';
 import '../models/ble_device_role.dart';
 import '../resources/game_se.dart';
@@ -227,68 +228,91 @@ class _TitleScreenState extends State<TitleScreen> {
     );
   }
 
+  void _openThresholdDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (_) => const ThresholdEditDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MarbleBackground(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/title.png',
-              width: 600,
-              height: 230,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return const Text(
-                  'ROBOT ARM',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 64,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 8,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 10,
-                        color: Colors.blueAccent,
-                        offset: Offset(0, 0),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: _openThresholdDialog,
+              child: Container(
+                width: 40,
+                height: 40,
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/title.png',
+                  width: 600,
+                  height: 230,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Text(
+                      'ROBOT ARM',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 64,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 8,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10,
+                            color: Colors.blueAccent,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildConnectButton(
+                        color: ConnectButtonColor.blue,
+                        role: BleDeviceRole.blue,
+                        state: _blueState,
+                        message: _blueMessage,
+                      ),
+                      StartButton(
+                        label: '出動',
+                        disabled: !_canStart,
+                        onTap: () {
+                          GameSe.sortieButton.play();
+                          widget.onStart();
+                        },
+                      ),
+                      _buildConnectButton(
+                        color: ConnectButtonColor.red,
+                        role: BleDeviceRole.red,
+                        state: _redState,
+                        message: _redMessage,
                       ),
                     ],
                   ),
-                );
-              },
+                ),
+              ],
             ),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildConnectButton(
-                    color: ConnectButtonColor.blue,
-                    role: BleDeviceRole.blue,
-                    state: _blueState,
-                    message: _blueMessage,
-                  ),
-                  StartButton(
-                    label: '出動',
-                    disabled: !_canStart,
-                    onTap: () {
-                      GameSe.sortieButton.play();
-                      widget.onStart();
-                    },
-                  ),
-                  _buildConnectButton(
-                    color: ConnectButtonColor.red,
-                    role: BleDeviceRole.red,
-                    state: _redState,
-                    message: _redMessage,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

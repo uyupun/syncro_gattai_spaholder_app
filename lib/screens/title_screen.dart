@@ -17,10 +17,14 @@ class TitleScreen extends StatefulWidget {
   final VoidCallback onStart;
   final BleService bleService;
 
+  /// trueのとき、BLE未接続でも出動可能にする（モックモード専用）
+  final bool isMockMode;
+
   const TitleScreen({
     super.key,
     required this.onStart,
     required this.bleService,
+    this.isMockMode = false,
   });
 
   @override
@@ -200,8 +204,9 @@ class _TitleScreenState extends State<TitleScreen> {
   }
 
   bool get _canStart =>
-      _blueState == _ConnectionUiState.connected &&
-      _redState == _ConnectionUiState.connected;
+      widget.isMockMode ||
+      (_blueState == _ConnectionUiState.connected &&
+          _redState == _ConnectionUiState.connected);
 
   Widget _buildConnectButton({
     required ConnectButtonColor color,

@@ -86,7 +86,6 @@ class BleMockAccessor implements BleService {
     if (_connectedRoles.contains(role)) return;
 
     debugPrint('[BLE Mock] ${role.deviceName} 接続開始');
-    await Future<void>.delayed(const Duration(seconds: 1));
 
     if (failNextConnect) {
       failNextConnect = false;

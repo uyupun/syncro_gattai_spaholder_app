@@ -11,6 +11,7 @@ import '../game/hp_bar_config.dart';
 import '../game/robot_arm_game.dart';
 import '../interfaces/ble_service.dart';
 import '../widgets/action_label_text.dart';
+import '../widgets/attack_timing_bar.dart';
 import '../widgets/outlined_text.dart';
 import '../widgets/charge_level_indicator.dart';
 import '../widgets/exit_dialog.dart';
@@ -184,6 +185,21 @@ class _GameWrapperState extends State<GameWrapper> {
                 ),
               ),
             ),
+            if (!widget.enablePendulum)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _game.armSwingNormalized,
+                    builder: (context, swing, _) => AttackTimingBar(
+                      swingNormalized: swing,
+                      width: screenSize.width * 0.55,
+                    ),
+                  ),
+                ),
+              ),
             Positioned(
               left: screenSize.width * 0.56,
               top: screenSize.height * 0.12,

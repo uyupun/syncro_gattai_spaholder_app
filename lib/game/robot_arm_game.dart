@@ -204,6 +204,9 @@ class RobotArmGame extends Forge2DGame {
   /// 画面中央に表示するメッセージ。2秒間表示後nullに戻る。
   final ValueNotifier<String?> centerMessage = ValueNotifier(null);
 
+  /// 腕の揺動位置(0.0〜1.0)。ユガロック戦でのみ使用。1.0=腕が敵に最も向いている(攻撃チャンス)。
+  final ValueNotifier<double> armSwingNormalized = ValueNotifier(1.0);
+
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
 
@@ -906,6 +909,10 @@ class RobotArmGame extends Forge2DGame {
       final offsetDeg =
           oscCenter + oscAmplitude * cos(omega * _yugarockOscillationTime);
       final currentShoulderAngle = _fixedShoulderAngle + offsetDeg * pi / 180;
+      armSwingNormalized.value =
+          ((offsetDeg - _yugarockOscMinDeg) /
+                  (_yugarockOscMaxDeg - _yugarockOscMinDeg))
+              .clamp(0.0, 1.0);
 
       upperArm.body.setTransform(upperArm.body.position, currentShoulderAngle);
       upperArm.body.angularVelocity = 0;

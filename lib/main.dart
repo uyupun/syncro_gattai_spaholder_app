@@ -167,6 +167,7 @@ class _MyAppState extends State<MyApp> {
           AppScreen.title => TitleScreen(
             onStart: _startEnemyIntro,
             bleService: _bleService,
+            isMockMode: widget.useMockBle,
           ),
           AppScreen.enemyIntro => EnemyIntroScreen(
             stage: _currentStage,
